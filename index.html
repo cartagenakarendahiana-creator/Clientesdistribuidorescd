@@ -35,21 +35,34 @@
   .topbar{
     background:var(--white);
     color:var(--ink);
-    padding:18px 24px 16px;
+    padding:10px 24px;
     position:sticky;top:0;z-index:20;
-    border-bottom:3px solid var(--gold);
+    border-bottom:2px solid var(--gold);
     box-shadow:0 2px 10px rgba(180,132,43,.08);
   }
   .topbar-top{
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
-    padding-bottom:14px;border-bottom:1px solid var(--line);
   }
-  .topbar .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
-  .topbar h1{font-size:22px;margin:0;font-weight:600;letter-spacing:.3px;color:var(--gold-dark);}
-  .topbar .tag{font-size:12.5px;color:var(--ink-soft);font-weight:500;}
+  .topbar .brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .brand-logo-img{height:30px;width:auto;display:block;flex-shrink:0;}
+  .topbar h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.4px;color:var(--gold-dark);}
+  .topbar .tag{font-size:10.5px;color:var(--ink-soft);font-weight:500;letter-spacing:.1px;}
+  .topbar-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .topbar-toggle-wrap{display:flex;justify-content:center;}
+  .topbar-toggle{
+    display:flex;align-items:center;gap:5px;background:none;border:none;
+    margin-top:2px;padding:5px 14px 1px;font-family:'Inter';font-size:10px;font-weight:700;
+    color:var(--ink-soft);text-transform:uppercase;letter-spacing:.6px;cursor:pointer;
+    transition:color .15s;
+  }
+  .topbar-toggle:hover{color:var(--gold-dark);}
+  .topbar-toggle .chevron{transition:transform .2s;font-size:9px;}
+  .topbar-toggle.open .chevron{transform:rotate(180deg);}
+  .topbar-extra{max-height:0;overflow:hidden;transition:max-height .28s ease;}
+  .topbar-extra.open{max-height:640px;}
   .global-add-btn{
     background:var(--gold);color:var(--white);border:none;border-radius:8px;
-    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
+    padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;
     font-family:'Inter';white-space:nowrap;flex-shrink:0;
     display:flex;align-items:center;gap:6px;box-shadow:var(--shadow-sm);
     transition:background .15s, transform .1s;
@@ -57,7 +70,7 @@
   .global-add-btn:hover{background:var(--gold-dark);}
   .global-add-btn:active{transform:scale(.97);}
   .summary-strip{
-    display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;margin-top:14px;
+    display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;margin-top:12px;
   }
   .summary-item{
     font-size:11.5px;color:var(--ink-soft);letter-spacing:.2px;font-weight:600;
@@ -73,8 +86,8 @@
 
   /* ---- Barra de filtros (topbar) ---- */
   .filters-bar{
-    display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;
-    padding-top:14px;border-top:1px solid var(--line);
+    display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;
+    padding-top:12px;border-top:1px solid var(--line);
   }
   .filter-group{display:flex;flex-direction:column;gap:4px;min-width:150px;}
   .filter-group label{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;}
@@ -89,6 +102,33 @@
     height:36px;white-space:nowrap;
   }
   .filter-clear-btn:hover{background:var(--gold-pale);}
+
+  /* ---- Pantalla de acceso (usuario y contraseña) ---- */
+  .login-overlay{
+    position:fixed;inset:0;z-index:100;background:var(--cream);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .login-card{
+    width:100%;max-width:360px;background:var(--white);border:1px solid var(--line-gold);
+    border-radius:14px;box-shadow:var(--shadow);padding:32px 28px 26px;text-align:center;
+  }
+  .login-logo-img{height:52px;width:auto;display:block;margin:0 auto 10px;}
+  .login-card h1{font-size:21px;margin:2px 0 2px;color:var(--gold-dark);font-weight:600;}
+  .login-sub{font-size:12px;color:var(--ink-soft);margin-bottom:22px;}
+  .login-field{text-align:left;margin-bottom:12px;}
+  .login-field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+  .login-field input{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:14px;background:var(--cream-2);color:var(--ink);
+  }
+  .login-field input:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
+  .login-error{font-size:12px;color:#B3261E;font-weight:600;margin:-2px 0 12px;text-align:left;}
+  .login-btn{
+    width:100%;margin-top:6px;padding:11px;border:none;border-radius:8px;
+    background:var(--gold);color:var(--white);font-family:'Inter';font-size:14px;font-weight:700;
+    cursor:pointer;transition:background .15s;
+  }
+  .login-btn:hover{background:var(--gold-dark);}
 
   .layout{display:flex;max-width:1180px;margin:0 auto;min-height:calc(100vh - 96px);}
   .sidebar{
@@ -342,7 +382,7 @@
   /* ---- Filtro por producto (topbar) ---- */
   .filter-btn{
     background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);border-radius:8px;
-    padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter';
+    padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter';
     white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s;
   }
   .filter-btn:hover{background:var(--gold-pale);}
@@ -426,20 +466,48 @@
 </head>
 <body>
 
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <img class="login-logo-img" src="logo-casa-dorada.png" alt="Casa Dorada">
+    <div class="login-sub">Acceso restringido · Pedidos y Entregas</div>
+    <div class="login-field">
+      <label for="loginUsuario">Usuario</label>
+      <input type="text" id="loginUsuario" autocomplete="username" placeholder="Usuario">
+    </div>
+    <div class="login-field">
+      <label for="loginPassword">Contraseña</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Contraseña">
+    </div>
+    <div class="login-error" id="loginError" style="display:none;">Usuario o contraseña incorrectos.</div>
+    <button class="login-btn" id="btnLogin">Entrar</button>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+
 <div class="topbar">
   <div class="topbar-top">
     <div class="brand">
-      <h1>Casa Dorada</h1>
+      <img class="brand-logo-img" src="logo-casa-dorada.png" alt="Casa Dorada">
       <span class="tag">Control de pedidos y entregas — Distribuidores 2026</span>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div class="topbar-actions">
       <button class="filter-btn" id="btnFiltroProducto" title="Ver cuánto se debe de un producto en todos los distribuidores">🔎 Deuda por producto</button>
       <button class="filter-btn" id="btnDeudaTotal" title="Ver el detalle completo de todo lo que se debe">📋 Deuda total</button>
       <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">👤 Vendedores</button>
       <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">🏬 Distribuidores</button>
       <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo de la empresa">🧺 Nuevo producto</button>
+      <button class="filter-btn" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">🔒 Acceso</button>
+      <button class="filter-btn" id="btnCerrarSesion" title="Cerrar sesión">🚪 Salir</button>
     </div>
   </div>
+  <div class="topbar-toggle-wrap">
+    <button class="topbar-toggle" id="btnToggleTopbar" aria-expanded="false">
+      <span>Resumen y filtros</span>
+      <span class="chevron">▾</span>
+    </button>
+  </div>
+  <div class="topbar-extra" id="topbarExtra">
   <div class="summary-strip">
     <div class="summary-item">Distribuidores <b id="sumDist">–</b></div>
     <div class="summary-item">Total facturado <b id="sumFact">–</b></div>
@@ -463,6 +531,7 @@
       </select>
     </div>
     <button class="filter-clear-btn" id="btnLimpiarFiltros">Limpiar filtros</button>
+  </div>
   </div>
 </div>
 
@@ -490,6 +559,8 @@
 
 <div class="toast" id="toast"></div>
 
+</div>
+
 <script>
 const CATALOG = {"distribuidores": [{"col": 5, "id": "Imperio", "nombre": "Imperio", "fecha": "2026-07-04"}, {"col": 6, "id": "Estrella del Sinu", "nombre": "Estrella del Sinu", "fecha": "2026-07-28"}, {"col": 7, "id": "Estrella del Sinu (2026-08-24)", "nombre": "Estrella del Sinu", "fecha": "2026-08-24"}, {"col": 8, "id": "Tiendas la Ganga Pamplona", "nombre": "Tiendas la Ganga Pamplona", "fecha": "NN"}, {"col": 9, "id": "ALMACENES CASA DORADA", "nombre": "ALMACENES CASA DORADA", "fecha": "2026-09-01"}, {"col": 10, "id": "Casa Dorada 1", "nombre": "Casa Dorada 1", "fecha": null}, {"col": 11, "id": "Marta Nidia Giraldo", "nombre": "Marta Nidia Giraldo", "fecha": "2026-08-20"}, {"col": 12, "id": "Yoyo Medellin", "nombre": "Yoyo Medellin", "fecha": "2026-08-21"}, {"col": 13, "id": "Ana Maria Tiendas el papa Marinilla", "nombre": "Ana Maria Tiendas el papa Marinilla", "fecha": "2026-06-24"}, {"col": 14, "id": "MEDIA NARANJA APARTADO", "nombre": "MEDIA NARANJA APARTADO", "fecha": "2026-09-04"}, {"col": 15, "id": "MEDIA NARANJA BELLO", "nombre": "MEDIA NARANJA BELLO", "fecha": "2026-09-04"}, {"col": 16, "id": "MEDIA NARANJA ENVIGADO", "nombre": "MEDIA NARANJA ENVIGADO", "fecha": "2026-09-04"}, {"col": 17, "id": "MEDIA NARANJA BERRIO", "nombre": "MEDIA NARANJA BERRIO", "fecha": "2026-09-04"}, {"col": 18, "id": "MEDIA NARANJA CARABOBO", "nombre": "MEDIA NARANJA CARABOBO", "fecha": "2026-09-04"}, {"col": 19, "id": "MEDIA NARANJA PICHINCHA", "nombre": "MEDIA NARANJA PICHINCHA", "fecha": "2026-09-04"}, {"col": 20, "id": "MEDIA NARANJA AYACUCHO", "nombre": "MEDIA NARANJA AYACUCHO", "fecha": "2026-09-04"}, {"col": 21, "id": "MEDIA NARANJA BUENOS AIRES", "nombre": "MEDIA NARANJA BUENOS AIRES", "fecha": "2026-09-04"}, {"col": 22, "id": "MEDIA NARANJA CUNDINAMARCA", "nombre": "MEDIA NARANJA CUNDINAMARCA", "fecha": "2026-09-04"}, {"col": 23, "id": "MEDIA NARANJA CENTRAL", "nombre": "MEDIA NARANJA CENTRAL", "fecha": "2026-09-04"}, {"col": 24, "id": "MEDIA NARANJA ITAGUI", "nombre": "MEDIA NARANJA ITAGUI", "fecha": "2026-09-04"}, {"col": 25, "id": "PANAMA PLAZA", "nombre": "PANAMA PLAZA", "fecha": "2026-04-08"}, {"col": 26, "id": "INVERSIONES DUQUE SALAZAR", "nombre": "INVERSIONES DUQUE SALAZAR", "fecha": "2026-04-08"}, {"col": 27, "id": "EL GIGANTE DEL HOGAR  SEDE  004", "nombre": "EL GIGANTE DEL HOGAR  SEDE  004", "fecha": "07/29/2026"}, {"col": 28, "id": "ALIANZA VC CAUCASIA", "nombre": "ALIANZA VC CAUCASIA", "fecha": "2026-07-08"}, {"col": 29, "id": "EDWIN ALEANDER QUINTERO APARTADO", "nombre": "EDWIN ALEANDER QUINTERO APARTADO", "fecha": "2026-12-08"}, {"col": 30, "id": "GIGAZ TURBACO", "nombre": "GIGAZ TURBACO", "fecha": "2026-12-08"}, {"col": 31, "id": "WILLIAM TAMAYO", "nombre": "WILLIAM TAMAYO", "fecha": "08/13/2026"}, {"col": 32, "id": "DUBO CUCUTA", "nombre": "DUBO CUCUTA", "fecha": "08/13/2026"}, {"col": 33, "id": "EL REINO DE LAS SABANAS SHAGER", "nombre": "EL REINO DE LAS SABANAS SHAGER", "fecha": "08/14/2026"}, {"col": 34, "id": "LUZ ADRIANA RAMIREZ  PLATA", "nombre": "LUZ ADRIANA RAMIREZ  PLATA", "fecha": "08/14/2026"}, {"col": 35, "id": "HENRY ARISTIZABAL", "nombre": "HENRY ARISTIZABAL", "fecha": "08/18/2026"}, {"col": 36, "id": "BOTERO", "nombre": "BOTERO", "fecha": "08/19/2026"}, {"col": 37, "id": "Yanseli Vasquez (HOTEL) S.MARTA", "nombre": "Yanseli Vasquez (HOTEL) S.MARTA", "fecha": "2026-02-09"}, {"col": 38, "id": "Yanseli Vasquez (MAYORCA) S.MARTA", "nombre": "Yanseli Vasquez (MAYORCA) S.MARTA", "fecha": null}], "productos": [{"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "1x190 mt", "precio": 26000.0, "pedidos": {"Yoyo Medellin": 30.0, "MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "INVERSIONES DUQUE SALAZAR": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "120x190 mt", "precio": 29000.0, "pedidos": {"Yoyo Medellin": 30.0, "MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 18.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "140x190 mt", "precio": 31000.0, "pedidos": {"Estrella del Sinu (2026-08-24)": 300.0, "Casa Dorada 1": 200.0, "Yoyo Medellin": 40.0, "MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "INVERSIONES DUQUE SALAZAR": 24.0, "HENRY ARISTIZABAL": 48.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 36.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "160x190 mt", "precio": 35000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "2x2 mt", "precio": 39000.0, "pedidos": {"Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "2x2 mt Funda 50x1 mt", "precio": 41000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Funda de Almohada Silver Estampada 90 Gramos (PAR)", "medida": "50x70 cm PAR", "precio": 7000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 6.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "1x190 mt", "precio": 26000.0, "pedidos": {"Estrella del Sinu (2026-08-24)": 50.0, "MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "INVERSIONES DUQUE SALAZAR": 24.0, "EL GIGANTE DEL HOGAR  SEDE  004": 120.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "120x190 mt", "precio": 29000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 18.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "140x190 mt", "precio": 31000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "INVERSIONES DUQUE SALAZAR": 24.0, "EL GIGANTE DEL HOGAR  SEDE  004": 180.0, "DUBO CUCUTA": 120.0, "HENRY ARISTIZABAL": 36.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 36.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "160x190 mt", "precio": 35000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 9.0, "MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "2x2 mt", "precio": 39000.0, "pedidos": {"Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "2x2 mt Funda 50x1 mt", "precio": 41000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Funda de Almohada Silver Fondo Entero 90 Gramos (PAR)", "medida": "50x70 cm PAR", "precio": 7000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 6.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "1x190 mt", "precio": 26000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "120x190 mt", "precio": 29000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos Hotelera", "medida": "140x190 mt", "precio": 31000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "160x190 mt", "precio": 35000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos Hotelera", "medida": "2x2 mt", "precio": 39000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "2x2 mt Funda 50x1 mt", "precio": 41000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Funda de Almohada Silver Blanca 90 Gramos (PAR)", "medida": "50x70 cm PAR", "precio": 7000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 6.0, "ALIANZA VC CAUCASIA": 24.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "1x190 mt", "precio": 18000.0, "pedidos": {"PANAMA PLAZA": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "120x190 mt", "precio": 20000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "140x190 mt", "precio": 22000.0, "pedidos": {"PANAMA PLAZA": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "160x190 mt", "precio": 24000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 26000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "1x190 mt", "precio": 18000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "GIGAZ TURBACO": 12.0, "BOTERO": 6.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "120x190 mt", "precio": 20000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "140x190 mt", "precio": 22000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "GIGAZ TURBACO": 24.0, "BOTERO": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "160x190 mt", "precio": 24000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 26000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "1x190 mt", "precio": 18000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "EL REINO DE LAS SABANAS SHAGER": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "120x190 mt", "precio": 20000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "EL REINO DE LAS SABANAS SHAGER": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "140x190 mt", "precio": 22000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "EL GIGANTE DEL HOGAR  SEDE  004": 36.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "GIGAZ TURBACO": 24.0, "EL REINO DE LAS SABANAS SHAGER": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "160x190 mt", "precio": 24000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 26000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sabanas Golden Infantil 120 gramos", "medida": "1x190 mt", "precio": 32000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sabanas Golden Infantil 120 gramos", "medida": "120x190 mt", "precio": 37000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Almohada Casa Dorada Grande", "medida": "50x70 cm", "precio": 14000.0, "pedidos": {"MEDIA NARANJA APARTADO": 30.0, "MEDIA NARANJA BELLO": 60.0, "MEDIA NARANJA BERRIO": 45.0, "MEDIA NARANJA CARABOBO": 45.0, "MEDIA NARANJA PICHINCHA": 45.0, "MEDIA NARANJA BUENOS AIRES": 45.0, "MEDIA NARANJA CUNDINAMARCA": 45.0, "MEDIA NARANJA CENTRAL": 60.0, "WILLIAM TAMAYO": 9.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Sencillo", "medida": "1x190 mt", "precio": 7000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Doble", "medida": "140x190 mt", "precio": 75000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Queen", "medida": "160x190 mt", "precio": 80000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. King", "medida": "2x2 mt", "precio": 85000.0, "pedidos": {"BOTERO": 3.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cortina jacquard Botón CASA DORADA - 2 laterales", "medida": "140x220 cada uno", "precio": 37000.0, "pedidos": {"MEDIA NARANJA APARTADO": 18.0, "MEDIA NARANJA BELLO": 36.0, "MEDIA NARANJA CENTRAL": 36.0, "INVERSIONES DUQUE SALAZAR": 12.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Sencillo 6 PIEZAS", "medida": "1x190 mt", "precio": 0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Doble 6 PIEZAS", "medida": "140x190 mt", "precio": 95000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Queen 6 PIEZAS", "medida": "160x190 mt", "precio": 105000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 8.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. King 6 PIEZAS", "medida": "2x2 mt", "precio": 114000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 2.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábana + Cortina 2 paneles Sencilla", "medida": "1 mt", "precio": 44000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábana + Cortina 2 paneles Semidoble", "medida": "120 mt", "precio": 47000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábana + Cortina 2 paneles Doble", "medida": "140 mt", "precio": 49000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Sencilla", "medida": "1x190 mt", "precio": 110000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Semidoble", "medida": "120x190 mt", "precio": 125000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Doble", "medida": "140x190 mt", "precio": 135000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Queen", "medida": "160x190 mt", "precio": 145000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. King", "medida": "2x2 mt", "precio": 160000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. King", "medida": "2x2 mt Funda 50x1 mt", "precio": 170000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cobija Piel de Cisne Económica 900 Gramos Estampada", "medida": "190x215 cm", "precio": 22000.0, "pedidos": {"MEDIA NARANJA BELLO": 100.0, "MEDIA NARANJA ENVIGADO": 100.0, "MEDIA NARANJA BERRIO": 100.0, "MEDIA NARANJA CARABOBO": 100.0, "MEDIA NARANJA PICHINCHA": 100.0, "MEDIA NARANJA AYACUCHO": 100.0, "MEDIA NARANJA BUENOS AIRES": 100.0, "MEDIA NARANJA CUNDINAMARCA": 100.0, "MEDIA NARANJA CENTRAL": 100.0, "MEDIA NARANJA ITAGUI": 100.0, "INVERSIONES DUQUE SALAZAR": 100.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cobija Fondo Entero Económica", "medida": "190x215 cm", "precio": 22000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cobija Ovejera Cuadros", "medida": "190x215 cm", "precio": 50000.0, "pedidos": {}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"PANAMA PLAZA": 36.0, "BOTERO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90", "medida": "2x2 mt", "precio": 72000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {"ALMACENES CASA DORADA": 100.0, "MEDIA NARANJA BELLO": 4.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0, "INVERSIONES DUQUE SALAZAR": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "120x190 mt", "precio": 55000.0, "pedidos": {"ALMACENES CASA DORADA": 60.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"Imperio": 240.0, "Estrella del Sinu": 60.0, "Tiendas la Ganga Pamplona": 60.0, "ALMACENES CASA DORADA": 200.0, "Marta Nidia Giraldo": 48.0, "MEDIA NARANJA BELLO": 6.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 8.0, "PANAMA PLAZA": 36.0, "INVERSIONES DUQUE SALAZAR": 12.0, "ALIANZA VC CAUCASIA": 18.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "WILLIAM TAMAYO": 12.0, "LUZ ADRIANA RAMIREZ  PLATA": 24.0, "HENRY ARISTIZABAL": 8.0, "BOTERO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "160x190 mt", "precio": 67000.0, "pedidos": {"MEDIA NARANJA BELLO": 4.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0, "BOTERO": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "2x2 mt", "precio": 72000.0, "pedidos": {"ALMACENES CASA DORADA": 80.0, "INVERSIONES DUQUE SALAZAR": 6.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "LUZ ADRIANA RAMIREZ  PLATA": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR / UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {"Imperio": 240.0, "ALMACENES CASA DORADA": 100.0, "MEDIA NARANJA BELLO": 4.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR / UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "120x190 mt", "precio": 55000.0, "pedidos": {"ALMACENES CASA DORADA": 60.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR/UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"Imperio": 240.0, "Estrella del Sinu": 36.0, "ALMACENES CASA DORADA": 200.0, "Marta Nidia Giraldo": 36.0, "MEDIA NARANJA BELLO": 6.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 8.0, "ALIANZA VC CAUCASIA": 18.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "EL REINO DE LAS SABANAS SHAGER": 24.0, "HENRY ARISTIZABAL": 8.0, "BOTERO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR/UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "160x190 mt", "precio": 67000.0, "pedidos": {"Imperio": 240.0, "ALMACENES CASA DORADA": 80.0, "MEDIA NARANJA BELLO": 6.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0, "EL REINO DE LAS SABANAS SHAGER": 18.0, "BOTERO": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR/UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "2x2 mt", "precio": 72000.0, "pedidos": {"ALIANZA VC CAUCASIA": 12.0, "EL REINO DE LAS SABANAS SHAGER": 18.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "1x190 mt", "precio": 30000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 8.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 8.0, "MEDIA NARANJA CENTRAL": 8.0, "WILLIAM TAMAYO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "120x190 mt", "precio": 32000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "140x190 mt", "precio": 34000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "160x190 mt", "precio": 37000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 8.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 8.0, "WILLIAM TAMAYO": 9.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 40000.0, "pedidos": {}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Protector/Funda Ultraonido Unicolor/Blanco/Estampado", "medida": "50x70cm", "precio": 8000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector/Funda Ultrasonido UNICOLOR/BLANCO/ESTAMPADO", "medida": "50x70 cm UNIDAD", "precio": 8000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "1x190 mt", "precio": 28000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "120x190 mt", "precio": 31000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "140x190 mt", "precio": 35000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "160x190 mt", "precio": 38000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "2x2 mt", "precio": 52000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Almohada Algodón 180 hilos Acolchado G90 Cierre", "medida": "50x70 cm", "precio": 8000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "1x190 mt", "precio": 30000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "120x190 mt", "precio": 33000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "140x190 mt", "precio": 37000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "160x190 mt", "precio": 40000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "2x2 mt", "precio": 54000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Almohada Algodón 180 hilos Acolchado G90 Cierre Est", "medida": "50x70 cm", "precio": 9000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "1x190 mt", "precio": 24000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "120x190 mt", "precio": 26000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "140x190 mt", "precio": 28000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "160x190 mt", "precio": 30000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "2x2 mt", "precio": 38000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "1x190 mt", "precio": 30000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 12.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "120x190 mt", "precio": 34000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA CUNDINAMARCA": 18.0, "MEDIA NARANJA CENTRAL": 24.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "140x190 mt", "precio": 38500.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA CUNDINAMARCA": 18.0, "MEDIA NARANJA CENTRAL": 24.0, "EL GIGANTE DEL HOGAR  SEDE  004": 36.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "WILLIAM TAMAYO": 24.0, "BOTERO": 12.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "160x190 mt", "precio": 43000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 12.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "2x2 mt", "precio": 52000.0, "pedidos": {"EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Almohada Antifluido Con cierre", "medida": "50x70 cm UNIDAD", "precio": 9000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 12.0, "MEDIA NARANJA APARTADO": 18.0, "MEDIA NARANJA BELLO": 24.0, "MEDIA NARANJA CUNDINAMARCA": 24.0, "MEDIA NARANJA ITAGUI": 36.0, "INVERSIONES DUQUE SALAZAR": 6.0, "ALIANZA VC CAUCASIA": 24.0, "BOTERO": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 24.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "1x190 mt", "precio": 38000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 3.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "120x190 mt", "precio": 40000.0, "pedidos": {"Yanseli Vasquez (HOTEL) S.MARTA": 15.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "140x190 mt", "precio": 48000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "HENRY ARISTIZABAL": 6.0, "Yanseli Vasquez (HOTEL) S.MARTA": 20.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "160x190 mt", "precio": 52000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "HENRY ARISTIZABAL": 3.0, "BOTERO": 3.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "2x2 mt", "precio": 58000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Forro de Cojin Unicolor Golden House", "medida": "45x45 cm", "precio": 9000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 24.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Forro de Cojin Marmolizado", "medida": "45x45 cm", "precio": 13000.0, "pedidos": {"MEDIA NARANJA BELLO": 30.0, "MEDIA NARANJA BERRIO": 30.0, "MEDIA NARANJA CUNDINAMARCA": 30.0, "MEDIA NARANJA CENTRAL": 30.0, "INVERSIONES DUQUE SALAZAR": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 24.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Forro de Cojin LUXURY BRILLANTE", "medida": "45x45 cm", "precio": 15000.0, "pedidos": {}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Relleno de Cojín (para los forros, no se venden por aparte)", "medida": "45x45 cm", "precio": 6500.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 24.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Juego de Pie de Cama + Forro de Cojines Unicolor ECO", "medida": "Estándar", "precio": 32000.0, "pedidos": {}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Juego de Pie de Cama + Forro de Cojines Marmolizado", "medida": "Estándar", "precio": 38000.0, "pedidos": {}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Juego de Pie de Cama + Forro de Cojines LUXURY BRILLANTE", "medida": "Estándar", "precio": 40000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "120x190 mt", "precio": 60000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "160x190 mt", "precio": 66000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 76000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "2x2 mt Funda 0,50x1 mt", "precio": 78000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "1x190 mt", "precio": 58000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "120x190 mt", "precio": 65000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "140x190 mt", "precio": 68000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "160x190 mt", "precio": 76000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 86000.0, "pedidos": {"BOTERO": 3.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "2x2 mt Funda 0,50x1 mt", "precio": 92000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "1x190 mt", "precio": 58000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "120x190 mt", "precio": 65000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "140x190 mt", "precio": 68000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "160x190 mt", "precio": 76000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 86000.0, "pedidos": {"BOTERO": 3.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "2x2 mt Funda 0,50x1 mt", "precio": 92000.0, "pedidos": {}}]};
 
@@ -507,7 +578,8 @@ const DEFAULT_APPDATA = {
   distObservaciones:{},      // {distId: texto} — observaciones/notas del cliente distribuidor
   distUrgenteOverrides:{},   // {distId: true/false} — marca este pedido como urgente
   vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
-  distribuidoresRegistry:[]  // [nombre, ...] — distribuidores/clientes creados manualmente (aunque no tengan pedidos aún)
+  distribuidoresRegistry:[], // [nombre, ...] — distribuidores/clientes creados manualmente (aunque no tengan pedidos aún)
+  auth:{usuario:'admin', password:'CasaDorada2026'} // usuario y contraseña para entrar a la app
 };
 async function loadAppData(){
   try{
@@ -582,11 +654,24 @@ function getAllProducts(){
   return [...CATALOG.productos, ...(APPDATA.customProducts||[])];
 }
 
-// Lista combinada de vendedores: los creados manualmente (registro) + los ya asignados a algún pedido
+// Lista combinada de vendedores: los creados manualmente (registro) + los ya asignados a algún pedido.
+// Se conserva el ORDEN EN QUE SE VAN AÑADIENDO (no alfabético): primero el registro (en el orden
+// en que se crearon con "Gestionar Vendedores"), y al final cualquier vendedor que haya sido escrito
+// directamente al asignar un pedido y aún no esté en el registro.
 function getAllVendedores(){
-  const asignados = getAllDistributors().map(d=>d.vendedor).filter(Boolean);
   const registro = APPDATA.vendedoresRegistry || [];
-  return Array.from(new Set([...registro, ...asignados])).sort((a,b)=>a.localeCompare(b));
+  const asignados = getAllDistributors().map(d=>d.vendedor).filter(Boolean);
+  const combinados = [...registro];
+  asignados.forEach(v => { if(!combinados.includes(v)) combinados.push(v); });
+  return combinados;
+}
+
+// Registra un vendedor en el listado (si aún no existe) para que quede guardado en el orden
+// en que se va añadiendo, y así aparezca en ese mismo orden en el filtro de vendedores.
+function registerVendedor(nombre){
+  if(!nombre) return;
+  if(!APPDATA.vendedoresRegistry) APPDATA.vendedoresRegistry = [];
+  if(!APPDATA.vendedoresRegistry.includes(nombre)) APPDATA.vendedoresRegistry.push(nombre);
 }
 
 // Lista combinada de nombres de distribuidores: los creados manualmente (registro) + los que ya tienen algún pedido
@@ -703,11 +788,12 @@ function renderDistItemHtml(d){
   </div>`;
 }
 
-// Reconstruye las opciones del <select> de vendedores a partir de los vendedores asignados actualmente
+// Reconstruye las opciones del <select> de vendedores, en el orden en que se van añadiendo
+// (registro de vendedores + los que se van asignando), no en orden alfabético.
 function refreshVendedorOptions(dists){
   const sel = document.getElementById('filtroVendedor');
   if(!sel) return;
-  const vendedores = Array.from(new Set(dists.map(d=>d.vendedor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const vendedores = getAllVendedores();
   const current = vendedorFiltro;
   sel.innerHTML = `<option value="">Todos los vendedores</option>` +
     vendedores.map(v=>`<option value="${escapeAttr(v)}" ${v===current?'selected':''}>${escapeHtml(v)}</option>`).join('');
@@ -1243,6 +1329,7 @@ function openEditDistModal(dist){
 
     APPDATA.distNameOverrides[distId] = val;
     if(vendedor) APPDATA.distVendedorOverrides[distId] = vendedor; else delete APPDATA.distVendedorOverrides[distId];
+    registerVendedor(vendedor);
     if(fechaPedido) APPDATA.distFechaOverrides[distId] = fechaPedido; else delete APPDATA.distFechaOverrides[distId];
     if(fechaDespacho) APPDATA.distDespachoOverrides[distId] = fechaDespacho; else delete APPDATA.distDespachoOverrides[distId];
 
@@ -1412,6 +1499,7 @@ function openNewDistModal(){
     if(!nombre){ showToast('Escribe un nombre'); return; }
     const id = 'nuevo-' + Date.now();
     APPDATA.nuevosDistribuidores.push({id, nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    registerVendedor(vendedor);
     if(urgente){
       if(!APPDATA.distUrgenteOverrides) APPDATA.distUrgenteOverrides = {};
       APPDATA.distUrgenteOverrides[id] = true;
@@ -1468,6 +1556,7 @@ function openNewOrderForClientModal(dist){
     const observaciones = overlay.querySelector('#txtObservacionesNP').value;
     const id = dist.nombre + ' — ' + Date.now();
     APPDATA.nuevosDistribuidores.push({id, nombre: dist.nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    registerVendedor(vendedor);
     if(urgente){
       if(!APPDATA.distUrgenteOverrides) APPDATA.distUrgenteOverrides = {};
       APPDATA.distUrgenteOverrides[id] = true;
@@ -1699,9 +1788,94 @@ document.getElementById('btnLimpiarFiltros').addEventListener('click', ()=>{
   renderSidebar();
 });
 
+// ---------- acceso (usuario y contraseña) ----------
+let appRendered = false;
+
+function currentAuth(){
+  return APPDATA.auth || DEFAULT_APPDATA.auth;
+}
+
+function showApp(){
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('appRoot').style.display = '';
+  if(!appRendered){ renderAll(); appRendered = true; }
+}
+
+function attemptLogin(){
+  const u = document.getElementById('loginUsuario').value.trim();
+  const p = document.getElementById('loginPassword').value;
+  const auth = currentAuth();
+  const errEl = document.getElementById('loginError');
+  if(u === auth.usuario && p === auth.password){
+    errEl.style.display = 'none';
+    document.getElementById('loginPassword').value = '';
+    showApp();
+  }else{
+    errEl.style.display = 'block';
+  }
+}
+
+document.getElementById('btnLogin').addEventListener('click', attemptLogin);
+document.getElementById('loginUsuario').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
+document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
+
+document.getElementById('btnCerrarSesion').addEventListener('click', ()=>{
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginUsuario').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').style.display = 'none';
+});
+
+// Modal para cambiar el usuario y/o la contraseña de acceso (pide la contraseña actual)
+function openChangeAuthModal(){
+  const auth = currentAuth();
+  const overlay = openModal(`
+    <h3>Usuario y contraseña de acceso</h3>
+    <div class="hint">Cámbialos aquí y guárdalos en un lugar seguro. La próxima vez que entres a esta app te pedirá los nuevos datos.</div>
+    <div class="field">
+      <label>Contraseña actual</label>
+      <input type="password" id="inpAuthActual" placeholder="Escribe la contraseña actual">
+    </div>
+    <div class="field">
+      <label>Usuario nuevo</label>
+      <input type="text" id="inpAuthUsuario" value="${escapeAttr(auth.usuario)}">
+    </div>
+    <div class="field">
+      <label>Contraseña nueva</label>
+      <input type="password" id="inpAuthPassword" placeholder="Déjalo vacío para no cambiarla">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Guardar</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const actual = overlay.querySelector('#inpAuthActual').value;
+    if(actual !== auth.password){ showToast('La contraseña actual no es correcta'); return; }
+    const nuevoUsuario = overlay.querySelector('#inpAuthUsuario').value.trim();
+    const nuevaPassword = overlay.querySelector('#inpAuthPassword').value;
+    if(!nuevoUsuario){ showToast('Escribe un usuario'); return; }
+    APPDATA.auth = { usuario: nuevoUsuario, password: nuevaPassword ? nuevaPassword : auth.password };
+    await saveAppData(APPDATA);
+    overlay.remove();
+    showToast('Acceso actualizado');
+  });
+}
+document.getElementById('btnCambiarAcceso').addEventListener('click', openChangeAuthModal);
+
+// Barra superior desplegable: muestra/oculta el resumen y los filtros para mantener el topbar compacto
+document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
+  const extra = document.getElementById('topbarExtra');
+  const btn = document.getElementById('btnToggleTopbar');
+  const open = extra.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+
 (async function init(){
   APPDATA = await loadAppData();
-  renderAll();
 })();
 </script>
 </body>
