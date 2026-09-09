@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa Dorada · Pedidos y Entregas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FBF6EC;
+    --cream-2:#F3EBDA;
+    --ink:#2B2621;
+    --ink-soft:#6b6259;
+    --gold:#B4842B;
+    --gold-dark:#8C6620;
+    --gold-pale:#F6ECD3;
+    --gold-pale-2:#EFE0B8;
+    --line:#E4D9C2;
+    --line-gold:#D8C08A;
+    --white:#FFFFFF;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(43,38,33,.06), 0 4px 14px rgba(43,38,33,.06);
+    --shadow-sm:0 1px 2px rgba(43,38,33,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces',serif;}
+  .topbar{
+    background:var(--white);
+    color:var(--ink);
+    padding:18px 24px 16px;
+    position:sticky;top:0;z-index:20;
+    border-bottom:3px solid var(--gold);
+    box-shadow:0 2px 10px rgba(180,132,43,.08);
+  }
+  .topbar-top{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+    padding-bottom:14px;border-bottom:1px solid var(--line);
+  }
+  .topbar .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .topbar h1{font-size:22px;margin:0;font-weight:600;letter-spacing:.3px;color:var(--gold-dark);}
+  .topbar .tag{font-size:12.5px;color:var(--ink-soft);font-weight:500;}
+  .global-add-btn{
+    background:var(--gold);color:var(--white);border:none;border-radius:8px;
+    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
+    font-family:'Inter';white-space:nowrap;flex-shrink:0;
+    display:flex;align-items:center;gap:6px;box-shadow:var(--shadow-sm);
+    transition:background .15s, transform .1s;
+  }
+  .global-add-btn:hover{background:var(--gold-dark);}
+  .global-add-btn:active{transform:scale(.97);}
+  .summary-strip{
+    display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;margin-top:14px;
+  }
+  .summary-item{
+    font-size:11.5px;color:var(--ink-soft);letter-spacing:.2px;font-weight:600;
+    background:var(--cream);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;
+  }
+  .summary-item b{display:block;font-size:19px;color:var(--gold-dark);font-family:'Fraunces',serif;font-weight:600;margin-top:3px;}
+  .summary-item.debt b{color:var(--gold-dark);}
+  .summary-item.debt{border-color:var(--line-gold);background:var(--gold-pale);}
+  @media (max-width: 820px){
+    .summary-strip{grid-template-columns:repeat(2, 1fr);}
+  }
+
+  /* ---- Barra de filtros (topbar) ---- */
+  .filters-bar{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;
+    padding-top:14px;border-top:1px solid var(--line);
+  }
+  .filter-group{display:flex;flex-direction:column;gap:4px;min-width:150px;}
+  .filter-group label{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;}
+  .filter-group select, .filter-group input[type="date"]{
+    padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:13px;background:var(--white);color:var(--ink);
+  }
+  .filter-group select:focus, .filter-group input[type="date"]:focus{outline:2px solid var(--gold);border-color:var(--gold);}
+  .filter-clear-btn{
+    background:var(--cream-2);color:var(--gold-dark);border:1px solid var(--line-gold);border-radius:8px;
+    padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:'Inter';
+    height:36px;white-space:nowrap;
+  }
+  .filter-clear-btn:hover{background:var(--gold-pale);}
+
+  .layout{display:flex;max-width:1180px;margin:0 auto;min-height:calc(100vh - 96px);}
+  .sidebar{
+    width:300px;flex-shrink:0;border-right:1px solid var(--line);
+    background:var(--white);
+  }
+  .search-box{padding:14px;border-bottom:1px solid var(--line);}
+  .search-box input{
+    width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:14px;background:var(--cream-2);
+  }
+  .new-dist-btn{
+    width:100%;margin-top:8px;padding:9px;border:1px dashed var(--gold);
+    background:transparent;color:var(--gold-dark);border-radius:8px;font-size:13px;
+    cursor:pointer;font-weight:600;font-family:'Inter';
+  }
+  .new-dist-btn:hover{background:var(--cream-2);}
+  .dist-list{max-height:calc(100vh - 230px);overflow-y:auto;padding:8px 8px 16px;}
+  .sidebar-section-title{
+    font-size:10.5px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;
+    letter-spacing:.6px;padding:12px 8px 6px;
+  }
+  .dist-item{
+    padding:12px 13px;border-radius:10px;cursor:pointer;margin-bottom:6px;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:8px;
+    border:1px solid var(--line);background:var(--white);
+    transition:background .15s, border-color .15s, box-shadow .15s;
+  }
+  .dist-item:hover{background:var(--cream-2);border-color:var(--line-gold);}
+  .dist-item.active{background:var(--gold-pale);border-color:var(--gold);box-shadow:0 1px 4px rgba(180,132,43,.15);}
+  .dist-name-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+  .dist-name{font-size:13.5px;font-weight:600;line-height:1.3;}
+  .dist-meta{font-size:11px;color:var(--ink-soft);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .dist-meta .meta-chip{
+    background:var(--cream-2);border:1px solid var(--line);border-radius:20px;
+    padding:1px 8px;font-size:10.5px;font-weight:600;color:var(--ink-soft);white-space:nowrap;
+  }
+  .dist-meta .meta-chip.despacho{background:var(--gold-pale);border-color:var(--line-gold);color:var(--gold-dark);}
+  .badge{
+    font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;
+  }
+  .badge.debe{background:var(--gold);color:var(--white);}
+  .badge.saldado{background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);}
+  .icon-btn{
+    background:none;border:none;cursor:pointer;font-size:13px;line-height:1;
+    padding:4px 5px;border-radius:6px;color:var(--ink-soft);flex-shrink:0;
+    transition:background .15s, color .15s;
+  }
+  .icon-btn:hover{background:var(--white);}
+  .icon-edit:hover{color:var(--gold-dark);}
+  .icon-delete:hover{color:var(--gold-dark);}
+  .rename-dist-btn{opacity:0;transition:opacity .15s;}
+  .dist-item:hover .rename-dist-btn{opacity:1;}
+
+  .main{flex:1;padding:24px 28px;min-width:0;}
+  .empty-state{
+    text-align:center;padding:80px 20px;color:var(--ink-soft);
+  }
+  .empty-state h2{color:var(--ink);font-size:22px;margin-bottom:8px;}
+
+  .dist-header{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    flex-wrap:wrap;gap:12px;margin-bottom:20px;
+  }
+  .dist-header-title{display:flex;align-items:center;gap:6px;}
+  .dist-header h2{font-size:26px;margin:0;}
+  .dist-header .sub{font-size:13px;color:var(--ink-soft);margin-top:3px;}
+  .dist-info-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .info-chip{
+    display:flex;align-items:center;gap:6px;background:var(--cream);border:1px solid var(--line);
+    border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--ink-soft);
+  }
+  .info-chip b{color:var(--ink);font-weight:700;}
+  .info-chip.despacho{background:var(--gold-pale);border-color:var(--line-gold);color:var(--gold-dark);}
+  .info-chip.despacho b{color:var(--gold-dark);}
+  .info-chip.despacho input[type="date"]{
+    border:1px solid var(--line-gold);border-radius:6px;background:var(--white);
+    color:var(--gold-dark);font-family:'Inter';font-size:12px;font-weight:700;padding:3px 6px;
+  }
+  .info-chip.despacho input[type="date"]:focus{outline:2px solid var(--gold);}
+  .info-chip .icon-btn{padding:1px 3px;font-size:11px;}
+  .add-btn{
+    background:var(--gold);color:var(--white);border:none;border-radius:8px;
+    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
+    font-family:'Inter';white-space:nowrap;box-shadow:var(--shadow-sm);
+    transition:background .15s, transform .1s;
+  }
+  .add-btn:hover{background:var(--gold-dark);}
+  .add-btn:active{transform:scale(.97);}
+
+  .totals-row{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+  .tcard{
+    flex:1;min-width:140px;background:var(--white);border:1px solid var(--line);
+    border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);
+  }
+  .tcard .label{font-size:11.5px;color:var(--ink-soft);text-transform:none;font-weight:600;}
+  .tcard .val{font-family:'Fraunces',serif;font-size:21px;margin-top:5px;font-weight:600;}
+  .tcard.debe{border-color:var(--line-gold);background:var(--gold-pale);}
+  .tcard.debe .val{color:var(--gold-dark);}
+  .tcard.ok .val{color:var(--ink);}
+
+  table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);}
+  thead th{
+    background:var(--cream-2);text-align:left;font-size:11px;color:var(--ink-soft);
+    padding:11px 12px;font-weight:700;border-bottom:1px solid var(--line);white-space:nowrap;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  tbody td{padding:11px 12px;font-size:13.5px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FDFBF5;}
+  .cat-row td{
+    background:var(--cream-2);font-size:10.5px;font-weight:800;color:var(--gold-dark);
+    text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;
+  }
+  .cat-row:hover td{background:var(--cream-2);}
+  .prod-name{font-weight:600;}
+  .prod-medida{font-size:12px;color:var(--ink-soft);}
+  .edited-tag{font-size:10px;color:var(--gold-dark);font-weight:700;margin-left:6px;}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+  .entregado-input{
+    width:64px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;
+    text-align:right;font-family:'Inter';font-size:13.5px;
+  }
+  .entregado-input:focus{outline:2px solid var(--gold);border-color:var(--gold);}
+  .pend-val{font-weight:700;}
+  .pend-val.zero{color:var(--ink-soft);}
+  .pend-val.pos{color:var(--gold-dark);}
+  .row-actions{display:flex;gap:2px;justify-content:flex-end;white-space:nowrap;}
+
+  .table-scroll{overflow-x:auto;border-radius:var(--radius);}
+  .table-scroll table{box-shadow:none;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(43,38,33,.5);display:flex;
+    align-items:center;justify-content:center;z-index:100;padding:16px;
+  }
+  .modal{
+    background:var(--white);border-radius:16px;padding:24px;max-width:440px;width:100%;
+    max-height:85vh;overflow-y:auto;box-shadow:0 10px 40px rgba(43,38,33,.22);
+  }
+  .modal h3{margin:0 0 16px;font-size:19px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field input, .field select{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:14px;background:var(--cream);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
+  .modal-actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;}
+  .modal-actions button{
+    flex:1;min-width:100px;padding:10px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;
+    font-family:'Inter';border:none;transition:filter .15s;
+  }
+  .modal-actions button:hover{filter:brightness(.95);}
+  .btn-cancel{background:var(--cream-2);color:var(--ink);}
+  .btn-confirm{background:var(--gold);color:white;}
+  .btn-confirm:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-danger{background:var(--gold-pale-2);color:var(--gold-dark);}
+  .hint{font-size:11.5px;color:var(--ink-soft);margin-top:-6px;margin-bottom:12px;}
+  .price-hint{font-size:12px;color:var(--gold-dark);margin-top:4px;}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:30px;
+    font-size:13px;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+
+  @media (max-width: 820px){
+    .layout{flex-direction:column;}
+    .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--line);}
+    .dist-list{max-height:260px;}
+    .main{padding:18px;}
+    .summary-strip{gap:12px;}
+  }
+
+  /* ---- Filtro por producto (topbar) ---- */
+  .filter-btn{
+    background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);border-radius:8px;
+    padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter';
+    white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s;
+  }
+  .filter-btn:hover{background:var(--gold-pale);}
+  .product-search-wrap{position:relative;}
+  .product-search-results{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);
+    border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(43,38,33,.18);
+    max-height:260px;overflow-y:auto;z-index:50;
+  }
+  .product-search-results .psr-item{
+    padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--line);
+  }
+  .product-search-results .psr-item:last-child{border-bottom:none;}
+  .product-search-results .psr-item:hover{background:var(--cream-2);}
+  .product-search-results .psr-item .psr-cat{font-size:10.5px;color:var(--gold-dark);font-weight:700;text-transform:uppercase;}
+  .product-search-results .psr-empty{padding:12px;font-size:13px;color:var(--ink-soft);}
+  .product-debt-summary{margin-top:16px;}
+  .product-debt-summary .pd-title{font-size:15px;font-weight:600;margin-bottom:10px;}
+  .product-debt-summary .pd-cards{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .product-debt-summary .pd-card{
+    flex:1;min-width:110px;background:var(--cream-2);border-radius:8px;padding:10px 12px;
+  }
+  .product-debt-summary .pd-card .lab{font-size:10.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;}
+  .product-debt-summary .pd-card .v{font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin-top:3px;}
+  .product-debt-summary table{box-shadow:none;}
+  .product-debt-summary th, .product-debt-summary td{font-size:12.5px;}
+
+  /* ---- Buscador de productos dentro del pedido ---- */
+  .order-search-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+  .order-search-row input{
+    flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:13.5px;background:var(--white);
+  }
+  .order-search-row input:focus{outline:2px solid var(--gold);border-color:var(--gold);}
+  .no-match{padding:16px;color:var(--ink-soft);font-size:13px;text-align:center;}
+
+  /* ---- Buscador de producto dentro de los modales (agregar/editar línea) ---- */
+  .select-search-input{
+    width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px 8px 0 0;
+    font-family:'Inter';font-size:13.5px;background:var(--cream);border-bottom:none;
+  }
+  .select-search-input:focus{outline:none;border-color:var(--gold);}
+  .field select.searchable-select{border-radius:0 0 8px 8px;}
+
+  /* ---- Imprimir pedido ---- */
+  .print-btn{
+    background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter';
+    white-space:nowrap;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:6px;
+  }
+  .print-btn:hover{background:var(--cream-2);}
+  .print-header{display:none;}
+
+  @media print{
+    body{background:#fff;}
+    .topbar, .sidebar, .add-btn, .print-btn, .row-actions, thead th:last-child,
+    tbody td:last-child, .order-search-row, .icon-btn,
+    .dist-header-title .icon-btn, .toast{display:none !important;}
+    .layout{display:block;max-width:100%;margin:0;min-height:0;}
+    .main{padding:0;}
+    .print-header{display:block;margin-bottom:14px;}
+    .print-header h2{margin:0 0 4px;font-size:22px;}
+    .print-header .sub{font-size:12.5px;color:var(--ink-soft);}
+    table{box-shadow:none;border:1px solid #999;}
+    .entregado-input{border:none;background:none;padding:0;text-align:right;width:auto;}
+    .tcard{box-shadow:none;border:1px solid #999;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-top">
+    <div class="brand">
+      <h1>Casa Dorada</h1>
+      <span class="tag">Control de pedidos y entregas — Distribuidores 2026</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="filter-btn" id="btnFiltroProducto" title="Ver cuánto se debe de un producto en todos los distribuidores">🔎 Deuda por producto</button>
+      <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo de la empresa">🧺 Nuevo producto</button>
+    </div>
+  </div>
+  <div class="summary-strip">
+    <div class="summary-item">Distribuidores <b id="sumDist">–</b></div>
+    <div class="summary-item">Total facturado <b id="sumFact">–</b></div>
+    <div class="summary-item debt">Total pendiente por cobrar <b id="sumDeuda">–</b></div>
+    <div class="summary-item">Productos pedidos (unidades) <b id="sumUnidPedidas">–</b></div>
+    <div class="summary-item debt">Unidades pendientes por despachar <b id="sumUnidPendientes">–</b></div>
+  </div>
+  <div class="filters-bar">
+    <div class="filter-group">
+      <label>Ordenar por fecha de pedido</label>
+      <select id="filtroOrden">
+        <option value="fecha_desc">Fecha: de más nueva a más antigua</option>
+        <option value="fecha_asc">Fecha: de más antigua a más nueva</option>
+        <option value="nombre">Nombre (A–Z)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Vendedor</label>
+      <select id="filtroVendedor">
+        <option value="">Todos los vendedores</option>
+      </select>
+    </div>
+    <button class="filter-clear-btn" id="btnLimpiarFiltros">Limpiar filtros</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="search-box">
+      <input type="text" id="searchDist" placeholder="Buscar distribuidor...">
+      <button class="new-dist-btn" id="btnNuevoDist">+ Nuevo distribuidor</button>
+    </div>
+    <div class="dist-list" id="distList"></div>
+  </div>
+
+  <div class="main" id="mainPanel">
+    <div class="empty-state">
+      <h2>Selecciona un distribuidor</h2>
+      <p>Elige uno de la lista para ver sus pedidos, marcar lo entregado y ver cuánto queda debiendo.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATALOG = {"distribuidores": [{"col": 5, "id": "Imperio", "nombre": "Imperio", "fecha": "2026-07-04"}, {"col": 6, "id": "Estrella del Sinu", "nombre": "Estrella del Sinu", "fecha": "2026-07-28"}, {"col": 7, "id": "Estrella del Sinu (2026-08-24)", "nombre": "Estrella del Sinu", "fecha": "2026-08-24"}, {"col": 8, "id": "Tiendas la Ganga Pamplona", "nombre": "Tiendas la Ganga Pamplona", "fecha": "NN"}, {"col": 9, "id": "ALMACENES CASA DORADA", "nombre": "ALMACENES CASA DORADA", "fecha": "2026-09-01"}, {"col": 10, "id": "Casa Dorada 1", "nombre": "Casa Dorada 1", "fecha": null}, {"col": 11, "id": "Marta Nidia Giraldo", "nombre": "Marta Nidia Giraldo", "fecha": "2026-08-20"}, {"col": 12, "id": "Yoyo Medellin", "nombre": "Yoyo Medellin", "fecha": "2026-08-21"}, {"col": 13, "id": "Ana Maria Tiendas el papa Marinilla", "nombre": "Ana Maria Tiendas el papa Marinilla", "fecha": "2026-06-24"}, {"col": 14, "id": "MEDIA NARANJA APARTADO", "nombre": "MEDIA NARANJA APARTADO", "fecha": "2026-09-04"}, {"col": 15, "id": "MEDIA NARANJA BELLO", "nombre": "MEDIA NARANJA BELLO", "fecha": "2026-09-04"}, {"col": 16, "id": "MEDIA NARANJA ENVIGADO", "nombre": "MEDIA NARANJA ENVIGADO", "fecha": "2026-09-04"}, {"col": 17, "id": "MEDIA NARANJA BERRIO", "nombre": "MEDIA NARANJA BERRIO", "fecha": "2026-09-04"}, {"col": 18, "id": "MEDIA NARANJA CARABOBO", "nombre": "MEDIA NARANJA CARABOBO", "fecha": "2026-09-04"}, {"col": 19, "id": "MEDIA NARANJA PICHINCHA", "nombre": "MEDIA NARANJA PICHINCHA", "fecha": "2026-09-04"}, {"col": 20, "id": "MEDIA NARANJA AYACUCHO", "nombre": "MEDIA NARANJA AYACUCHO", "fecha": "2026-09-04"}, {"col": 21, "id": "MEDIA NARANJA BUENOS AIRES", "nombre": "MEDIA NARANJA BUENOS AIRES", "fecha": "2026-09-04"}, {"col": 22, "id": "MEDIA NARANJA CUNDINAMARCA", "nombre": "MEDIA NARANJA CUNDINAMARCA", "fecha": "2026-09-04"}, {"col": 23, "id": "MEDIA NARANJA CENTRAL", "nombre": "MEDIA NARANJA CENTRAL", "fecha": "2026-09-04"}, {"col": 24, "id": "MEDIA NARANJA ITAGUI", "nombre": "MEDIA NARANJA ITAGUI", "fecha": "2026-09-04"}, {"col": 25, "id": "PANAMA PLAZA", "nombre": "PANAMA PLAZA", "fecha": "2026-04-08"}, {"col": 26, "id": "INVERSIONES DUQUE SALAZAR", "nombre": "INVERSIONES DUQUE SALAZAR", "fecha": "2026-04-08"}, {"col": 27, "id": "EL GIGANTE DEL HOGAR  SEDE  004", "nombre": "EL GIGANTE DEL HOGAR  SEDE  004", "fecha": "07/29/2026"}, {"col": 28, "id": "ALIANZA VC CAUCASIA", "nombre": "ALIANZA VC CAUCASIA", "fecha": "2026-07-08"}, {"col": 29, "id": "EDWIN ALEANDER QUINTERO APARTADO", "nombre": "EDWIN ALEANDER QUINTERO APARTADO", "fecha": "2026-12-08"}, {"col": 30, "id": "GIGAZ TURBACO", "nombre": "GIGAZ TURBACO", "fecha": "2026-12-08"}, {"col": 31, "id": "WILLIAM TAMAYO", "nombre": "WILLIAM TAMAYO", "fecha": "08/13/2026"}, {"col": 32, "id": "DUBO CUCUTA", "nombre": "DUBO CUCUTA", "fecha": "08/13/2026"}, {"col": 33, "id": "EL REINO DE LAS SABANAS SHAGER", "nombre": "EL REINO DE LAS SABANAS SHAGER", "fecha": "08/14/2026"}, {"col": 34, "id": "LUZ ADRIANA RAMIREZ  PLATA", "nombre": "LUZ ADRIANA RAMIREZ  PLATA", "fecha": "08/14/2026"}, {"col": 35, "id": "HENRY ARISTIZABAL", "nombre": "HENRY ARISTIZABAL", "fecha": "08/18/2026"}, {"col": 36, "id": "BOTERO", "nombre": "BOTERO", "fecha": "08/19/2026"}, {"col": 37, "id": "Yanseli Vasquez (HOTEL) S.MARTA", "nombre": "Yanseli Vasquez (HOTEL) S.MARTA", "fecha": "2026-02-09"}, {"col": 38, "id": "Yanseli Vasquez (MAYORCA) S.MARTA", "nombre": "Yanseli Vasquez (MAYORCA) S.MARTA", "fecha": null}], "productos": [{"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "1x190 mt", "precio": 26000.0, "pedidos": {"Yoyo Medellin": 30.0, "MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "INVERSIONES DUQUE SALAZAR": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "120x190 mt", "precio": 29000.0, "pedidos": {"Yoyo Medellin": 30.0, "MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 18.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "140x190 mt", "precio": 31000.0, "pedidos": {"Estrella del Sinu (2026-08-24)": 300.0, "Casa Dorada 1": 200.0, "Yoyo Medellin": 40.0, "MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "INVERSIONES DUQUE SALAZAR": 24.0, "HENRY ARISTIZABAL": 48.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 36.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "160x190 mt", "precio": 35000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "2x2 mt", "precio": 39000.0, "pedidos": {"Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Estampada 90 Gramos", "medida": "2x2 mt Funda 50x1 mt", "precio": 41000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Funda de Almohada Silver Estampada 90 Gramos (PAR)", "medida": "50x70 cm PAR", "precio": 7000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 6.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "1x190 mt", "precio": 26000.0, "pedidos": {"Estrella del Sinu (2026-08-24)": 50.0, "MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "INVERSIONES DUQUE SALAZAR": 24.0, "EL GIGANTE DEL HOGAR  SEDE  004": 120.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "120x190 mt", "precio": 29000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 18.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "140x190 mt", "precio": 31000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "INVERSIONES DUQUE SALAZAR": 24.0, "EL GIGANTE DEL HOGAR  SEDE  004": 180.0, "DUBO CUCUTA": 120.0, "HENRY ARISTIZABAL": 36.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 36.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "160x190 mt", "precio": 35000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 9.0, "MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "2x2 mt", "precio": 39000.0, "pedidos": {"Yanseli Vasquez (MAYORCA) S.MARTA": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Unicolor 90 Gramos. Embozada", "medida": "2x2 mt Funda 50x1 mt", "precio": 41000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Funda de Almohada Silver Fondo Entero 90 Gramos (PAR)", "medida": "50x70 cm PAR", "precio": 7000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 6.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "1x190 mt", "precio": 26000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "120x190 mt", "precio": 29000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos Hotelera", "medida": "140x190 mt", "precio": 31000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "160x190 mt", "precio": 35000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos Hotelera", "medida": "2x2 mt", "precio": 39000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Juego de Sabanas Silver Blanca 90 Gramos. Hotelera", "medida": "2x2 mt Funda 50x1 mt", "precio": 41000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Funda de Almohada Silver Blanca 90 Gramos (PAR)", "medida": "50x70 cm PAR", "precio": 7000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 6.0, "ALIANZA VC CAUCASIA": 24.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "1x190 mt", "precio": 18000.0, "pedidos": {"PANAMA PLAZA": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "120x190 mt", "precio": 20000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "140x190 mt", "precio": 22000.0, "pedidos": {"PANAMA PLAZA": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "160x190 mt", "precio": 24000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Blanco 90 Gramos", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 26000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "1x190 mt", "precio": 18000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "GIGAZ TURBACO": 12.0, "BOTERO": 6.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "120x190 mt", "precio": 20000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "140x190 mt", "precio": 22000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "GIGAZ TURBACO": 24.0, "BOTERO": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "160x190 mt", "precio": 24000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Estampada 90 Gramos", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 26000.0, "pedidos": {}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "1x190 mt", "precio": 18000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0, "EL REINO DE LAS SABANAS SHAGER": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "120x190 mt", "precio": 20000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "EL REINO DE LAS SABANAS SHAGER": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "140x190 mt", "precio": 22000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0, "EL GIGANTE DEL HOGAR  SEDE  004": 36.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "GIGAZ TURBACO": 24.0, "EL REINO DE LAS SABANAS SHAGER": 24.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "160x190 mt", "precio": 24000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 12.0}}, {"categoria": "SÁBANAS SILVER", "producto": "Semijuego de Sábanas Silver Unicolor 90 Gramos", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 26000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sabanas Golden Infantil 120 gramos", "medida": "1x190 mt", "precio": 32000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sabanas Golden Infantil 120 gramos", "medida": "120x190 mt", "precio": 37000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Almohada Casa Dorada Grande", "medida": "50x70 cm", "precio": 14000.0, "pedidos": {"MEDIA NARANJA APARTADO": 30.0, "MEDIA NARANJA BELLO": 60.0, "MEDIA NARANJA BERRIO": 45.0, "MEDIA NARANJA CARABOBO": 45.0, "MEDIA NARANJA PICHINCHA": 45.0, "MEDIA NARANJA BUENOS AIRES": 45.0, "MEDIA NARANJA CUNDINAMARCA": 45.0, "MEDIA NARANJA CENTRAL": 60.0, "WILLIAM TAMAYO": 9.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Sencillo", "medida": "1x190 mt", "precio": 7000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Doble", "medida": "140x190 mt", "precio": 75000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Queen", "medida": "160x190 mt", "precio": 80000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. King", "medida": "2x2 mt", "precio": 85000.0, "pedidos": {"BOTERO": 3.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cortina jacquard Botón CASA DORADA - 2 laterales", "medida": "140x220 cada uno", "precio": 37000.0, "pedidos": {"MEDIA NARANJA APARTADO": 18.0, "MEDIA NARANJA BELLO": 36.0, "MEDIA NARANJA CENTRAL": 36.0, "INVERSIONES DUQUE SALAZAR": 12.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Sencillo 6 PIEZAS", "medida": "1x190 mt", "precio": 0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Doble 6 PIEZAS", "medida": "140x190 mt", "precio": 95000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. Queen 6 PIEZAS", "medida": "160x190 mt", "precio": 105000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 8.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Plumón 140 gramos Unicolor/Unicolor. King 6 PIEZAS", "medida": "2x2 mt", "precio": 114000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 2.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábana + Cortina 2 paneles Sencilla", "medida": "1 mt", "precio": 44000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábana + Cortina 2 paneles Semidoble", "medida": "120 mt", "precio": 47000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábana + Cortina 2 paneles Doble", "medida": "140 mt", "precio": 49000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Sencilla", "medida": "1x190 mt", "precio": 110000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Semidoble", "medida": "120x190 mt", "precio": 125000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Doble", "medida": "140x190 mt", "precio": 135000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. Queen", "medida": "160x190 mt", "precio": 145000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. King", "medida": "2x2 mt", "precio": 160000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Juego de Sábanas 250 Hilos Blanca Satin Stripe. King", "medida": "2x2 mt Funda 50x1 mt", "precio": 170000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cobija Piel de Cisne Económica 900 Gramos Estampada", "medida": "190x215 cm", "precio": 22000.0, "pedidos": {"MEDIA NARANJA BELLO": 100.0, "MEDIA NARANJA ENVIGADO": 100.0, "MEDIA NARANJA BERRIO": 100.0, "MEDIA NARANJA CARABOBO": 100.0, "MEDIA NARANJA PICHINCHA": 100.0, "MEDIA NARANJA AYACUCHO": 100.0, "MEDIA NARANJA BUENOS AIRES": 100.0, "MEDIA NARANJA CUNDINAMARCA": 100.0, "MEDIA NARANJA CENTRAL": 100.0, "MEDIA NARANJA ITAGUI": 100.0, "INVERSIONES DUQUE SALAZAR": 100.0}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cobija Fondo Entero Económica", "medida": "190x215 cm", "precio": 22000.0, "pedidos": {}}, {"categoria": "PLUMONES, COBIJAS Y CORTINAS", "producto": "Cobija Ovejera Cuadros", "medida": "190x215 cm", "precio": 50000.0, "pedidos": {}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"PANAMA PLAZA": 36.0, "BOTERO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90", "medida": "2x2 mt", "precio": 72000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {"ALMACENES CASA DORADA": 100.0, "MEDIA NARANJA BELLO": 4.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0, "INVERSIONES DUQUE SALAZAR": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "120x190 mt", "precio": 55000.0, "pedidos": {"ALMACENES CASA DORADA": 60.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"Imperio": 240.0, "Estrella del Sinu": 60.0, "Tiendas la Ganga Pamplona": 60.0, "ALMACENES CASA DORADA": 200.0, "Marta Nidia Giraldo": 48.0, "MEDIA NARANJA BELLO": 6.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 8.0, "PANAMA PLAZA": 36.0, "INVERSIONES DUQUE SALAZAR": 12.0, "ALIANZA VC CAUCASIA": 18.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "WILLIAM TAMAYO": 12.0, "LUZ ADRIANA RAMIREZ  PLATA": 24.0, "HENRY ARISTIZABAL": 8.0, "BOTERO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "160x190 mt", "precio": 67000.0, "pedidos": {"MEDIA NARANJA BELLO": 4.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0, "BOTERO": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido ESTAMPADO Y UNICOLOR (DOBLE FAZ) G90", "medida": "2x2 mt", "precio": 72000.0, "pedidos": {"ALMACENES CASA DORADA": 80.0, "INVERSIONES DUQUE SALAZAR": 6.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "LUZ ADRIANA RAMIREZ  PLATA": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR / UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {"Imperio": 240.0, "ALMACENES CASA DORADA": 100.0, "MEDIA NARANJA BELLO": 4.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR / UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "120x190 mt", "precio": 55000.0, "pedidos": {"ALMACENES CASA DORADA": 60.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR/UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"Imperio": 240.0, "Estrella del Sinu": 36.0, "ALMACENES CASA DORADA": 200.0, "Marta Nidia Giraldo": 36.0, "MEDIA NARANJA BELLO": 6.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 8.0, "ALIANZA VC CAUCASIA": 18.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "EL REINO DE LAS SABANAS SHAGER": 24.0, "HENRY ARISTIZABAL": 8.0, "BOTERO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR/UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "160x190 mt", "precio": 67000.0, "pedidos": {"Imperio": 240.0, "ALMACENES CASA DORADA": 80.0, "MEDIA NARANJA BELLO": 6.0, "MEDIA NARANJA BERRIO": 4.0, "MEDIA NARANJA CARABOBO": 4.0, "MEDIA NARANJA CUNDINAMARCA": 4.0, "MEDIA NARANJA CENTRAL": 6.0, "EL REINO DE LAS SABANAS SHAGER": 18.0, "BOTERO": 6.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido Ultrasonido UNICOLOR/UNICOLOR (DOBLE FAZ) Guata 90g", "medida": "2x2 mt", "precio": 72000.0, "pedidos": {"ALIANZA VC CAUCASIA": 12.0, "EL REINO DE LAS SABANAS SHAGER": 18.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "1x190 mt", "precio": 30000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 8.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 8.0, "MEDIA NARANJA CENTRAL": 8.0, "WILLIAM TAMAYO": 12.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "120x190 mt", "precio": 32000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "140x190 mt", "precio": 34000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA BERRIO": 12.0, "MEDIA NARANJA CARABOBO": 12.0, "MEDIA NARANJA PICHINCHA": 12.0, "MEDIA NARANJA BUENOS AIRES": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 18.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "160x190 mt", "precio": 37000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 8.0, "MEDIA NARANJA BERRIO": 6.0, "MEDIA NARANJA CARABOBO": 6.0, "MEDIA NARANJA PICHINCHA": 6.0, "MEDIA NARANJA BUENOS AIRES": 6.0, "MEDIA NARANJA CUNDINAMARCA": 6.0, "MEDIA NARANJA CENTRAL": 8.0, "WILLIAM TAMAYO": 9.0}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Tendido de Cama Ultrasonido UNIFAZ (Unicolor o Estampado)", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 40000.0, "pedidos": {}}, {"categoria": "TENDIDOS ULTRASONIDO", "producto": "Protector/Funda Ultraonido Unicolor/Blanco/Estampado", "medida": "50x70cm", "precio": 8000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector/Funda Ultrasonido UNICOLOR/BLANCO/ESTAMPADO", "medida": "50x70 cm UNIDAD", "precio": 8000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "1x190 mt", "precio": 28000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "120x190 mt", "precio": 31000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "140x190 mt", "precio": 35000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "160x190 mt", "precio": 38000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado BLANCO", "medida": "2x2 mt", "precio": 52000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Almohada Algodón 180 hilos Acolchado G90 Cierre", "medida": "50x70 cm", "precio": 8000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "1x190 mt", "precio": 30000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "120x190 mt", "precio": 33000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "140x190 mt", "precio": 37000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "160x190 mt", "precio": 40000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Algodón 180 Hilos Acolchado ESTAMPADO", "medida": "2x2 mt", "precio": 54000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Almohada Algodón 180 hilos Acolchado G90 Cierre Est", "medida": "50x70 cm", "precio": 9000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "1x190 mt", "precio": 24000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "120x190 mt", "precio": 26000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "140x190 mt", "precio": 28000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "160x190 mt", "precio": 30000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón MICROFIBRA 90Grms Acolchado Ajustable EST", "medida": "2x2 mt", "precio": 38000.0, "pedidos": {}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "1x190 mt", "precio": 30000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 12.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "120x190 mt", "precio": 34000.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA CUNDINAMARCA": 18.0, "MEDIA NARANJA CENTRAL": 24.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "140x190 mt", "precio": 38500.0, "pedidos": {"MEDIA NARANJA APARTADO": 12.0, "MEDIA NARANJA BELLO": 18.0, "MEDIA NARANJA CUNDINAMARCA": 18.0, "MEDIA NARANJA CENTRAL": 24.0, "EL GIGANTE DEL HOGAR  SEDE  004": 36.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "WILLIAM TAMAYO": 24.0, "BOTERO": 12.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "160x190 mt", "precio": 43000.0, "pedidos": {"MEDIA NARANJA APARTADO": 6.0, "MEDIA NARANJA BELLO": 12.0, "MEDIA NARANJA CUNDINAMARCA": 12.0, "MEDIA NARANJA CENTRAL": 12.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry Ajustable HOTELERO", "medida": "2x2 mt", "precio": 52000.0, "pedidos": {"EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 6.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Almohada Antifluido Con cierre", "medida": "50x70 cm UNIDAD", "precio": 9000.0, "pedidos": {"Ana Maria Tiendas el papa Marinilla": 12.0, "MEDIA NARANJA APARTADO": 18.0, "MEDIA NARANJA BELLO": 24.0, "MEDIA NARANJA CUNDINAMARCA": 24.0, "MEDIA NARANJA ITAGUI": 36.0, "INVERSIONES DUQUE SALAZAR": 6.0, "ALIANZA VC CAUCASIA": 24.0, "BOTERO": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 24.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "1x190 mt", "precio": 38000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "BOTERO": 3.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "120x190 mt", "precio": 40000.0, "pedidos": {"Yanseli Vasquez (HOTEL) S.MARTA": 15.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "140x190 mt", "precio": 48000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "HENRY ARISTIZABAL": 6.0, "Yanseli Vasquez (HOTEL) S.MARTA": 20.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "160x190 mt", "precio": 52000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0, "HENRY ARISTIZABAL": 3.0, "BOTERO": 3.0}}, {"categoria": "PROTECTORES", "producto": "Protector de Colchón Antifluido/Terry ESTUCHE COMPLETO", "medida": "2x2 mt", "precio": 58000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 2.0, "EDWIN ALEANDER QUINTERO APARTADO": 6.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Forro de Cojin Unicolor Golden House", "medida": "45x45 cm", "precio": 9000.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 24.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Forro de Cojin Marmolizado", "medida": "45x45 cm", "precio": 13000.0, "pedidos": {"MEDIA NARANJA BELLO": 30.0, "MEDIA NARANJA BERRIO": 30.0, "MEDIA NARANJA CUNDINAMARCA": 30.0, "MEDIA NARANJA CENTRAL": 30.0, "INVERSIONES DUQUE SALAZAR": 12.0, "Yanseli Vasquez (MAYORCA) S.MARTA": 24.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Forro de Cojin LUXURY BRILLANTE", "medida": "45x45 cm", "precio": 15000.0, "pedidos": {}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Relleno de Cojín (para los forros, no se venden por aparte)", "medida": "45x45 cm", "precio": 6500.0, "pedidos": {"INVERSIONES DUQUE SALAZAR": 24.0}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Juego de Pie de Cama + Forro de Cojines Unicolor ECO", "medida": "Estándar", "precio": 32000.0, "pedidos": {}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Juego de Pie de Cama + Forro de Cojines Marmolizado", "medida": "Estándar", "precio": 38000.0, "pedidos": {}}, {"categoria": "COJINES Y PIE DE CAMA", "producto": "Juego de Pie de Cama + Forro de Cojines LUXURY BRILLANTE", "medida": "Estándar", "precio": 40000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "1x190 mt", "precio": 50000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "120x190 mt", "precio": 60000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "140x190 mt", "precio": 62000.0, "pedidos": {"BOTERO": 12.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "160x190 mt", "precio": 66000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 76000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 hilos Blanca", "medida": "2x2 mt Funda 0,50x1 mt", "precio": 78000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "1x190 mt", "precio": 58000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "120x190 mt", "precio": 65000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "140x190 mt", "precio": 68000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "160x190 mt", "precio": 76000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 86000.0, "pedidos": {"BOTERO": 3.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos Estampado", "medida": "2x2 mt Funda 0,50x1 mt", "precio": 92000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "1x190 mt", "precio": 58000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "120x190 mt", "precio": 65000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "140x190 mt", "precio": 68000.0, "pedidos": {}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "160x190 mt", "precio": 76000.0, "pedidos": {"BOTERO": 6.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "2x2 mt Fundas 0,50x0,70", "precio": 86000.0, "pedidos": {"BOTERO": 3.0}}, {"categoria": "SÁBANAS PLATINUM", "producto": "Juego de Sábana Platinum 180 Hilos UNICOLOR", "medida": "2x2 mt Funda 0,50x1 mt", "precio": 92000.0, "pedidos": {}}]};
+
+// ---------- storage helpers ----------
+const DEFAULT_APPDATA = {
+  entregas:{},            // {distId: {lineKey: cantidadEntregada}}
+  extras:[],              // [{distId, productoIdx, cantidad, precio}] — líneas agregadas a un pedido
+  nuevosDistribuidores:[],// [{id, nombre, fecha}] — distribuidores creados desde cero
+  customProducts:[],      // [{categoria, producto, medida, precio}] — productos nuevos del catálogo (ej. toallas)
+  catalogOverrides:{},    // {distId: {lineKey: {productoIdx, cantidad, precio, eliminado}}} — ediciones a líneas originales
+  distNameOverrides:{},   // {distId: nuevoNombre} — renombres de distribuidores/proveedores
+  distVendedorOverrides:{},  // {distId: nombreVendedor} — vendedor asignado a cada distribuidor
+  distDespachoOverrides:{},  // {distId: 'YYYY-MM-DD'} — fecha máxima de despacho de cada distribuidor
+  distFechaOverrides:{}      // {distId: 'YYYY-MM-DD'} — corrección de la fecha de pedido
+};
+async function loadAppData(){
+  try{
+    const res = await window.storage.get('casa-dorada-datos', false);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      return {...structuredClone(DEFAULT_APPDATA), ...parsed};
+    }
+  }catch(e){}
+  return structuredClone(DEFAULT_APPDATA);
+}
+async function saveAppData(data){
+  try{
+    await window.storage.set('casa-dorada-datos', JSON.stringify(data), false);
+    showToast('Guardado');
+  }catch(e){
+    console.error('storage error', e);
+    showToast('No se pudo guardar, intenta de nuevo');
+  }
+}
+let APPDATA = structuredClone(DEFAULT_APPDATA);
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
+const fmtNum = n => Math.round(n).toLocaleString('es-CO');
+
+// ---------- data model ----------
+// Build full distributor list (catalog + custom-added), applying name overrides
+function getAllDistributors(){
+  const base = CATALOG.distribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha}));
+  const custom = APPDATA.nuevosDistribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha, vendedor: d.vendedor, fechaDespacho: d.fechaDespacho}));
+  const all = [...base, ...custom];
+  return all.map(d => ({
+    ...d,
+    nombre: (APPDATA.distNameOverrides && APPDATA.distNameOverrides[d.id]) || d.nombre,
+    fecha: (APPDATA.distFechaOverrides && APPDATA.distFechaOverrides[d.id]) || d.fecha,
+    vendedor: (APPDATA.distVendedorOverrides && APPDATA.distVendedorOverrides[d.id]) || d.vendedor || '',
+    fechaDespacho: (APPDATA.distDespachoOverrides && APPDATA.distDespachoOverrides[d.id]) || d.fechaDespacho || null
+  }));
+}
+
+// Convierte distintos formatos de fecha (YYYY-MM-DD, MM/DD/YYYY, "NN", null) a un timestamp comparable.
+// Fechas inválidas o ausentes van al final al ordenar ascendente y al inicio al ordenar descendente.
+function parseFechaToTime(fecha){
+  if(!fecha) return null;
+  const s = String(fecha).trim();
+  if(!s || s.toUpperCase()==='NN') return null;
+  let d;
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)){
+    d = new Date(s.slice(0,10)+'T00:00:00');
+  }else if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const [m,day,y] = s.split('/').map(n=>parseInt(n,10));
+    d = new Date(y, m-1, day);
+  }else{
+    d = new Date(s);
+  }
+  const t = d.getTime();
+  return isNaN(t) ? null : t;
+}
+
+// Combined product catalog: original products + company products added via "Nuevo producto"
+function getAllProducts(){
+  return [...CATALOG.productos, ...(APPDATA.customProducts||[])];
+}
+
+// pedido lines for a distributor id: from catalog productos[].pedidos[distId] (with possible edits/deletions)
+// plus extras where distId matches (lines added manually, always editable)
+function getOrderLines(distId){
+  const products = getAllProducts();
+  const lines = [];
+  const overridesForDist = (APPDATA.catalogOverrides && APPDATA.catalogOverrides[distId]) || {};
+
+  CATALOG.productos.forEach((p, idx) => {
+    const cantOriginal = p.pedidos[distId];
+    if(!cantOriginal) return;
+    const key = 'cat-'+idx;
+    const ov = overridesForDist[key];
+    if(ov && ov.eliminado) return;
+    let productoIdx = idx, cantidad = cantOriginal, precio = p.precio;
+    if(ov){
+      if(ov.productoIdx !== undefined) productoIdx = ov.productoIdx;
+      if(ov.cantidad !== undefined) cantidad = ov.cantidad;
+      if(ov.precio !== undefined) precio = ov.precio;
+    }
+    const prod = products[productoIdx] || p;
+    lines.push({key, productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad, origen:'catalogo', editado: !!ov});
+  });
+
+  APPDATA.extras.forEach((ex, i) => {
+    if(ex.distId === distId){
+      const prod = products[ex.productoIdx] || {categoria:'', producto:'(producto eliminado)', medida:'', precio:0};
+      const precio = (ex.precio !== undefined && ex.precio !== null) ? ex.precio : (prod.precio || 0);
+      lines.push({key:'extra-'+i, extraIdx:i, productoIdx: ex.productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad:ex.cantidad, origen:'extra'});
+    }
+  });
+  return lines;
+}
+
+function getEntregado(distId, lineKey){
+  return (APPDATA.entregas[distId] && APPDATA.entregas[distId][lineKey]) || 0;
+}
+function setEntregado(distId, lineKey, val){
+  if(!APPDATA.entregas[distId]) APPDATA.entregas[distId] = {};
+  APPDATA.entregas[distId][lineKey] = val;
+}
+
+function distTotals(distId){
+  const lines = getOrderLines(distId);
+  let totalPedido=0, totalEntregadoVal=0, totalPendienteVal=0;
+  lines.forEach(l=>{
+    const ent = Math.min(getEntregado(distId, l.key), l.cantidad);
+    totalPedido += l.cantidad * l.precio;
+    totalEntregadoVal += ent * l.precio;
+    totalPendienteVal += (l.cantidad - ent) * l.precio;
+  });
+  return {totalPedido, totalEntregadoVal, totalPendienteVal, numLines: lines.length};
+}
+
+// Totales globales de UNIDADES (piezas) en todos los distribuidores
+function computeGlobalUnitTotals(){
+  const dists = getAllDistributors();
+  let totalUnidadesPedidas = 0;
+  let totalUnidadesPendientes = 0;
+  dists.forEach(d=>{
+    const lines = getOrderLines(d.id);
+    lines.forEach(l=>{
+      const ent = Math.min(getEntregado(d.id, l.key), l.cantidad);
+      totalUnidadesPedidas += l.cantidad;
+      totalUnidadesPendientes += (l.cantidad - ent);
+    });
+  });
+  return {totalUnidadesPedidas, totalUnidadesPendientes};
+}
+
+// ---------- rendering ----------
+let selectedDistId = null;
+let searchTerm = '';
+let ordenFiltro = 'fecha_desc'; // 'fecha_asc' | 'fecha_desc' | 'nombre'
+let vendedorFiltro = '';     // '' = todos
+
+function renderDistItemHtml(d){
+  const debe = d.t.totalPendienteVal > 0;
+  return `<div class="dist-item ${d.id===selectedDistId?'active':''}" data-id="${escapeAttr(d.id)}">
+    <div>
+      <div class="dist-name-row">
+        <div class="dist-name">${escapeHtml(d.nombre)}</div>
+        <button class="icon-btn icon-edit rename-dist-btn" data-id="${escapeAttr(d.id)}" title="Editar distribuidor">✎</button>
+      </div>
+      <div class="dist-meta">
+        <span class="meta-chip">${d.t.numLines} producto(s)</span>
+        ${d.fecha ? `<span class="meta-chip">Pedido: ${escapeHtml(String(d.fecha))}</span>` : ''}
+        ${d.vendedor ? `<span class="meta-chip">Vend: ${escapeHtml(d.vendedor)}</span>` : ''}
+        ${d.fechaDespacho ? `<span class="meta-chip despacho">Despacho: ${escapeHtml(String(d.fechaDespacho))}</span>` : ''}
+      </div>
+    </div>
+    <div class="badge ${debe?'debe':'saldado'}">${debe ? fmt(d.t.totalPendienteVal) : 'Saldado'}</div>
+  </div>`;
+}
+
+// Reconstruye las opciones del <select> de vendedores a partir de los vendedores asignados actualmente
+function refreshVendedorOptions(dists){
+  const sel = document.getElementById('filtroVendedor');
+  if(!sel) return;
+  const vendedores = Array.from(new Set(dists.map(d=>d.vendedor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const current = vendedorFiltro;
+  sel.innerHTML = `<option value="">Todos los vendedores</option>` +
+    vendedores.map(v=>`<option value="${escapeAttr(v)}" ${v===current?'selected':''}>${escapeHtml(v)}</option>`).join('');
+  if(current && !vendedores.includes(current)){
+    vendedorFiltro = '';
+    sel.value = '';
+  }
+}
+
+function renderSidebar(){
+  const dists = getAllDistributors();
+  refreshVendedorOptions(dists);
+
+  const listEl = document.getElementById('distList');
+  let filtered = dists.filter(d => d.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+  if(vendedorFiltro) filtered = filtered.filter(d => d.vendedor === vendedorFiltro);
+  const withTotals = filtered.map(d => ({...d, t: distTotals(d.id)}));
+
+  let html = '';
+  if(ordenFiltro === 'fecha_asc' || ordenFiltro === 'fecha_desc'){
+    const dir = ordenFiltro === 'fecha_asc' ? 1 : -1;
+    withTotals.sort((a,b)=>{
+      const ta = parseFechaToTime(a.fecha), tb = parseFechaToTime(b.fecha);
+      if(ta===null && tb===null) return a.nombre.localeCompare(b.nombre);
+      if(ta===null) return 1;   // sin fecha al final
+      if(tb===null) return -1;
+      return dir * (ta - tb);
+    });
+    html += `<div class="sidebar-section-title">${ordenFiltro==='fecha_asc' ? 'Más antiguos primero' : 'Más nuevos primero'} (${withTotals.length})</div>`;
+    html += withTotals.map(renderDistItemHtml).join('');
+  }else{
+    withTotals.sort((a,b)=> a.nombre.localeCompare(b.nombre));
+    html += `<div class="sidebar-section-title">Todos (${withTotals.length})</div>`;
+    html += withTotals.map(renderDistItemHtml).join('');
+  }
+
+  listEl.innerHTML = html || '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Sin resultados con estos filtros</div>';
+
+  listEl.querySelectorAll('.dist-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      selectedDistId = el.dataset.id;
+      renderAll();
+    });
+  });
+  listEl.querySelectorAll('.rename-dist-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const dist = getAllDistributors().find(d=>d.id===btn.dataset.id);
+      if(dist) openEditDistModal(dist);
+    });
+  });
+}
+
+function renderSummaryStrip(){
+  const dists = getAllDistributors();
+  let totalFact=0, totalDeuda=0;
+  dists.forEach(d=>{
+    const t = distTotals(d.id);
+    totalFact += t.totalPedido;
+    totalDeuda += t.totalPendienteVal;
+  });
+  const unidades = computeGlobalUnitTotals();
+  document.getElementById('sumDist').textContent = dists.length;
+  document.getElementById('sumFact').textContent = fmt(totalFact);
+  document.getElementById('sumDeuda').textContent = fmt(totalDeuda);
+  document.getElementById('sumUnidPedidas').textContent = fmtNum(unidades.totalUnidadesPedidas);
+  document.getElementById('sumUnidPendientes').textContent = fmtNum(unidades.totalUnidadesPendientes);
+}
+
+let orderSearchTerm = '';
+
+function renderMain(){
+  const main = document.getElementById('mainPanel');
+  if(!selectedDistId){
+    main.innerHTML = `<div class="empty-state"><h2>Selecciona un distribuidor</h2><p>Elige uno de la lista para ver sus pedidos, marcar lo entregado y ver cuánto queda debiendo.</p></div>`;
+    return;
+  }
+  const dist = getAllDistributors().find(d=>d.id===selectedDistId);
+  if(!dist){ selectedDistId=null; renderMain(); return; }
+  const allLines = getOrderLines(selectedDistId).sort((a,b)=> (a.categoria||'').localeCompare(b.categoria||'') || a.producto.localeCompare(b.producto));
+  const totals = distTotals(selectedDistId);
+
+  const term = orderSearchTerm.trim().toLowerCase();
+  const lines = term ? allLines.filter(l =>
+    (l.producto||'').toLowerCase().includes(term) ||
+    (l.medida||'').toLowerCase().includes(term) ||
+    (l.categoria||'').toLowerCase().includes(term)
+  ) : allLines;
+
+  let lastCat = null;
+  let rowsHtml = '';
+  lines.forEach(l=>{
+    const cat = l.categoria || 'Sin categoría';
+    if(cat !== lastCat){
+      rowsHtml += `<tr class="cat-row"><td colspan="7">${escapeHtml(cat)}</td></tr>`;
+      lastCat = cat;
+    }
+    const ent = Math.min(getEntregado(selectedDistId, l.key), l.cantidad);
+    const pend = l.cantidad - ent;
+    const pendVal = pend * l.precio;
+    rowsHtml += `<tr>
+      <td><span class="prod-name">${escapeHtml(l.producto)}</span>${l.editado ? '<span class="edited-tag">✎ editado</span>' : ''}<br>
+          <span class="prod-medida">${escapeHtml(l.medida||'')}</span></td>
+      <td class="num">${fmt(l.precio)}</td>
+      <td class="num">${l.cantidad}</td>
+      <td class="num"><input type="number" min="0" class="entregado-input" data-key="${escapeAttr(l.key)}" value="${ent}"></td>
+      <td class="num">${pend}</td>
+      <td class="num pend-val ${pendVal>0?'pos':'zero'}">${fmt(pendVal)}</td>
+      <td class="row-actions">
+        <button class="icon-btn icon-edit edit-row-btn" data-key="${escapeAttr(l.key)}" title="Editar línea">✎</button>
+        <button class="icon-btn icon-delete delete-row-btn" data-key="${escapeAttr(l.key)}" title="Eliminar línea">🗑</button>
+      </td>
+    </tr>`;
+  });
+
+  main.innerHTML = `
+    <div class="print-header">
+      <h2>${escapeHtml(dist.nombre)}</h2>
+      <div class="sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'} · Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+    </div>
+    <div class="dist-header">
+      <div>
+        <div class="dist-header-title">
+          <h2>${escapeHtml(dist.nombre)}</h2>
+          <button class="icon-btn icon-edit" id="btnRenameDist" title="Editar nombre del distribuidor">✎</button>
+        </div>
+        <div class="sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'} · ${allLines.length} línea(s) de producto</div>
+        <div class="dist-info-chips">
+          <div class="info-chip">Vendedor: <b>${dist.vendedor ? escapeHtml(dist.vendedor) : 'Sin asignar'}</b></div>
+          <div class="info-chip despacho">
+            <label for="inpFechaDespachoInline" style="cursor:pointer;">Fecha máxima de despacho:</label>
+            <input type="date" id="inpFechaDespachoInline" value="${fechaToInputValue(dist.fechaDespacho)}">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="print-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir pedido</button>
+        <button class="add-btn" id="btnAgregarLinea">+ Agregar producto al pedido</button>
+      </div>
+    </div>
+    <div class="totals-row">
+      <div class="tcard"><div class="label">Total pedido</div><div class="val">${fmt(totals.totalPedido)}</div></div>
+      <div class="tcard ok"><div class="label">Total entregado</div><div class="val">${fmt(totals.totalEntregadoVal)}</div></div>
+      <div class="tcard debe"><div class="label">Total que debe</div><div class="val">${fmt(totals.totalPendienteVal)}</div></div>
+    </div>
+    ${allLines.length ? `
+    <div class="order-search-row">
+      <input type="text" id="searchProductoPedido" placeholder="Buscar producto en este pedido (nombre, medida o categoría)..." value="${escapeAttr(orderSearchTerm)}">
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr>
+        <th>Producto</th><th>Precio</th><th>Pedido</th><th>Entregado</th><th>Pendiente</th><th>Valor debe</th><th></th>
+      </tr></thead>
+      <tbody>${rowsHtml || ''}</tbody>
+    </table>
+    </div>
+    ${!lines.length ? `<div class="no-match">Ningún producto de este pedido coincide con "${escapeHtml(orderSearchTerm)}"</div>` : ''}
+    ` : `<p style="color:var(--ink-soft);">Este distribuidor aún no tiene productos en su pedido. Usa "Agregar producto al pedido".</p>`}
+  `;
+
+  main.querySelectorAll('.entregado-input').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      let v = parseFloat(e.target.value);
+      if(isNaN(v) || v<0) v = 0;
+      setEntregado(selectedDistId, e.target.dataset.key, v);
+      await saveAppData(APPDATA);
+      renderMain();
+      renderSidebar();
+      renderSummaryStrip();
+    });
+  });
+  main.querySelectorAll('.edit-row-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const line = allLines.find(l=>l.key===btn.dataset.key);
+      if(line) openEditLineModal(selectedDistId, line);
+    });
+  });
+  main.querySelectorAll('.delete-row-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const line = allLines.find(l=>l.key===btn.dataset.key);
+      if(!line) return;
+      if(line.origen==='extra'){
+        APPDATA.extras.splice(line.extraIdx,1);
+      }else{
+        if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
+        if(!APPDATA.catalogOverrides[selectedDistId]) APPDATA.catalogOverrides[selectedDistId] = {};
+        APPDATA.catalogOverrides[selectedDistId][line.key] = {eliminado:true};
+      }
+      await saveAppData(APPDATA);
+      renderAll();
+    });
+  });
+  const btnAgregar = document.getElementById('btnAgregarLinea');
+  if(btnAgregar) btnAgregar.addEventListener('click', ()=> openAddProductModal(selectedDistId));
+  document.getElementById('btnRenameDist').addEventListener('click', ()=> openEditDistModal(dist));
+  document.getElementById('inpFechaDespachoInline').addEventListener('change', async (e)=>{
+    const val = e.target.value;
+    if(!APPDATA.distDespachoOverrides) APPDATA.distDespachoOverrides = {};
+    if(val) APPDATA.distDespachoOverrides[selectedDistId] = val; else delete APPDATA.distDespachoOverrides[selectedDistId];
+    await saveAppData(APPDATA);
+    renderSidebar();
+  });
+
+  const searchInp = document.getElementById('searchProductoPedido');
+  if(searchInp){
+    searchInp.addEventListener('input', (e)=>{
+      orderSearchTerm = e.target.value;
+      renderMain();
+      document.getElementById('searchProductoPedido').focus();
+      const val = document.getElementById('searchProductoPedido');
+      if(val){ const p = val.value.length; val.setSelectionRange(p,p); }
+    });
+  }
+
+  document.getElementById('btnImprimirPedido').addEventListener('click', ()=> window.print());
+}
+
+function renderAll(){
+  renderSidebar();
+  renderMain();
+  renderSummaryStrip();
+}
+
+// ---------- modals ----------
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+function openModal(innerHtml){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal">${innerHtml}</div>`;
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+// Construye las <option> de un <select> de productos, opcionalmente filtradas por texto de búsqueda
+function buildProductOptions(products, term, selectedIdx){
+  const t = (term||'').trim().toLowerCase();
+  return products
+    .map((p, idx) => ({p, idx}))
+    .filter(({p}) => !t || (p.producto||'').toLowerCase().includes(t) || (p.categoria||'').toLowerCase().includes(t) || (p.medida||'').toLowerCase().includes(t))
+    .map(({p, idx}) =>
+      `<option value="${idx}" data-precio="${p.precio||0}" ${idx===selectedIdx?'selected':''}>${escapeHtml(p.categoria||'')} — ${escapeHtml(p.producto)} (${escapeHtml(p.medida||'')})</option>`
+    ).join('');
+}
+
+// Conecta un input de búsqueda a un <select> para filtrar sus opciones en tiempo real
+function wireSearchableSelect(overlay, searchInputEl, selectEl, products, onPick){
+  searchInputEl.addEventListener('input', ()=>{
+    const currentVal = selectEl.value;
+    selectEl.innerHTML = buildProductOptions(products, searchInputEl.value, parseInt(currentVal));
+    if(selectEl.options.length && selectEl.selectedIndex === -1) selectEl.selectedIndex = 0;
+    if(onPick) onPick();
+  });
+}
+
+// Agrega una línea de producto al pedido de un distribuidor concreto
+function openAddProductModal(distId){
+  const products = getAllProducts();
+  const opciones = buildProductOptions(products, '', 0);
+
+  const overlay = openModal(`
+    <h3>Agregar producto al pedido</h3>
+    <div class="field">
+      <label>Producto</label>
+      <input type="text" class="select-search-input" id="buscarProducto" placeholder="Escribe para buscar rápido (nombre, categoría o medida)...">
+      <select id="selProducto" class="searchable-select" size="1">${opciones}</select>
+    </div>
+    <div class="field">
+      <label>Cantidad pedida</label>
+      <input type="number" min="1" id="inpCantidad" value="1">
+    </div>
+    <div class="field">
+      <label>Precio unitario</label>
+      <input type="number" min="0" id="inpPrecioLinea" value="${products[0]?.precio || 0}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Agregar</button>
+    </div>
+  `);
+  const selEl = overlay.querySelector('#selProducto');
+  const precioEl = overlay.querySelector('#inpPrecioLinea');
+  const buscarEl = overlay.querySelector('#buscarProducto');
+  selEl.addEventListener('change', ()=>{
+    precioEl.value = selEl.selectedOptions[0]?.dataset.precio || 0;
+  });
+  wireSearchableSelect(overlay, buscarEl, selEl, products, ()=>{
+    precioEl.value = selEl.selectedOptions[0]?.dataset.precio || 0;
+  });
+  buscarEl.focus();
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const productoIdx = parseInt(selEl.value);
+    const cantidad = parseFloat(overlay.querySelector('#inpCantidad').value) || 0;
+    const precio = parseFloat(precioEl.value) || 0;
+    if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); return; }
+    APPDATA.extras.push({distId, productoIdx, cantidad, precio});
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+  });
+}
+
+// Edita una línea existente (producto elegido por error, cantidad o precio)
+function openEditLineModal(distId, line){
+  const products = getAllProducts();
+  const opciones = buildProductOptions(products, '', line.productoIdx);
+
+  const overlay = openModal(`
+    <h3>Editar línea de pedido</h3>
+    <div class="field">
+      <label>Producto</label>
+      <input type="text" class="select-search-input" id="buscarProductoEdit" placeholder="Escribe para buscar rápido (nombre, categoría o medida)...">
+      <select id="editSelProducto" class="searchable-select" size="1">${opciones}</select>
+    </div>
+    <div class="field">
+      <label>Cantidad pedida</label>
+      <input type="number" min="0" id="editCantidad" value="${line.cantidad}">
+    </div>
+    <div class="field">
+      <label>Precio unitario</label>
+      <input type="number" min="0" id="editPrecio" value="${line.precio}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-danger" id="btnDelete">Eliminar línea</button>
+      <button class="btn-confirm" id="btnConfirm">Guardar cambios</button>
+    </div>
+  `);
+  const selEl = overlay.querySelector('#editSelProducto');
+  const precioEl = overlay.querySelector('#editPrecio');
+  const buscarEl = overlay.querySelector('#buscarProductoEdit');
+  selEl.addEventListener('change', ()=>{
+    precioEl.value = selEl.selectedOptions[0]?.dataset.precio || 0;
+  });
+  wireSearchableSelect(overlay, buscarEl, selEl, products, ()=>{
+    precioEl.value = selEl.selectedOptions[0]?.dataset.precio || 0;
+  });
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnDelete').addEventListener('click', async ()=>{
+    if(line.origen==='extra'){
+      APPDATA.extras.splice(line.extraIdx,1);
+    }else{
+      if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
+      if(!APPDATA.catalogOverrides[distId]) APPDATA.catalogOverrides[distId] = {};
+      APPDATA.catalogOverrides[distId][line.key] = {eliminado:true};
+    }
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+  });
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const productoIdx = parseInt(selEl.value);
+    const cantidad = parseFloat(overlay.querySelector('#editCantidad').value) || 0;
+    const precio = parseFloat(precioEl.value) || 0;
+    if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); return; }
+    if(line.origen==='extra'){
+      APPDATA.extras[line.extraIdx] = {...APPDATA.extras[line.extraIdx], productoIdx, cantidad, precio};
+    }else{
+      if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
+      if(!APPDATA.catalogOverrides[distId]) APPDATA.catalogOverrides[distId] = {};
+      APPDATA.catalogOverrides[distId][line.key] = {productoIdx, cantidad, precio};
+    }
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+  });
+}
+
+// Crea un producto nuevo en el catálogo de la empresa (ej. toallas), con precio propio
+function openNewProductModal(){
+  const categorias = Array.from(new Set(getAllProducts().map(p=>p.categoria).filter(Boolean)));
+  const overlay = openModal(`
+    <h3>Nuevo producto del catálogo</h3>
+    <div class="field">
+      <label>Categoría</label>
+      <input type="text" id="inpCategoria" list="dlCategorias" placeholder="Ej. TOALLAS">
+      <datalist id="dlCategorias">${categorias.map(c=>`<option value="${escapeAttr(c)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Nombre del producto</label>
+      <input type="text" id="inpProducto" placeholder="Ej. Toalla de mano Premium">
+    </div>
+    <div class="field">
+      <label>Medida / presentación (opcional)</label>
+      <input type="text" id="inpMedida" placeholder="Ej. 50x90 cm">
+    </div>
+    <div class="field">
+      <label>Precio unitario</label>
+      <input type="number" min="0" id="inpPrecio" placeholder="0">
+    </div>
+    <div class="hint">Quedará disponible para agregarlo al pedido de cualquier distribuidor.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Crear producto</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const categoria = overlay.querySelector('#inpCategoria').value.trim() || 'OTROS';
+    const producto = overlay.querySelector('#inpProducto').value.trim();
+    const medida = overlay.querySelector('#inpMedida').value.trim();
+    const precio = parseFloat(overlay.querySelector('#inpPrecio').value) || 0;
+    if(!producto){ showToast('Escribe el nombre del producto'); return; }
+    if(!APPDATA.customProducts) APPDATA.customProducts = [];
+    APPDATA.customProducts.push({categoria, producto, medida, precio});
+    await saveAppData(APPDATA);
+    overlay.remove();
+    showToast('Producto agregado al catálogo');
+  });
+}
+
+// Convierte cualquier formato de fecha reconocido a YYYY-MM-DD para precargar un <input type="date">
+function fechaToInputValue(fecha){
+  const t = parseFechaToTime(fecha);
+  if(t===null) return '';
+  const d = new Date(t);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+// Edita un distribuidor/proveedor: nombre, vendedor asignado, fecha de pedido y fecha máxima de despacho
+// (aplica tanto a los del catálogo como a los creados manualmente)
+function openEditDistModal(dist){
+  const distId = dist.id;
+  const vendedoresExistentes = Array.from(new Set(getAllDistributors().map(d=>d.vendedor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const overlay = openModal(`
+    <h3>Editar distribuidor</h3>
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="inpRename" value="${escapeAttr(dist.nombre)}">
+    </div>
+    <div class="field">
+      <label>Vendedor asignado</label>
+      <input type="text" id="inpVendedor" list="dlVendedores" placeholder="Ej. Carlos Restrepo" value="${escapeAttr(dist.vendedor||'')}">
+      <datalist id="dlVendedores">${vendedoresExistentes.map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Fecha del pedido</label>
+      <input type="date" id="inpFechaPedido" value="${fechaToInputValue(dist.fecha)}">
+    </div>
+    <div class="field">
+      <label>Fecha máxima de despacho</label>
+      <input type="date" id="inpFechaDespacho" value="${fechaToInputValue(dist.fechaDespacho)}">
+      <div class="hint">Fecha límite para que este pedido quede despachado.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Guardar</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const val = overlay.querySelector('#inpRename').value.trim();
+    if(!val){ showToast('Escribe un nombre'); return; }
+    const vendedor = overlay.querySelector('#inpVendedor').value.trim();
+    const fechaPedido = overlay.querySelector('#inpFechaPedido').value;
+    const fechaDespacho = overlay.querySelector('#inpFechaDespacho').value;
+
+    if(!APPDATA.distNameOverrides) APPDATA.distNameOverrides = {};
+    if(!APPDATA.distVendedorOverrides) APPDATA.distVendedorOverrides = {};
+    if(!APPDATA.distFechaOverrides) APPDATA.distFechaOverrides = {};
+    if(!APPDATA.distDespachoOverrides) APPDATA.distDespachoOverrides = {};
+
+    APPDATA.distNameOverrides[distId] = val;
+    if(vendedor) APPDATA.distVendedorOverrides[distId] = vendedor; else delete APPDATA.distVendedorOverrides[distId];
+    if(fechaPedido) APPDATA.distFechaOverrides[distId] = fechaPedido; else delete APPDATA.distFechaOverrides[distId];
+    if(fechaDespacho) APPDATA.distDespachoOverrides[distId] = fechaDespacho; else delete APPDATA.distDespachoOverrides[distId];
+
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+  });
+}
+
+// Muestra, para un producto elegido, cuánto se debe en TODOS los distribuidores en general
+function openProductDebtFilter(){
+  const products = getAllProducts();
+  const overlay = openModal(`
+    <h3>Deuda por producto (todos los distribuidores)</h3>
+    <div class="field product-search-wrap">
+      <label>Busca un producto</label>
+      <input type="text" id="pdSearchInput" placeholder="Ej. Sábana Silver, toalla, cobija..." autocomplete="off">
+      <div class="product-search-results" id="pdSearchResults" style="display:none;"></div>
+    </div>
+    <div id="pdResultZone"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cerrar</button>
+    </div>
+  `);
+  const input = overlay.querySelector('#pdSearchInput');
+  const resultsBox = overlay.querySelector('#pdSearchResults');
+  const zone = overlay.querySelector('#pdResultZone');
+
+  function showMatches(term){
+    const t = term.trim().toLowerCase();
+    if(!t){ resultsBox.style.display='none'; resultsBox.innerHTML=''; return; }
+    const matches = products
+      .map((p, idx) => ({p, idx}))
+      .filter(({p}) => (p.producto||'').toLowerCase().includes(t) || (p.categoria||'').toLowerCase().includes(t) || (p.medida||'').toLowerCase().includes(t))
+      .slice(0, 30);
+    if(!matches.length){
+      resultsBox.innerHTML = `<div class="psr-empty">Sin coincidencias</div>`;
+    }else{
+      resultsBox.innerHTML = matches.map(({p,idx}) =>
+        `<div class="psr-item" data-idx="${idx}">
+           <div class="psr-cat">${escapeHtml(p.categoria||'')}</div>
+           <div>${escapeHtml(p.producto)} ${p.medida ? '· '+escapeHtml(p.medida) : ''}</div>
+         </div>`
+      ).join('');
+      resultsBox.querySelectorAll('.psr-item').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          const idx = parseInt(el.dataset.idx);
+          input.value = products[idx].producto + (products[idx].medida ? ' · '+products[idx].medida : '');
+          resultsBox.style.display='none';
+          renderProductDebt(idx);
+        });
+      });
+    }
+    resultsBox.style.display='block';
+  }
+
+  function renderProductDebt(productoIdx){
+    const dists = getAllDistributors();
+    const prod = products[productoIdx];
+    let totalPedidoUnid=0, totalEntregadoUnid=0, totalPendienteUnid=0, totalPendienteVal=0, totalPedidoVal=0;
+    const porDistribuidor = [];
+    dists.forEach(d=>{
+      const lines = getOrderLines(d.id).filter(l=>l.productoIdx===productoIdx);
+      if(!lines.length) return;
+      let dPedido=0, dEntregado=0, dPendiente=0, dPendienteVal=0, dPedidoVal=0;
+      lines.forEach(l=>{
+        const ent = Math.min(getEntregado(d.id, l.key), l.cantidad);
+        dPedido += l.cantidad;
+        dEntregado += ent;
+        dPendiente += (l.cantidad-ent);
+        dPendienteVal += (l.cantidad-ent) * l.precio;
+        dPedidoVal += l.cantidad * l.precio;
+      });
+      totalPedidoUnid += dPedido;
+      totalEntregadoUnid += dEntregado;
+      totalPendienteUnid += dPendiente;
+      totalPendienteVal += dPendienteVal;
+      totalPedidoVal += dPedidoVal;
+      if(dPendienteVal > 0){
+        porDistribuidor.push({nombre:d.nombre, id:d.id, dPendiente, dPendienteVal});
+      }
+    });
+    porDistribuidor.sort((a,b)=> b.dPendienteVal - a.dPendienteVal);
+
+    zone.innerHTML = `
+      <div class="product-debt-summary">
+        <div class="pd-title">${escapeHtml(prod.producto)} ${prod.medida ? '· '+escapeHtml(prod.medida) : ''}</div>
+        <div class="pd-cards">
+          <div class="pd-card"><div class="lab">Pedido total</div><div class="v">${fmt(totalPedidoVal)}</div></div>
+          <div class="pd-card"><div class="lab">Unidades pedidas</div><div class="v">${fmtNum(totalPedidoUnid)}</div></div>
+          <div class="pd-card"><div class="lab">Unidades pendientes</div><div class="v">${fmtNum(totalPendienteUnid)}</div></div>
+          <div class="pd-card"><div class="lab">Se debe en total</div><div class="v" style="color:var(--gold-dark);">${fmt(totalPendienteVal)}</div></div>
+        </div>
+        ${porDistribuidor.length ? `
+        <table>
+          <thead><tr><th>Distribuidor</th><th class="num">Unid. pendientes</th><th class="num">Debe</th></tr></thead>
+          <tbody>
+            ${porDistribuidor.map(r=>`<tr><td>${escapeHtml(r.nombre)}</td><td class="num">${fmtNum(r.dPendiente)}</td><td class="num pend-val pos">${fmt(r.dPendienteVal)}</td></tr>`).join('')}
+          </tbody>
+        </table>` : `<p style="color:var(--ink-soft);font-size:13px;">Nadie debe este producto actualmente — está totalmente entregado o sin pedidos.</p>`}
+      </div>
+    `;
+  }
+
+  input.addEventListener('input', ()=> showMatches(input.value));
+  input.addEventListener('focus', ()=> { if(input.value.trim()) showMatches(input.value); });
+  document.addEventListener('click', function outsideClick(e){
+    if(!overlay.contains(e.target)) return;
+    if(!resultsBox.contains(e.target) && e.target !== input) resultsBox.style.display='none';
+  });
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+}
+
+function openNewDistModal(){
+  const vendedoresExistentes = Array.from(new Set(getAllDistributors().map(d=>d.vendedor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const overlay = openModal(`
+    <h3>Nuevo distribuidor</h3>
+    <div class="field">
+      <label>Nombre del distribuidor / tienda</label>
+      <input type="text" id="inpNombre" placeholder="Ej. Almacén El Progreso">
+    </div>
+    <div class="field">
+      <label>Vendedor asignado (opcional)</label>
+      <input type="text" id="inpVendedor" list="dlVendedoresNuevo" placeholder="Ej. Carlos Restrepo">
+      <datalist id="dlVendedoresNuevo">${vendedoresExistentes.map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Fecha del pedido (opcional)</label>
+      <input type="date" id="inpFecha">
+    </div>
+    <div class="field">
+      <label>Fecha máxima de despacho (opcional)</label>
+      <input type="date" id="inpFechaDespacho">
+    </div>
+    <div class="hint">Después de crearlo podrás agregarle los productos de su primer pedido.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Crear</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const nombre = overlay.querySelector('#inpNombre').value.trim();
+    const vendedor = overlay.querySelector('#inpVendedor').value.trim();
+    const fecha = overlay.querySelector('#inpFecha').value;
+    const fechaDespacho = overlay.querySelector('#inpFechaDespacho').value;
+    if(!nombre){ showToast('Escribe un nombre'); return; }
+    const id = 'nuevo-' + Date.now();
+    APPDATA.nuevosDistribuidores.push({id, nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    await saveAppData(APPDATA);
+    selectedDistId = id;
+    overlay.remove();
+    renderAll();
+  });
+}
+
+// ---------- init ----------
+document.getElementById('searchDist').addEventListener('input', (e)=>{
+  searchTerm = e.target.value;
+  renderSidebar();
+});
+document.getElementById('btnNuevoDist').addEventListener('click', openNewDistModal);
+document.getElementById('btnAgregarProductoGlobal').addEventListener('click', openNewProductModal);
+document.getElementById('btnFiltroProducto').addEventListener('click', openProductDebtFilter);
+
+document.getElementById('filtroOrden').addEventListener('change', (e)=>{
+  ordenFiltro = e.target.value;
+  renderSidebar();
+});
+document.getElementById('filtroVendedor').addEventListener('change', (e)=>{
+  vendedorFiltro = e.target.value;
+  renderSidebar();
+});
+document.getElementById('btnLimpiarFiltros').addEventListener('click', ()=>{
+  ordenFiltro = 'fecha_desc';
+  vendedorFiltro = '';
+  searchTerm = '';
+  document.getElementById('filtroOrden').value = 'fecha_desc';
+  document.getElementById('searchDist').value = '';
+  renderSidebar();
+});
+
+(async function init(){
+  APPDATA = await loadAppData();
+  renderAll();
+})();
+</script>
+</body>
+</html>
