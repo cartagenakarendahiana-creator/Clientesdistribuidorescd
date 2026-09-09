@@ -106,7 +106,29 @@
     cursor:pointer;font-weight:600;font-family:'Inter';
   }
   .new-dist-btn:hover{background:var(--cream-2);}
-  .dist-list{max-height:calc(100vh - 230px);overflow-y:auto;padding:8px 8px 16px;}
+  .dist-list{max-height:calc(100vh - 274px);overflow-y:auto;padding:8px 8px 16px;}
+  .sidebar-tabs{display:flex;gap:6px;padding:0 14px 12px;flex-wrap:wrap;}
+  .sidebar-tab-btn{
+    flex:1;min-width:80px;padding:8px 6px;border-radius:8px;border:1px solid var(--line);background:var(--white);
+    color:var(--ink-soft);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter';
+    display:flex;align-items:center;justify-content:center;gap:5px;transition:background .15s,border-color .15s,color .15s;
+  }
+  .sidebar-tab-btn:hover{background:var(--cream-2);}
+  .sidebar-tab-btn.active{background:var(--gold);border-color:var(--gold);color:var(--white);}
+  .sidebar-tab-btn.vencidos-tab.active{background:#B3261E;border-color:#B3261E;}
+  .sidebar-tab-btn .count{
+    background:rgba(0,0,0,.12);border-radius:20px;padding:0 6px;font-size:10.5px;min-width:16px;text-align:center;
+  }
+  .sidebar-tab-btn.active .count{background:rgba(255,255,255,.28);}
+  .urgente-badge{
+    font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;white-space:nowrap;
+    background:#F4D9D0;color:#A8401F;
+  }
+  .vencido-badge{
+    font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;white-space:nowrap;
+    background:#B3261E;color:#fff;
+  }
+  .dist-item.vencido{border-color:#E3A19A;box-shadow:inset 3px 0 0 #B3261E;}
   .sidebar-section-title{
     font-size:10.5px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;
     letter-spacing:.6px;padding:12px 8px 6px;
@@ -170,6 +192,57 @@
   }
   .info-chip.despacho input[type="date"]:focus{outline:2px solid var(--gold);}
   .info-chip .icon-btn{padding:1px 3px;font-size:11px;}
+  .info-chip.pedido input[type="date"]{
+    border:1px solid var(--line);border-radius:6px;background:var(--white);
+    color:var(--ink);font-family:'Inter';font-size:12px;font-weight:700;padding:3px 6px;
+  }
+  .info-chip.pedido input[type="date"]:focus{outline:2px solid var(--gold);}
+  .info-chip.urgente-toggle{
+    cursor:pointer;user-select:none;border:1px solid var(--line);background:var(--white);color:var(--ink-soft);
+  }
+  .info-chip.urgente-toggle.on{background:#F4D9D0;border-color:#E3A48F;color:#A8401F;}
+  .observaciones-block{
+    margin-top:16px;margin-bottom:20px;background:var(--white);border:1px solid var(--line);
+    border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow-sm);
+  }
+  .observaciones-block label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+  .observaciones-block textarea{
+    width:100%;min-height:64px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:13.5px;background:var(--cream);resize:vertical;color:var(--ink);
+  }
+  .observaciones-block textarea:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
+  .btn-nuevo-pedido{
+    background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);border-radius:8px;
+    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter';white-space:nowrap;
+    transition:background .15s;
+  }
+  .btn-nuevo-pedido:hover{background:var(--gold-pale);}
+
+  /* ---- Gestión de vendedores / distribuidores (jalarlos) ---- */
+  .registry-add-row{display:flex;gap:8px;margin-bottom:14px;}
+  .registry-add-row input{flex:1;}
+  .registry-list{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;}
+  .registry-item{
+    display:flex;justify-content:space-between;align-items:center;padding:9px 12px;
+    border-bottom:1px solid var(--line);font-size:13.5px;
+  }
+  .registry-item:last-child{border-bottom:none;}
+  .registry-item .tag{font-size:10.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;}
+  .registry-empty{padding:16px;text-align:center;color:var(--ink-soft);font-size:13px;}
+
+  /* ---- Reporte de deuda total ---- */
+  .debt-report-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
+  .debt-report-toolbar input{flex:1;min-width:180px;}
+  .debt-report-totals{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .debt-report-totals .pd-card{flex:1;min-width:130px;background:var(--cream-2);border-radius:8px;padding:10px 12px;}
+  .debt-report-totals .pd-card .lab{font-size:10.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;}
+  .debt-report-totals .pd-card .v{font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin-top:3px;color:var(--gold-dark);}
+  .print-btn-modal{
+    background:var(--gold);color:var(--white);border:none;border-radius:8px;padding:9px 14px;
+    font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter';white-space:nowrap;
+  }
+  .print-btn-modal:hover{background:var(--gold-dark);}
   .add-btn{
     background:var(--gold);color:var(--white);border:none;border-radius:8px;
     padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
@@ -230,6 +303,7 @@
     max-height:85vh;overflow-y:auto;box-shadow:0 10px 40px rgba(43,38,33,.22);
   }
   .modal h3{margin:0 0 16px;font-size:19px;}
+  .modal.wide{max-width:960px;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
   .field input, .field select{
@@ -335,6 +409,18 @@
     table{box-shadow:none;border:1px solid #999;}
     .entregado-input{border:none;background:none;padding:0;text-align:right;width:auto;}
     .tcard{box-shadow:none;border:1px solid #999;}
+
+    /* Modales que se imprimen (deuda por producto / deuda total) */
+    body.printing-modal > *:not(.modal-overlay.printing){display:none !important;}
+    .modal-overlay.printing{
+      position:static !important;background:none !important;padding:0 !important;
+      display:block !important;inset:auto !important;
+    }
+    .modal-overlay.printing .modal{
+      max-width:100% !important;max-height:none !important;overflow:visible !important;
+      box-shadow:none !important;padding:0;
+    }
+    .modal-overlay.printing .no-print{display:none !important;}
   }
 </style>
 </head>
@@ -348,6 +434,9 @@
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="filter-btn" id="btnFiltroProducto" title="Ver cuánto se debe de un producto en todos los distribuidores">🔎 Deuda por producto</button>
+      <button class="filter-btn" id="btnDeudaTotal" title="Ver el detalle completo de todo lo que se debe">📋 Deuda total</button>
+      <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">👤 Vendedores</button>
+      <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">🏬 Distribuidores</button>
       <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo de la empresa">🧺 Nuevo producto</button>
     </div>
   </div>
@@ -383,6 +472,11 @@
       <input type="text" id="searchDist" placeholder="Buscar distribuidor...">
       <button class="new-dist-btn" id="btnNuevoDist">+ Nuevo distribuidor</button>
     </div>
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab-btn" id="tabTodos" data-tab="todos">Todos <span class="count" id="countTodos">0</span></button>
+      <button class="sidebar-tab-btn" id="tabUrgentes" data-tab="urgentes">🔥 Urgentes <span class="count" id="countUrgentes">0</span></button>
+      <button class="sidebar-tab-btn vencidos-tab" id="tabVencidos" data-tab="vencidos">⏰ Vencidos <span class="count" id="countVencidos">0</span></button>
+    </div>
     <div class="dist-list" id="distList"></div>
   </div>
 
@@ -409,7 +503,11 @@ const DEFAULT_APPDATA = {
   distNameOverrides:{},   // {distId: nuevoNombre} — renombres de distribuidores/proveedores
   distVendedorOverrides:{},  // {distId: nombreVendedor} — vendedor asignado a cada distribuidor
   distDespachoOverrides:{},  // {distId: 'YYYY-MM-DD'} — fecha máxima de despacho de cada distribuidor
-  distFechaOverrides:{}      // {distId: 'YYYY-MM-DD'} — corrección de la fecha de pedido
+  distFechaOverrides:{},     // {distId: 'YYYY-MM-DD'} — corrección de la fecha de pedido
+  distObservaciones:{},      // {distId: texto} — observaciones/notas del cliente distribuidor
+  distUrgenteOverrides:{},   // {distId: true/false} — marca este pedido como urgente
+  vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
+  distribuidoresRegistry:[]  // [nombre, ...] — distribuidores/clientes creados manualmente (aunque no tengan pedidos aún)
 };
 async function loadAppData(){
   try{
@@ -454,7 +552,9 @@ function getAllDistributors(){
     nombre: (APPDATA.distNameOverrides && APPDATA.distNameOverrides[d.id]) || d.nombre,
     fecha: (APPDATA.distFechaOverrides && APPDATA.distFechaOverrides[d.id]) || d.fecha,
     vendedor: (APPDATA.distVendedorOverrides && APPDATA.distVendedorOverrides[d.id]) || d.vendedor || '',
-    fechaDespacho: (APPDATA.distDespachoOverrides && APPDATA.distDespachoOverrides[d.id]) || d.fechaDespacho || null
+    fechaDespacho: (APPDATA.distDespachoOverrides && APPDATA.distDespachoOverrides[d.id]) || d.fechaDespacho || null,
+    observaciones: (APPDATA.distObservaciones && APPDATA.distObservaciones[d.id]) || '',
+    urgente: !!(APPDATA.distUrgenteOverrides && APPDATA.distUrgenteOverrides[d.id])
   }));
 }
 
@@ -480,6 +580,29 @@ function parseFechaToTime(fecha){
 // Combined product catalog: original products + company products added via "Nuevo producto"
 function getAllProducts(){
   return [...CATALOG.productos, ...(APPDATA.customProducts||[])];
+}
+
+// Lista combinada de vendedores: los creados manualmente (registro) + los ya asignados a algún pedido
+function getAllVendedores(){
+  const asignados = getAllDistributors().map(d=>d.vendedor).filter(Boolean);
+  const registro = APPDATA.vendedoresRegistry || [];
+  return Array.from(new Set([...registro, ...asignados])).sort((a,b)=>a.localeCompare(b));
+}
+
+// Lista combinada de nombres de distribuidores: los creados manualmente (registro) + los que ya tienen algún pedido
+function getAllDistribuidorNombres(){
+  const existentes = getAllDistributors().map(d=>d.nombre).filter(Boolean);
+  const registro = APPDATA.distribuidoresRegistry || [];
+  return Array.from(new Set([...registro, ...existentes])).sort((a,b)=>a.localeCompare(b));
+}
+
+// Un pedido está "vencido" si ya pasó su fecha máxima de despacho y todavía queda algo por entregar
+function isVencido(d, totalPendienteVal){
+  if(!d.fechaDespacho) return false;
+  const t = parseFechaToTime(d.fechaDespacho);
+  if(t===null) return false;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  return t < hoy.getTime() && totalPendienteVal > 0;
 }
 
 // pedido lines for a distributor id: from catalog productos[].pedidos[distId] (with possible edits/deletions)
@@ -556,13 +679,17 @@ let selectedDistId = null;
 let searchTerm = '';
 let ordenFiltro = 'fecha_desc'; // 'fecha_asc' | 'fecha_desc' | 'nombre'
 let vendedorFiltro = '';     // '' = todos
+let sidebarTab = 'todos';    // 'todos' | 'urgentes'
 
 function renderDistItemHtml(d){
   const debe = d.t.totalPendienteVal > 0;
-  return `<div class="dist-item ${d.id===selectedDistId?'active':''}" data-id="${escapeAttr(d.id)}">
+  const vencido = isVencido(d, d.t.totalPendienteVal);
+  return `<div class="dist-item ${d.id===selectedDistId?'active':''} ${vencido?'vencido':''}" data-id="${escapeAttr(d.id)}">
     <div>
       <div class="dist-name-row">
         <div class="dist-name">${escapeHtml(d.nombre)}</div>
+        ${d.urgente ? `<span class="urgente-badge">🔥 Urgente</span>` : ''}
+        ${vencido ? `<span class="vencido-badge">⏰ Vencido</span>` : ''}
         <button class="icon-btn icon-edit rename-dist-btn" data-id="${escapeAttr(d.id)}" title="Editar distribuidor">✎</button>
       </div>
       <div class="dist-meta">
@@ -594,10 +721,24 @@ function renderSidebar(){
   const dists = getAllDistributors();
   refreshVendedorOptions(dists);
 
+  const withT = dists.map(d => ({...d, t: distTotals(d.id)}));
+  document.getElementById('countTodos').textContent = withT.length;
+  document.getElementById('countUrgentes').textContent = withT.filter(d=>d.urgente).length;
+  document.getElementById('countVencidos').textContent = withT.filter(d=>isVencido(d, d.t.totalPendienteVal)).length;
+  document.getElementById('tabTodos').classList.toggle('active', sidebarTab==='todos');
+  document.getElementById('tabUrgentes').classList.toggle('active', sidebarTab==='urgentes');
+  document.getElementById('tabVencidos').classList.toggle('active', sidebarTab==='vencidos');
+
   const listEl = document.getElementById('distList');
-  let filtered = dists.filter(d => d.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+  let filtered = withT.filter(d => d.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
   if(vendedorFiltro) filtered = filtered.filter(d => d.vendedor === vendedorFiltro);
-  const withTotals = filtered.map(d => ({...d, t: distTotals(d.id)}));
+  if(sidebarTab === 'urgentes') filtered = filtered.filter(d => d.urgente);
+  if(sidebarTab === 'vencidos') filtered = filtered.filter(d => isVencido(d, d.t.totalPendienteVal));
+  const withTotals = filtered;
+
+  // Aseguramos que el <select> de orden refleje siempre la variable actual (evita que se desincronice)
+  const selOrden = document.getElementById('filtroOrden');
+  if(selOrden && selOrden.value !== ordenFiltro) selOrden.value = ordenFiltro;
 
   let html = '';
   if(ordenFiltro === 'fecha_asc' || ordenFiltro === 'fecha_desc'){
@@ -607,6 +748,7 @@ function renderSidebar(){
       if(ta===null && tb===null) return a.nombre.localeCompare(b.nombre);
       if(ta===null) return 1;   // sin fecha al final
       if(tb===null) return -1;
+      if(ta === tb) return a.nombre.localeCompare(b.nombre); // desempate por nombre
       return dir * (ta - tb);
     });
     html += `<div class="sidebar-section-title">${ordenFiltro==='fecha_asc' ? 'Más antiguos primero' : 'Más nuevos primero'} (${withTotals.length})</div>`;
@@ -617,7 +759,11 @@ function renderSidebar(){
     html += withTotals.map(renderDistItemHtml).join('');
   }
 
-  listEl.innerHTML = html || '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Sin resultados con estos filtros</div>';
+  listEl.innerHTML = html || (sidebarTab==='urgentes'
+    ? '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">No hay pedidos marcados como urgentes.</div>'
+    : sidebarTab==='vencidos'
+    ? '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">No hay pedidos vencidos. 🎉</div>'
+    : '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Sin resultados con estos filtros</div>');
 
   listEl.querySelectorAll('.dist-item').forEach(el=>{
     el.addEventListener('click', ()=>{
@@ -710,16 +856,29 @@ function renderMain(){
         <div class="sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'} · ${allLines.length} línea(s) de producto</div>
         <div class="dist-info-chips">
           <div class="info-chip">Vendedor: <b>${dist.vendedor ? escapeHtml(dist.vendedor) : 'Sin asignar'}</b></div>
+          <div class="info-chip pedido">
+            <label for="inpFechaPedidoInline" style="cursor:pointer;">Fecha del pedido:</label>
+            <input type="date" id="inpFechaPedidoInline" value="${fechaToInputValue(dist.fecha)}">
+          </div>
           <div class="info-chip despacho">
             <label for="inpFechaDespachoInline" style="cursor:pointer;">Fecha máxima de despacho:</label>
             <input type="date" id="inpFechaDespachoInline" value="${fechaToInputValue(dist.fechaDespacho)}">
           </div>
+          <div class="info-chip urgente-toggle ${dist.urgente?'on':''}" id="chipUrgente" title="Marcar/desmarcar este pedido como urgente">
+            ${dist.urgente ? '🔥 Urgente' : 'Marcar como urgente'}
+          </div>
+          ${isVencido(dist, totals.totalPendienteVal) ? `<div class="info-chip" style="background:#B3261E;border-color:#B3261E;color:#fff;">⏰ Pedido vencido: la fecha de despacho ya pasó</div>` : ''}
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="print-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir pedido</button>
+        <button class="btn-nuevo-pedido" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido para este cliente</button>
         <button class="add-btn" id="btnAgregarLinea">+ Agregar producto al pedido</button>
       </div>
+    </div>
+    <div class="observaciones-block">
+      <label for="txtObservaciones">Observaciones del cliente distribuidor</label>
+      <textarea id="txtObservaciones" placeholder="Ej. Prefiere entrega los viernes, siempre paga en efectivo, pedir confirmación antes de despachar...">${escapeHtml(dist.observaciones||'')}</textarea>
     </div>
     <div class="totals-row">
       <div class="tcard"><div class="label">Total pedido</div><div class="val">${fmt(totals.totalPedido)}</div></div>
@@ -784,6 +943,27 @@ function renderMain(){
     await saveAppData(APPDATA);
     renderSidebar();
   });
+  document.getElementById('inpFechaPedidoInline').addEventListener('change', async (e)=>{
+    const val = e.target.value;
+    if(!APPDATA.distFechaOverrides) APPDATA.distFechaOverrides = {};
+    if(val) APPDATA.distFechaOverrides[selectedDistId] = val; else delete APPDATA.distFechaOverrides[selectedDistId];
+    await saveAppData(APPDATA);
+    renderSidebar();
+  });
+  document.getElementById('chipUrgente').addEventListener('click', async ()=>{
+    if(!APPDATA.distUrgenteOverrides) APPDATA.distUrgenteOverrides = {};
+    if(APPDATA.distUrgenteOverrides[selectedDistId]) delete APPDATA.distUrgenteOverrides[selectedDistId];
+    else APPDATA.distUrgenteOverrides[selectedDistId] = true;
+    await saveAppData(APPDATA);
+    renderAll();
+  });
+  document.getElementById('txtObservaciones').addEventListener('change', async (e)=>{
+    const val = e.target.value;
+    if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
+    if(val.trim()) APPDATA.distObservaciones[selectedDistId] = val; else delete APPDATA.distObservaciones[selectedDistId];
+    await saveAppData(APPDATA);
+  });
+  document.getElementById('btnNuevoPedidoCliente').addEventListener('click', ()=> openNewOrderForClientModal(dist));
 
   const searchInp = document.getElementById('searchProductoPedido');
   if(searchInp){
@@ -816,6 +996,19 @@ function openModal(innerHtml){
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
   return overlay;
+}
+
+// Imprime SOLO el contenido de un modal (usado para "Deuda por producto" y "Deuda total")
+function printModal(overlay){
+  overlay.classList.add('printing');
+  document.body.classList.add('printing-modal');
+  const cleanup = () => {
+    overlay.classList.remove('printing');
+    document.body.classList.remove('printing-modal');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
 }
 
 // Construye las <option> de un <select> de productos, opcionalmente filtradas por texto de búsqueda
@@ -1009,7 +1202,7 @@ function fechaToInputValue(fecha){
 // (aplica tanto a los del catálogo como a los creados manualmente)
 function openEditDistModal(dist){
   const distId = dist.id;
-  const vendedoresExistentes = Array.from(new Set(getAllDistributors().map(d=>d.vendedor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const vendedoresExistentes = getAllVendedores();
   const overlay = openModal(`
     <h3>Editar distribuidor</h3>
     <div class="field">
@@ -1063,14 +1256,14 @@ function openEditDistModal(dist){
 function openProductDebtFilter(){
   const products = getAllProducts();
   const overlay = openModal(`
-    <h3>Deuda por producto (todos los distribuidores)</h3>
-    <div class="field product-search-wrap">
+    <h3 class="no-print">Deuda por producto (todos los distribuidores)</h3>
+    <div class="field product-search-wrap no-print">
       <label>Busca un producto</label>
       <input type="text" id="pdSearchInput" placeholder="Ej. Sábana Silver, toalla, cobija..." autocomplete="off">
       <div class="product-search-results" id="pdSearchResults" style="display:none;"></div>
     </div>
     <div id="pdResultZone"></div>
-    <div class="modal-actions">
+    <div class="modal-actions no-print">
       <button class="btn-cancel" id="btnCancel">Cerrar</button>
     </div>
   `);
@@ -1135,8 +1328,15 @@ function openProductDebtFilter(){
     porDistribuidor.sort((a,b)=> b.dPendienteVal - a.dPendienteVal);
 
     zone.innerHTML = `
+      <div class="print-header">
+        <h2>Casa Dorada · Deuda por producto</h2>
+        <div class="sub">${escapeHtml(prod.producto)} ${prod.medida ? '· '+escapeHtml(prod.medida) : ''} · Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+      </div>
       <div class="product-debt-summary">
-        <div class="pd-title">${escapeHtml(prod.producto)} ${prod.medida ? '· '+escapeHtml(prod.medida) : ''}</div>
+        <div class="pd-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span>${escapeHtml(prod.producto)} ${prod.medida ? '· '+escapeHtml(prod.medida) : ''}</span>
+          <button class="print-btn-modal no-print" id="btnImprimirDeudaProducto">🖨 Imprimir</button>
+        </div>
         <div class="pd-cards">
           <div class="pd-card"><div class="lab">Pedido total</div><div class="v">${fmt(totalPedidoVal)}</div></div>
           <div class="pd-card"><div class="lab">Unidades pedidas</div><div class="v">${fmtNum(totalPedidoUnid)}</div></div>
@@ -1152,6 +1352,8 @@ function openProductDebtFilter(){
         </table>` : `<p style="color:var(--ink-soft);font-size:13px;">Nadie debe este producto actualmente — está totalmente entregado o sin pedidos.</p>`}
       </div>
     `;
+    const btnImp = zone.querySelector('#btnImprimirDeudaProducto');
+    if(btnImp) btnImp.addEventListener('click', ()=> printModal(overlay));
   }
 
   input.addEventListener('input', ()=> showMatches(input.value));
@@ -1164,12 +1366,14 @@ function openProductDebtFilter(){
 }
 
 function openNewDistModal(){
-  const vendedoresExistentes = Array.from(new Set(getAllDistributors().map(d=>d.vendedor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const vendedoresExistentes = getAllVendedores();
   const overlay = openModal(`
     <h3>Nuevo distribuidor</h3>
     <div class="field">
       <label>Nombre del distribuidor / tienda</label>
-      <input type="text" id="inpNombre" placeholder="Ej. Almacén El Progreso">
+      <input type="text" id="inpNombre" list="dlDistribuidoresRegistro" placeholder="Ej. Almacén El Progreso" autocomplete="off">
+      <datalist id="dlDistribuidoresRegistro">${getAllDistribuidorNombres().map(n=>`<option value="${escapeAttr(n)}">`).join('')}</datalist>
+      <div class="hint" style="margin-top:5px;margin-bottom:0;">Escribe uno nuevo o elige uno ya creado en "🏬 Distribuidores".</div>
     </div>
     <div class="field">
       <label>Vendedor asignado (opcional)</label>
@@ -1184,6 +1388,13 @@ function openNewDistModal(){
       <label>Fecha máxima de despacho (opcional)</label>
       <input type="date" id="inpFechaDespacho">
     </div>
+    <div class="field">
+      <label><input type="checkbox" id="chkUrgenteNuevo" style="width:auto;margin-right:6px;">Marcar este pedido como urgente</label>
+    </div>
+    <div class="field">
+      <label>Observaciones (opcional)</label>
+      <textarea id="inpObservacionesNuevo" style="width:100%;min-height:56px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:14px;background:var(--cream);" placeholder="Ej. Prefiere entrega los viernes..."></textarea>
+    </div>
     <div class="hint">Después de crearlo podrás agregarle los productos de su primer pedido.</div>
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
@@ -1196,13 +1407,263 @@ function openNewDistModal(){
     const vendedor = overlay.querySelector('#inpVendedor').value.trim();
     const fecha = overlay.querySelector('#inpFecha').value;
     const fechaDespacho = overlay.querySelector('#inpFechaDespacho').value;
+    const urgente = overlay.querySelector('#chkUrgenteNuevo').checked;
+    const observaciones = overlay.querySelector('#inpObservacionesNuevo').value;
     if(!nombre){ showToast('Escribe un nombre'); return; }
     const id = 'nuevo-' + Date.now();
     APPDATA.nuevosDistribuidores.push({id, nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    if(urgente){
+      if(!APPDATA.distUrgenteOverrides) APPDATA.distUrgenteOverrides = {};
+      APPDATA.distUrgenteOverrides[id] = true;
+    }
+    if(observaciones.trim()){
+      if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
+      APPDATA.distObservaciones[id] = observaciones;
+    }
     await saveAppData(APPDATA);
     selectedDistId = id;
     overlay.remove();
     renderAll();
+  });
+}
+
+// Crea un pedido NUEVO para un cliente distribuidor que ya existe: el cliente queda
+// guardado (mismo nombre) y este nuevo pedido arranca vacío de productos, con su propia
+// fecha, fecha de despacho y marca de urgente, editable por separado del pedido anterior.
+function openNewOrderForClientModal(dist){
+  const overlay = openModal(`
+    <h3>Nuevo pedido para ${escapeHtml(dist.nombre)}</h3>
+    <div class="hint">El cliente queda guardado; este es otro pedido independiente para él, que podrás editar y despachar por separado.</div>
+    <div class="field">
+      <label>Vendedor asignado (opcional)</label>
+      <input type="text" id="inpVendedorNP" list="dlVendedoresNP" value="${escapeAttr(dist.vendedor||'')}">
+      <datalist id="dlVendedoresNP">${getAllVendedores().map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Fecha del pedido</label>
+      <input type="date" id="inpFechaNP">
+    </div>
+    <div class="field">
+      <label>Fecha máxima de despacho (opcional)</label>
+      <input type="date" id="inpFechaDespachoNP">
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="chkUrgenteNP" style="width:auto;margin-right:6px;">Marcar este pedido como urgente</label>
+    </div>
+    <div class="field">
+      <label>Observaciones del cliente</label>
+      <textarea id="txtObservacionesNP" style="width:100%;min-height:60px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:14px;background:var(--cream);">${escapeHtml(dist.observaciones||'')}</textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Crear pedido</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const vendedor = overlay.querySelector('#inpVendedorNP').value.trim();
+    const fecha = overlay.querySelector('#inpFechaNP').value;
+    const fechaDespacho = overlay.querySelector('#inpFechaDespachoNP').value;
+    const urgente = overlay.querySelector('#chkUrgenteNP').checked;
+    const observaciones = overlay.querySelector('#txtObservacionesNP').value;
+    const id = dist.nombre + ' — ' + Date.now();
+    APPDATA.nuevosDistribuidores.push({id, nombre: dist.nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    if(urgente){
+      if(!APPDATA.distUrgenteOverrides) APPDATA.distUrgenteOverrides = {};
+      APPDATA.distUrgenteOverrides[id] = true;
+    }
+    if(observaciones.trim()){
+      if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
+      APPDATA.distObservaciones[id] = observaciones;
+    }
+    await saveAppData(APPDATA);
+    selectedDistId = id;
+    overlay.remove();
+    renderAll();
+    showToast('Nuevo pedido creado para ' + dist.nombre);
+  });
+}
+
+// Reporte detallado de TODO lo que se debe: cada línea pendiente, de todos los distribuidores, en un solo listado
+function openTotalDebtReport(){
+  const dists = getAllDistributors();
+  // Se agrupa por Categoría + Producto + Medida (sumando todos los distribuidores) para que sea un total simple, no un detalle línea por línea
+  const grupos = {};
+  dists.forEach(d=>{
+    getOrderLines(d.id).forEach(l=>{
+      const ent = Math.min(getEntregado(d.id, l.key), l.cantidad);
+      const pend = l.cantidad - ent;
+      if(pend <= 0) return;
+      const pendVal = pend * l.precio;
+      const categoria = l.categoria || 'Sin categoría';
+      const medida = l.medida || '—';
+      const key = categoria+'|'+l.producto+'|'+medida;
+      if(!grupos[key]) grupos[key] = {categoria, producto:l.producto, medida, pend:0, pendVal:0, nDist:new Set()};
+      grupos[key].pend += pend;
+      grupos[key].pendVal += pendVal;
+      grupos[key].nDist.add(d.nombre);
+    });
+  });
+  const rows = Object.values(grupos).map(g => ({...g, nDist: g.nDist.size}));
+  rows.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
+  const totalVal = rows.reduce((s,r)=>s+r.pendVal, 0);
+  const totalUnid = rows.reduce((s,r)=>s+r.pend, 0);
+
+  const overlay = openModal(`
+    <div class="print-header">
+      <h2>Casa Dorada · Deuda total por producto</h2>
+      <div class="sub">Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+    </div>
+    <h3 class="no-print">Deuda total de productos — total por medida/estilo</h3>
+    <div class="debt-report-toolbar no-print">
+      <input type="text" id="tdrSearch" placeholder="Filtrar por producto, categoría o medida...">
+      <button class="print-btn-modal" id="btnImprimirDeudaTotal">🖨 Imprimir</button>
+    </div>
+    <div class="debt-report-totals">
+      <div class="pd-card"><div class="lab">Productos con deuda</div><div class="v" id="tdrCountLines">${rows.length}</div></div>
+      <div class="pd-card"><div class="lab">Unidades pendientes</div><div class="v" id="tdrUnid">${fmtNum(totalUnid)}</div></div>
+      <div class="pd-card"><div class="lab">Se debe en total</div><div class="v" id="tdrVal">${fmt(totalVal)}</div></div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Categoría</th><th>Producto</th><th>Medida / Estilo</th><th class="num">Distribuidores</th><th class="num">Pendiente</th><th class="num">Debe</th></tr></thead>
+        <tbody id="tdrBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions no-print">
+      <button class="btn-cancel" id="btnCancel">Cerrar</button>
+    </div>
+  `);
+  const modalEl = overlay.querySelector('.modal');
+  modalEl.classList.add('wide');
+  const tbody = overlay.querySelector('#tdrBody');
+  const searchInp = overlay.querySelector('#tdrSearch');
+
+  function paint(term){
+    const t = (term||'').trim().toLowerCase();
+    const filtered = !t ? rows : rows.filter(r =>
+      r.producto.toLowerCase().includes(t) || r.categoria.toLowerCase().includes(t) || r.medida.toLowerCase().includes(t)
+    );
+    let fVal=0, fUnid=0;
+    let lastCat = null;
+    let bodyHtml = '';
+    filtered.forEach(r=>{
+      if(r.categoria !== lastCat){
+        bodyHtml += `<tr class="cat-row"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
+        lastCat = r.categoria;
+      }
+      fVal += r.pendVal; fUnid += r.pend;
+      bodyHtml += `<tr><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
+        <td class="num">${r.nDist}</td><td class="num">${fmtNum(r.pend)}</td><td class="num pend-val pos">${fmt(r.pendVal)}</td></tr>`;
+    });
+    tbody.innerHTML = bodyHtml || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
+    overlay.querySelector('#tdrCountLines').textContent = filtered.length;
+    overlay.querySelector('#tdrUnid').textContent = fmtNum(fUnid);
+    overlay.querySelector('#tdrVal').textContent = fmt(fVal);
+  }
+  paint('');
+  searchInp.addEventListener('input', ()=> paint(searchInp.value));
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnImprimirDeudaTotal').addEventListener('click', ()=> printModal(overlay));
+}
+
+// Gestión de vendedores: crearlos de antemano para poder "jalarlos" (seleccionarlos) al asignar un pedido
+function openManageVendedoresModal(){
+  const overlay = openModal(`
+    <h3>Vendedores</h3>
+    <div class="hint">Crea aquí tus vendedores para poder elegirlos rápido al asignar un pedido.</div>
+    <div class="registry-add-row">
+      <input type="text" id="inpNuevoVendedor" placeholder="Nombre del vendedor">
+      <button class="btn-confirm" id="btnAgregarVendedor" style="flex:0 0 auto;">Agregar</button>
+    </div>
+    <div class="registry-list" id="vendedoresList"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cerrar</button>
+    </div>
+  `);
+  function paint(){
+    const registro = APPDATA.vendedoresRegistry || [];
+    const asignados = new Set(getAllDistributors().map(d=>d.vendedor).filter(Boolean));
+    const todos = getAllVendedores();
+    const listEl = overlay.querySelector('#vendedoresList');
+    listEl.innerHTML = todos.length ? todos.map(v => `
+      <div class="registry-item">
+        <span>${escapeHtml(v)}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          ${asignados.has(v) ? `<span class="tag">En uso</span>` : ''}
+          <button class="icon-btn icon-delete" data-v="${escapeAttr(v)}" title="Quitar del listado">🗑</button>
+        </span>
+      </div>`).join('') : `<div class="registry-empty">Aún no has creado vendedores.</div>`;
+    listEl.querySelectorAll('button[data-v]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        APPDATA.vendedoresRegistry = (APPDATA.vendedoresRegistry||[]).filter(v=>v!==btn.dataset.v);
+        await saveAppData(APPDATA);
+        paint();
+        renderSidebar();
+      });
+    });
+  }
+  paint();
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnAgregarVendedor').addEventListener('click', async ()=>{
+    const inp = overlay.querySelector('#inpNuevoVendedor');
+    const val = inp.value.trim();
+    if(!val){ showToast('Escribe un nombre'); return; }
+    if(!APPDATA.vendedoresRegistry) APPDATA.vendedoresRegistry = [];
+    if(!APPDATA.vendedoresRegistry.includes(val)) APPDATA.vendedoresRegistry.push(val);
+    await saveAppData(APPDATA);
+    inp.value = '';
+    paint();
+    renderSidebar();
+  });
+}
+
+// Gestión de distribuidores: crearlos de antemano para poder "jalarlos" (seleccionarlos) al crear un nuevo pedido
+function openManageDistribuidoresModal(){
+  const overlay = openModal(`
+    <h3>Distribuidores</h3>
+    <div class="hint">Crea aquí los nombres de tus clientes distribuidores para poder elegirlos rápido al crear un pedido nuevo.</div>
+    <div class="registry-add-row">
+      <input type="text" id="inpNuevoDistribuidor" placeholder="Nombre del distribuidor / tienda">
+      <button class="btn-confirm" id="btnAgregarDistribuidor" style="flex:0 0 auto;">Agregar</button>
+    </div>
+    <div class="registry-list" id="distribuidoresList"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cerrar</button>
+    </div>
+  `);
+  function paint(){
+    const conPedidos = new Set(getAllDistributors().map(d=>d.nombre));
+    const todos = getAllDistribuidorNombres();
+    const listEl = overlay.querySelector('#distribuidoresList');
+    listEl.innerHTML = todos.length ? todos.map(n => `
+      <div class="registry-item">
+        <span>${escapeHtml(n)}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
+          <button class="icon-btn icon-delete" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
+        </span>
+      </div>`).join('') : `<div class="registry-empty">Aún no has creado distribuidores.</div>`;
+    listEl.querySelectorAll('button[data-n]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
+        await saveAppData(APPDATA);
+        paint();
+      });
+    });
+  }
+  paint();
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnAgregarDistribuidor').addEventListener('click', async ()=>{
+    const inp = overlay.querySelector('#inpNuevoDistribuidor');
+    const val = inp.value.trim();
+    if(!val){ showToast('Escribe un nombre'); return; }
+    if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
+    if(!APPDATA.distribuidoresRegistry.includes(val)) APPDATA.distribuidoresRegistry.push(val);
+    await saveAppData(APPDATA);
+    inp.value = '';
+    paint();
+    showToast('Distribuidor creado. Ya puedes elegirlo al crear un pedido.');
   });
 }
 
@@ -1212,6 +1673,12 @@ document.getElementById('searchDist').addEventListener('input', (e)=>{
   renderSidebar();
 });
 document.getElementById('btnNuevoDist').addEventListener('click', openNewDistModal);
+document.getElementById('tabTodos').addEventListener('click', ()=>{ sidebarTab='todos'; renderSidebar(); });
+document.getElementById('tabUrgentes').addEventListener('click', ()=>{ sidebarTab='urgentes'; renderSidebar(); });
+document.getElementById('tabVencidos').addEventListener('click', ()=>{ sidebarTab='vencidos'; renderSidebar(); });
+document.getElementById('btnDeudaTotal').addEventListener('click', openTotalDebtReport);
+document.getElementById('btnGestionarVendedores').addEventListener('click', openManageVendedoresModal);
+document.getElementById('btnGestionarDistribuidores').addEventListener('click', openManageDistribuidoresModal);
 document.getElementById('btnAgregarProductoGlobal').addEventListener('click', openNewProductModal);
 document.getElementById('btnFiltroProducto').addEventListener('click', openProductDebtFilter);
 
