@@ -40,17 +40,21 @@
     border-bottom:2px solid var(--gold);
     box-shadow:0 2px 10px rgba(180,132,43,.08);
   }
+  .topbar-top, .topbar-toolbar{max-width:1180px;margin-left:auto;margin-right:auto;}
   .topbar-top{
-    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:12px;
   }
-  .topbar .brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .topbar .brand{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-width:0;}
   .brand-logo-img{height:30px;width:auto;display:block;flex-shrink:0;}
   .topbar h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.4px;color:var(--gold-dark);}
-  .topbar .tag{font-size:10.5px;color:var(--ink-soft);font-weight:500;letter-spacing:.1px;}
-  .topbar-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
-  .topbar-group{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .topbar .tag{font-size:10.5px;color:var(--ink-soft);font-weight:500;letter-spacing:.1px;white-space:nowrap;}
+  .topbar-session{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;flex-shrink:0;}
+  .topbar-toolbar{
+    display:flex;justify-content:flex-start;align-items:center;gap:14px;flex-wrap:nowrap;
+    margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
+  }
+  .topbar-group{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;}
   .topbar-divider{width:1px;align-self:stretch;background:var(--line);flex-shrink:0;}
-  @media (max-width: 900px){.topbar-divider{display:none;}}
   .topbar-toggle-wrap{display:flex;justify-content:center;}
   .topbar-toggle{
     display:flex;align-items:center;gap:5px;background:none;border:none;
@@ -497,22 +501,21 @@
         <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Logo Casa Dorada" style="height:38px; width:auto; object-fit:contain; border-radius:4px; vertical-align:middle;">
         <span class="tag">Control de pedidos y entregas — Distribuidores 2026</span>
       </div>
-      <div class="topbar-actions">
-        <div class="topbar-group">
-          <button class="filter-btn" id="btnFiltroProducto" title="Ver cuánto se debe de un producto en todos los pedidos">Deuda por producto</button>
-          <button class="filter-btn" id="btnDeudaTotal" title="Ver el detalle completo de todo lo que se debe">Deuda total</button>
-        </div>
-        <div class="topbar-divider"></div>
-        <div class="topbar-group">
-          <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">Vendedores</button>
-          <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">Distribuidores</button>
-          <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo">Nuevo producto</button>
-        </div>
-        <div class="topbar-divider"></div>
-        <div class="topbar-group">
-          <button class="filter-btn subtle" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">Acceso</button>
-          <button class="filter-btn subtle" id="btnCerrarSesion" title="Cerrar sesión">Salir</button>
-        </div>
+      <div class="topbar-session">
+        <button class="filter-btn subtle" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">Acceso</button>
+        <button class="filter-btn subtle" id="btnCerrarSesion" title="Cerrar sesión">Salir</button>
+      </div>
+    </div>
+    <div class="topbar-toolbar">
+      <div class="topbar-group">
+        <button class="filter-btn" id="btnFiltroProducto" title="Ver cuánto se debe de un producto en todos los pedidos">Deuda por producto</button>
+        <button class="filter-btn" id="btnDeudaTotal" title="Ver el detalle completo de todo lo que se debe">Deuda total</button>
+      </div>
+      <div class="topbar-divider"></div>
+      <div class="topbar-group">
+        <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">Vendedores</button>
+        <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">Distribuidores</button>
+        <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo">Nuevo producto</button>
       </div>
     </div>
     <div class="topbar-toggle-wrap">
@@ -1893,4 +1896,3 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 </script>
 </body>
 </html>
-
