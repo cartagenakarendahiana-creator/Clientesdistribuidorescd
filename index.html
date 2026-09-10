@@ -47,7 +47,10 @@
   .brand-logo-img{height:30px;width:auto;display:block;flex-shrink:0;}
   .topbar h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.4px;color:var(--gold-dark);}
   .topbar .tag{font-size:10.5px;color:var(--ink-soft);font-weight:500;letter-spacing:.1px;}
-  .topbar-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .topbar-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .topbar-group{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .topbar-divider{width:1px;align-self:stretch;background:var(--line);flex-shrink:0;}
+  @media (max-width: 900px){.topbar-divider{display:none;}}
   .topbar-toggle-wrap{display:flex;justify-content:center;}
   .topbar-toggle{
     display:flex;align-items:center;gap:5px;background:none;border:none;
@@ -386,6 +389,10 @@
     white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s;
   }
   .filter-btn:hover{background:var(--gold-pale);}
+  .filter-btn.subtle{
+    background:transparent;color:var(--ink-soft);border-color:var(--line);
+  }
+  .filter-btn.subtle:hover{background:var(--cream-2);color:var(--ink);}
   .product-search-wrap{position:relative;}
   .product-search-results{
     position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);
@@ -491,13 +498,21 @@
         <span class="tag">Control de pedidos y entregas — Distribuidores 2026</span>
       </div>
       <div class="topbar-actions">
-        <button class="filter-btn" id="btnFiltroProducto" title="Ver cuánto se debe de un producto en todos los pedidos">🔎 Deuda por producto</button>
-        <button class="filter-btn" id="btnDeudaTotal" title="Ver el detalle completo de todo lo que se debe">📊 Deuda total</button>
-        <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">👤 Vendedores</button>
-        <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">🏢 Distribuidores</button>
-        <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo">📦 Nuevo producto</button>
-        <button class="filter-btn" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">🔒 Acceso</button>
-        <button class="filter-btn" id="btnCerrarSesion" title="Cerrar sesión">🚪 Salir</button>
+        <div class="topbar-group">
+          <button class="filter-btn" id="btnFiltroProducto" title="Ver cuánto se debe de un producto en todos los pedidos">Deuda por producto</button>
+          <button class="filter-btn" id="btnDeudaTotal" title="Ver el detalle completo de todo lo que se debe">Deuda total</button>
+        </div>
+        <div class="topbar-divider"></div>
+        <div class="topbar-group">
+          <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">Vendedores</button>
+          <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">Distribuidores</button>
+          <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo">Nuevo producto</button>
+        </div>
+        <div class="topbar-divider"></div>
+        <div class="topbar-group">
+          <button class="filter-btn subtle" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">Acceso</button>
+          <button class="filter-btn subtle" id="btnCerrarSesion" title="Cerrar sesión">Salir</button>
+        </div>
       </div>
     </div>
     <div class="topbar-toggle-wrap">
@@ -1878,3 +1893,4 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
