@@ -40,7 +40,7 @@
     border-bottom:2px solid var(--gold);
     box-shadow:0 2px 10px rgba(180,132,43,.08);
   }
-  .topbar-top, .topbar-toolbar{max-width:1180px;margin-left:auto;margin-right:auto;}
+  .topbar-top, .topbar-toolbar, .topbar-toggle-wrap{max-width:1180px;margin-left:auto;margin-right:auto;}
   .topbar-top{
     display:flex;justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:12px;
   }
@@ -55,18 +55,23 @@
   }
   .topbar-group{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;}
   .topbar-divider{width:1px;align-self:stretch;background:var(--line);flex-shrink:0;}
-  .topbar-toggle-wrap{display:flex;justify-content:center;}
+  .topbar-toggle-wrap{display:flex;justify-content:flex-start;margin-top:8px;}
   .topbar-toggle{
-    display:flex;align-items:center;gap:5px;background:none;border:none;
-    margin-top:2px;padding:5px 14px 1px;font-family:'Inter';font-size:10px;font-weight:700;
-    color:var(--ink-soft);text-transform:uppercase;letter-spacing:.6px;cursor:pointer;
-    transition:color .15s;
+    display:flex;align-items:center;gap:6px;
+    background:var(--cream-2);border:1px solid var(--line-gold);border-radius:20px;
+    padding:6px 18px;font-family:'Inter';font-size:10.5px;font-weight:700;
+    color:var(--gold-dark);text-transform:uppercase;letter-spacing:.6px;cursor:pointer;
+    transition:background .15s,color .15s;
   }
-  .topbar-toggle:hover{color:var(--gold-dark);}
-  .topbar-toggle .chevron{transition:transform .2s;font-size:9px;}
+  .topbar-toggle:hover{background:var(--gold-pale);}
+  .topbar-toggle .chevron{transition:transform .2s;font-size:9px;display:inline-block;}
   .topbar-toggle.open .chevron{transform:rotate(180deg);}
-  .topbar-extra{max-height:0;overflow:hidden;transition:max-height .28s ease;}
-  .topbar-extra.open{max-height:640px;}
+  .topbar-extra{
+    max-height:0;overflow:hidden;transition:max-height .28s ease;
+    background:var(--white);border-bottom:1px solid transparent;
+  }
+  .topbar-extra.open{max-height:640px;border-bottom-color:var(--line);}
+  .topbar-extra-inner{max-width:1180px;margin:0 auto;padding:0 24px 16px;}
   .global-add-btn{
     background:var(--gold);color:var(--white);border:none;border-radius:8px;
     padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;
@@ -77,7 +82,7 @@
   .global-add-btn:hover{background:var(--gold-dark);}
   .global-add-btn:active{transform:scale(.97);}
   .summary-strip{
-    display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;margin-top:12px;
+    display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;padding-top:16px;
   }
   .summary-item{
     font-size:11.5px;color:var(--ink-soft);letter-spacing:.2px;font-weight:600;
@@ -519,11 +524,11 @@
       </div>
     </div>
     <div class="topbar-toggle-wrap">
-      <button class="topbar-toggle" id="btnToggleTopbar" aria-expanded="false">RESUMEN Y FILTROS ▾</button>
-    </div>
+      <button class="topbar-toggle" id="btnToggleTopbar" aria-expanded="false">Resumen y filtros <span class="chevron">▾</span></button>
     </div>
   </div>
   <div class="topbar-extra" id="topbarExtra">
+  <div class="topbar-extra-inner">
   <div class="summary-strip">
     <div class="summary-item">Distribuidores <b id="sumDist">–</b></div>
     <div class="summary-item">Total facturado <b id="sumFact">–</b></div>
@@ -549,7 +554,7 @@
     <button class="filter-clear-btn" id="btnLimpiarFiltros">Limpiar filtros</button>
   </div>
   </div>
-</div>
+  </div>
 
 <div class="layout">
   <div class="sidebar">
@@ -1896,3 +1901,4 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
