@@ -170,6 +170,7 @@
   .sidebar-tab-btn:hover{background:var(--cream-2);}
   .sidebar-tab-btn.active{background:var(--gold);border-color:var(--gold);color:var(--white);}
   .sidebar-tab-btn.vencidos-tab.active{background:#B3261E;border-color:#B3261E;}
+  .sidebar-tab-btn.saldados-tab.active{background:#3E7B4F;border-color:#3E7B4F;}
   .sidebar-tab-btn .count{
     background:rgba(0,0,0,.12);border-radius:20px;padding:0 6px;font-size:10.5px;min-width:16px;text-align:center;
   }
@@ -266,6 +267,22 @@
     font-family:'Inter';font-size:13.5px;background:var(--cream);resize:vertical;color:var(--ink);
   }
   .observaciones-block textarea:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
+  .obs-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .obs-item{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+    background:var(--cream);border:1px solid var(--line);border-radius:8px;padding:9px 10px;
+  }
+  .obs-item-main{flex:1;min-width:0;}
+  .obs-item-text{font-size:13.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+  .obs-item-date{font-size:10.5px;color:var(--ink-soft);margin-top:4px;font-weight:600;}
+  .obs-empty{padding:6px 2px 10px;color:var(--ink-soft);font-size:13px;}
+  .obs-add-row{display:flex;gap:8px;}
+  .obs-add-row input{
+    flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:13.5px;background:var(--cream);color:var(--ink);
+  }
+  .obs-add-row input:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
+  .obs-add-row button{flex:0 0 auto;}
   .btn-nuevo-pedido{
     background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);border-radius:8px;
     padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter';white-space:nowrap;
@@ -479,6 +496,22 @@
       box-shadow:none !important;padding:0;
     }
     .modal-overlay.printing .no-print{display:none !important;}
+
+    /* ---- Reporte de deuda total: tabla compacta y organizada al imprimir ---- */
+    .modal.debt-report-modal{max-width:100% !important;}
+    .modal.debt-report-modal .print-header h2{font-size:15px;margin-bottom:2px;}
+    .modal.debt-report-modal .print-header .sub{font-size:9.5px;}
+    .modal.debt-report-modal .debt-report-totals{gap:6px;margin-bottom:8px;}
+    .modal.debt-report-modal .pd-card{padding:5px 8px;border:1px solid #ccc;background:#fff;}
+    .modal.debt-report-modal .pd-card .lab{font-size:8px;}
+    .modal.debt-report-modal .pd-card .v{font-size:11.5px;margin-top:1px;}
+    .modal.debt-report-modal table{font-size:9.5px;border:1px solid #999;box-shadow:none;table-layout:fixed;}
+    .modal.debt-report-modal thead{display:table-header-group;}
+    .modal.debt-report-modal thead th{padding:4px 6px;font-size:8px;letter-spacing:.2px;}
+    .modal.debt-report-modal tbody td{padding:3px 6px;font-size:9.5px;line-height:1.25;}
+    .modal.debt-report-modal tr{page-break-inside:avoid;}
+    .modal.debt-report-modal .cat-row td{padding:4px 6px;font-size:9px;background:#f1ece0 !important;}
+    .modal.debt-report-modal td, .modal.debt-report-modal th{overflow-wrap:break-word;}
   }
 </style>
 </head>
@@ -567,6 +600,8 @@
     </div>
     <div class="sidebar-tabs">
       <button class="sidebar-tab-btn" id="tabTodos" data-tab="todos">Todos <span class="count" id="countTodos">0</span></button>
+      <button class="sidebar-tab-btn" id="tabPorSaldar" data-tab="porsaldar">Por saldar <span class="count" id="countPorSaldar">0</span></button>
+      <button class="sidebar-tab-btn saldados-tab" id="tabSaldados" data-tab="saldados">✅ Saldados <span class="count" id="countSaldados">0</span></button>
       <button class="sidebar-tab-btn" id="tabUrgentes" data-tab="urgentes">🔥 Urgentes <span class="count" id="countUrgentes">0</span></button>
       <button class="sidebar-tab-btn vencidos-tab" id="tabVencidos" data-tab="vencidos">⏰ Vencidos <span class="count" id="countVencidos">0</span></button>
     </div>
@@ -603,7 +638,7 @@ const DEFAULT_APPDATA = {
   distVendedorOverrides:{},  // {distId: nombreVendedor} — vendedor asignado a cada distribuidor
   distDespachoOverrides:{},  // {distId: 'YYYY-MM-DD'} — fecha máxima de despacho de cada distribuidor
   distFechaOverrides:{},     // {distId: 'YYYY-MM-DD'} — corrección de la fecha de pedido
-  distObservaciones:{},      // {distId: texto} — observaciones/notas del cliente distribuidor
+  distObservaciones:{},      // {distId: [{texto, fecha}, ...]} — varias observaciones/notas guardadas por cliente distribuidor
   distUrgenteOverrides:{},   // {distId: true/false} — marca este pedido como urgente
   vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
   distribuidoresRegistry:[], // [nombre, ...] — distribuidores/clientes creados manualmente (aunque no tengan pedidos aún)
@@ -700,9 +735,43 @@ function getAllDistributors(){
     fecha: (APPDATA.distFechaOverrides && APPDATA.distFechaOverrides[d.id]) || d.fecha,
     vendedor: (APPDATA.distVendedorOverrides && APPDATA.distVendedorOverrides[d.id]) || d.vendedor || '',
     fechaDespacho: (APPDATA.distDespachoOverrides && APPDATA.distDespachoOverrides[d.id]) || d.fechaDespacho || null,
-    observaciones: (APPDATA.distObservaciones && APPDATA.distObservaciones[d.id]) || '',
+    observaciones: getObservaciones(d.id),
     urgente: !!(APPDATA.distUrgenteOverrides && APPDATA.distUrgenteOverrides[d.id])
   }));
+}
+
+// ---------- observaciones (varias notas por distribuidor/pedido) ----------
+// Guardamos un ARREGLO de observaciones por distId: [{texto, fecha}, ...]
+// Se mantiene compatibilidad con datos antiguos donde se guardaba un solo texto.
+function getObservaciones(distId){
+  const raw = APPDATA.distObservaciones && APPDATA.distObservaciones[distId];
+  if(!raw) return [];
+  if(Array.isArray(raw)) return raw;
+  if(typeof raw === 'string' && raw.trim()) return [{texto: raw, fecha: null}];
+  return [];
+}
+async function addObservacion(distId, texto){
+  if(!texto || !texto.trim()) return;
+  if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
+  const actuales = getObservaciones(distId);
+  actuales.push({texto: texto.trim(), fecha: new Date().toISOString()});
+  APPDATA.distObservaciones[distId] = actuales;
+  await saveAppData(APPDATA);
+}
+async function deleteObservacion(distId, index){
+  const actuales = getObservaciones(distId);
+  actuales.splice(index,1);
+  if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
+  if(actuales.length) APPDATA.distObservaciones[distId] = actuales;
+  else delete APPDATA.distObservaciones[distId];
+  await saveAppData(APPDATA);
+}
+function formatObsFecha(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('es-CO', {day:'2-digit', month:'short', year:'numeric'}) + ' · ' +
+    d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
 }
 
 // Convierte distintos formatos de fecha (YYYY-MM-DD, MM/DD/YYYY, "NN", null) a un timestamp comparable.
@@ -839,7 +908,7 @@ let selectedDistId = null;
 let searchTerm = '';
 let ordenFiltro = 'fecha_desc'; // 'fecha_asc' | 'fecha_desc' | 'nombre'
 let vendedorFiltro = '';     // '' = todos
-let sidebarTab = 'todos';    // 'todos' | 'urgentes'
+let sidebarTab = 'todos';    // 'todos' | 'porsaldar' | 'saldados' | 'urgentes' | 'vencidos'
 
 function renderDistItemHtml(d){
   const debe = d.t.totalPendienteVal > 0;
@@ -883,10 +952,17 @@ function renderSidebar(){
   refreshVendedorOptions(dists);
 
   const withT = dists.map(d => ({...d, t: distTotals(d.id)}));
-  document.getElementById('countTodos').textContent = withT.length;
+  // "Todos" y "Por saldar" excluyen los pedidos ya saldados (con eso se restan de estas listas al saldarse)
+  const porSaldar = withT.filter(d=>d.t.totalPendienteVal > 0);
+  const saldados = withT.filter(d=>d.t.totalPendienteVal <= 0 && d.t.numLines > 0);
+  document.getElementById('countTodos').textContent = porSaldar.length;
+  document.getElementById('countPorSaldar').textContent = porSaldar.length;
+  document.getElementById('countSaldados').textContent = saldados.length;
   document.getElementById('countUrgentes').textContent = withT.filter(d=>d.urgente).length;
   document.getElementById('countVencidos').textContent = withT.filter(d=>isVencido(d, d.t.totalPendienteVal)).length;
   document.getElementById('tabTodos').classList.toggle('active', sidebarTab==='todos');
+  document.getElementById('tabPorSaldar').classList.toggle('active', sidebarTab==='porsaldar');
+  document.getElementById('tabSaldados').classList.toggle('active', sidebarTab==='saldados');
   document.getElementById('tabUrgentes').classList.toggle('active', sidebarTab==='urgentes');
   document.getElementById('tabVencidos').classList.toggle('active', sidebarTab==='vencidos');
 
@@ -895,6 +971,8 @@ function renderSidebar(){
   if(vendedorFiltro) filtered = filtered.filter(d => d.vendedor === vendedorFiltro);
   if(sidebarTab === 'urgentes') filtered = filtered.filter(d => d.urgente);
   if(sidebarTab === 'vencidos') filtered = filtered.filter(d => isVencido(d, d.t.totalPendienteVal));
+  if(sidebarTab === 'todos' || sidebarTab === 'porsaldar') filtered = filtered.filter(d => d.t.totalPendienteVal > 0);
+  if(sidebarTab === 'saldados') filtered = filtered.filter(d => d.t.totalPendienteVal <= 0 && d.t.numLines > 0);
   const withTotals = filtered;
 
   // Aseguramos que el <select> de orden refleje siempre la variable actual (evita que se desincronice)
@@ -924,6 +1002,10 @@ function renderSidebar(){
     ? '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">No hay pedidos marcados como urgentes.</div>'
     : sidebarTab==='vencidos'
     ? '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">No hay pedidos vencidos. 🎉</div>'
+    : sidebarTab==='saldados'
+    ? '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Aún no hay pedidos saldados.</div>'
+    : (sidebarTab==='todos' || sidebarTab==='porsaldar')
+    ? '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">No hay pedidos por saldar. 🎉</div>'
     : '<div style="padding:20px;color:var(--ink-soft);font-size:13px;">Sin resultados con estos filtros</div>');
 
   listEl.querySelectorAll('.dist-item').forEach(el=>{
@@ -1038,8 +1120,21 @@ function renderMain(){
       </div>
     </div>
     <div class="observaciones-block">
-      <label for="txtObservaciones">Observaciones del cliente distribuidor</label>
-      <textarea id="txtObservaciones" placeholder="Ej. Prefiere entrega los viernes, siempre paga en efectivo, pedir confirmación antes de despachar...">${escapeHtml(dist.observaciones||'')}</textarea>
+      <label>Observaciones del cliente distribuidor</label>
+      <div class="obs-list" id="obsList">
+        ${dist.observaciones.length ? dist.observaciones.map((o,i)=>`
+        <div class="obs-item">
+          <div class="obs-item-main">
+            <div class="obs-item-text">${escapeHtml(o.texto)}</div>
+            ${o.fecha ? `<div class="obs-item-date">${formatObsFecha(o.fecha)}</div>` : ''}
+          </div>
+          <button class="icon-btn icon-delete obs-delete-btn" data-i="${i}" title="Eliminar esta observación">🗑</button>
+        </div>`).join('') : `<div class="obs-empty">Aún no hay observaciones para este cliente.</div>`}
+      </div>
+      <div class="obs-add-row">
+        <input type="text" id="inpNuevaObservacion" placeholder="Ej. Prefiere entrega los viernes, siempre paga en efectivo...">
+        <button class="btn-confirm" id="btnAgregarObservacion">+ Agregar</button>
+      </div>
     </div>
     <div class="totals-row">
       <div class="tcard"><div class="label">Total pedido</div><div class="val">${fmt(totals.totalPedido)}</div></div>
@@ -1118,11 +1213,21 @@ function renderMain(){
     await saveAppData(APPDATA);
     renderAll();
   });
-  document.getElementById('txtObservaciones').addEventListener('change', async (e)=>{
-    const val = e.target.value;
-    if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
-    if(val.trim()) APPDATA.distObservaciones[selectedDistId] = val; else delete APPDATA.distObservaciones[selectedDistId];
-    await saveAppData(APPDATA);
+  main.querySelectorAll('.obs-delete-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      await deleteObservacion(selectedDistId, parseInt(btn.dataset.i,10));
+      renderMain();
+    });
+  });
+  function submitNuevaObservacion(){
+    const inp = document.getElementById('inpNuevaObservacion');
+    const val = inp.value;
+    if(!val.trim()){ showToast('Escribe una observación'); return; }
+    addObservacion(selectedDistId, val).then(()=> renderMain());
+  }
+  document.getElementById('btnAgregarObservacion').addEventListener('click', submitNuevaObservacion);
+  document.getElementById('inpNuevaObservacion').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); submitNuevaObservacion(); }
   });
   document.getElementById('btnNuevoPedidoCliente').addEventListener('click', ()=> openNewOrderForClientModal(dist));
 
@@ -1581,7 +1686,7 @@ function openNewDistModal(){
     }
     if(observaciones.trim()){
       if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
-      APPDATA.distObservaciones[id] = observaciones;
+      APPDATA.distObservaciones[id] = [{texto: observaciones.trim(), fecha: new Date().toISOString()}];
     }
     await saveAppData(APPDATA);
     selectedDistId = id;
@@ -1614,8 +1719,8 @@ function openNewOrderForClientModal(dist){
       <label><input type="checkbox" id="chkUrgenteNP" style="width:auto;margin-right:6px;">Marcar este pedido como urgente</label>
     </div>
     <div class="field">
-      <label>Observaciones del cliente</label>
-      <textarea id="txtObservacionesNP" style="width:100%;min-height:60px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:14px;background:var(--cream);">${escapeHtml(dist.observaciones||'')}</textarea>
+      <label>Observaciones del cliente (opcional, para este nuevo pedido)</label>
+      <textarea id="txtObservacionesNP" style="width:100%;min-height:60px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:14px;background:var(--cream);" placeholder="Ej. Prefiere entrega los viernes...">${dist.observaciones.length ? escapeHtml(dist.observaciones[dist.observaciones.length-1].texto) : ''}</textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
@@ -1638,7 +1743,7 @@ function openNewOrderForClientModal(dist){
     }
     if(observaciones.trim()){
       if(!APPDATA.distObservaciones) APPDATA.distObservaciones = {};
-      APPDATA.distObservaciones[id] = observaciones;
+      APPDATA.distObservaciones[id] = [{texto: observaciones.trim(), fecha: new Date().toISOString()}];
     }
     await saveAppData(APPDATA);
     selectedDistId = id;
@@ -1690,6 +1795,10 @@ function openTotalDebtReport(){
     </div>
     <div class="table-scroll">
       <table>
+        <colgroup>
+          <col style="width:14%"><col style="width:38%"><col style="width:16%">
+          <col style="width:12%"><col style="width:10%"><col style="width:10%">
+        </colgroup>
         <thead><tr><th>Categoría</th><th>Producto</th><th>Medida / Estilo</th><th class="num">Distribuidores</th><th class="num">Pendiente</th><th class="num">Debe</th></tr></thead>
         <tbody id="tdrBody"></tbody>
       </table>
@@ -1699,7 +1808,7 @@ function openTotalDebtReport(){
     </div>
   `);
   const modalEl = overlay.querySelector('.modal');
-  modalEl.classList.add('wide');
+  modalEl.classList.add('wide', 'debt-report-modal');
   const tbody = overlay.querySelector('#tdrBody');
   const searchInp = overlay.querySelector('#tdrSearch');
 
@@ -1838,6 +1947,8 @@ document.getElementById('searchDist').addEventListener('input', (e)=>{
 });
 document.getElementById('btnNuevoDist').addEventListener('click', openNewDistModal);
 document.getElementById('tabTodos').addEventListener('click', ()=>{ sidebarTab='todos'; renderSidebar(); });
+document.getElementById('tabPorSaldar').addEventListener('click', ()=>{ sidebarTab='porsaldar'; renderSidebar(); });
+document.getElementById('tabSaldados').addEventListener('click', ()=>{ sidebarTab='saldados'; renderSidebar(); });
 document.getElementById('tabUrgentes').addEventListener('click', ()=>{ sidebarTab='urgentes'; renderSidebar(); });
 document.getElementById('tabVencidos').addEventListener('click', ()=>{ sidebarTab='vencidos'; renderSidebar(); });
 document.getElementById('btnDeudaTotal').addEventListener('click', openTotalDebtReport);
