@@ -641,7 +641,8 @@ async function saveAppData(data){
     showToast('Guardado');
   }catch(e){
     console.error('storage error', e);
-    showToast('No se pudo guardar, intenta de nuevo');
+        showToast('Error: ' + (e && e.message ? e.message : e));
+
   }
 }
 
