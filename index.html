@@ -486,8 +486,8 @@
 <div id="appRoot" style="display:none;">
   <div class="topbar">
     <div class="topbar-top">
-      <div class="brand" style="display:flex; align-items:center; gap:10px;">
-        <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Logo" style="height: 42px; width: auto; object-fit: contain; border-radius: 4px;">
+      <div class="brand" style="display:inline-flex; align-items:center; gap:8px;">
+        <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Logo Casa Dorada" style="height:38px; width:auto; object-fit:contain; border-radius:4px; vertical-align:middle;">
         <span class="tag">Control de pedidos y entregas — Distribuidores 2026</span>
       </div>
       <div class="topbar-actions">
@@ -496,13 +496,13 @@
         <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">👤 Vendedores</button>
         <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">🏢 Distribuidores</button>
         <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo">📦 Nuevo producto</button>
-        <button class="filter-btn" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">🔒 Acceso</button> 
+        <button class="filter-btn" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">🔒 Acceso</button>
         <button class="filter-btn" id="btnCerrarSesion" title="Cerrar sesión">🚪 Salir</button>
       </div>
     </div>
-      <span>Resumen y filtros</span>
-      <span class="chevron">▾</span>
-    </button>
+    <div class="topbar-toggle-wrap">
+      <button class="topbar-toggle" id="btnToggleTopbar" aria-expanded="false">RESUMEN Y FILTROS ▾</button>
+    </div>
   </div>
   <div class="topbar-extra" id="topbarExtra">
   <div class="summary-strip">
