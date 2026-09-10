@@ -472,16 +472,19 @@
   .print-header{display:none;}
 
   @media print{
-    body{background:#fff;}
+    @page{ size: portrait; margin: 12mm; }
+    html, body{background:#fff;font-size:12px;}
     .topbar, .sidebar, .add-btn, .print-btn, .row-actions, thead th:last-child,
     tbody td:last-child, .order-search-row, .icon-btn,
     .dist-header-title .icon-btn, .toast{display:none !important;}
     .layout{display:block;max-width:100%;margin:0;min-height:0;}
     .main{padding:0;}
     .print-header{display:block;margin-bottom:14px;}
-    .print-header h2{margin:0 0 4px;font-size:22px;}
-    .print-header .sub{font-size:12.5px;color:var(--ink-soft);}
-    table{box-shadow:none;border:1px solid #999;}
+    .print-header h2{margin:0 0 4px;font-size:18px;}
+    .print-header .sub{font-size:10.5px;color:var(--ink-soft);}
+    table{box-shadow:none;border:1px solid #999;font-size:11px;}
+    thead th{padding:5px 8px;font-size:10px;}
+    tbody td{padding:5px 8px;}
     .entregado-input{border:none;background:none;padding:0;text-align:right;width:auto;}
     .tcard{box-shadow:none;border:1px solid #999;}
 
@@ -492,10 +495,14 @@
       display:block !important;inset:auto !important;
     }
     .modal-overlay.printing .modal{
-      max-width:100% !important;max-height:none !important;overflow:visible !important;
-      box-shadow:none !important;padding:0;
+      max-width:100% !important;width:100% !important;max-height:none !important;overflow:visible !important;
+      box-shadow:none !important;padding:0;font-size:12px;
     }
+    .modal-overlay.printing .modal h3{font-size:15px;}
     .modal-overlay.printing .no-print{display:none !important;}
+    .modal-overlay.printing .pd-card{padding:6px 8px;}
+    .modal-overlay.printing .pd-card .lab{font-size:8.5px;}
+    .modal-overlay.printing .pd-card .v{font-size:12px;}
 
     /* ---- Reporte de deuda total: tabla compacta y organizada al imprimir ---- */
     .modal.debt-report-modal{max-width:100% !important;}
@@ -1268,12 +1275,30 @@ function openModal(innerHtml){
 function printModal(overlay){
   overlay.classList.add('printing');
   document.body.classList.add('printing-modal');
+  let cleaned = false;
   const cleanup = () => {
+    if(cleaned) return;
+    cleaned = true;
     overlay.classList.remove('printing');
     document.body.classList.remove('printing-modal');
     window.removeEventListener('afterprint', cleanup);
+    window.removeEventListener('focus', onFocus);
+    if(mql && mql.removeEventListener) mql.removeEventListener('change', onMqlChange);
   };
+  // 'afterprint' no siempre se dispara en navegadores móviles (Safari/Chrome Android),
+  // así que además de escucharlo, restauramos la vista al recuperar el foco de la ventana
+  // (cuando se cierra el cuadro de impresión) y con un respaldo por si acaso, para que
+  // la app nunca quede "atascada" y no haga falta refrescar la página.
+  const onFocus = () => setTimeout(cleanup, 300);
+  let mql = null;
+  const onMqlChange = (e) => { if(!e.matches) cleanup(); };
+  if(window.matchMedia){
+    mql = window.matchMedia('print');
+    if(mql.addEventListener) mql.addEventListener('change', onMqlChange);
+  }
   window.addEventListener('afterprint', cleanup);
+  window.addEventListener('focus', onFocus);
+  setTimeout(cleanup, 60000); // respaldo final por si ningún evento se disparó
   window.print();
 }
 
@@ -1414,13 +1439,12 @@ function openEditLineModal(distId, line){
 
 // Crea un producto nuevo en el catálogo de la empresa (ej. toallas), con precio propio
 function openNewProductModal(){
-  const categorias = Array.from(new Set(getAllProducts().map(p=>p.categoria).filter(Boolean)));
   const overlay = openModal(`
     <h3>Nuevo producto del catálogo</h3>
     <div class="field">
       <label>Categoría</label>
       <input type="text" id="inpCategoria" list="dlCategorias" placeholder="Ej. TOALLAS">
-      <datalist id="dlCategorias">${categorias.map(c=>`<option value="${escapeAttr(c)}">`).join('')}</datalist>
+      <datalist id="dlCategorias"></datalist>
     </div>
     <div class="field">
       <label>Nombre del producto</label>
@@ -1434,12 +1458,48 @@ function openNewProductModal(){
       <label>Precio unitario</label>
       <input type="number" min="0" id="inpPrecio" placeholder="0">
     </div>
-    <div class="hint">Quedará disponible para agregarlo al pedido de cualquier distribuidor.</div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+    <div class="hint">Quedará disponible para agregarlo al pedido de cualquier distribuidor. Si te equivocas al escribirlo, puedes editarlo abajo.</div>
+    <div class="modal-actions" style="margin-bottom:2px;">
+      <button class="btn-cancel" id="btnCancel">Cerrar</button>
       <button class="btn-confirm" id="btnConfirm">Crear producto</button>
     </div>
+    <div class="hint" style="margin-top:14px;">Productos que has creado:</div>
+    <div class="registry-list" id="misProductosList"></div>
   `);
+
+  function paint(){
+    const categorias = Array.from(new Set(getAllProducts().map(p=>p.categoria).filter(Boolean)));
+    overlay.querySelector('#dlCategorias').innerHTML = categorias.map(c=>`<option value="${escapeAttr(c)}">`).join('');
+
+    const custom = APPDATA.customProducts || [];
+    const listEl = overlay.querySelector('#misProductosList');
+    listEl.innerHTML = custom.length ? custom.map((p, idx) => `
+      <div class="registry-item">
+        <span>${escapeHtml(p.categoria||'')} — ${escapeHtml(p.producto)}${p.medida ? ` (${escapeHtml(p.medida)})` : ''}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="tag">${fmt(p.precio||0)}</span>
+          <button class="icon-btn icon-edit" data-edit="${idx}" title="Editar producto">✎</button>
+          <button class="icon-btn icon-delete" data-del="${idx}" title="Eliminar producto">🗑</button>
+        </span>
+      </div>`).join('') : `<div class="registry-empty">Aún no has creado productos propios.</div>`;
+
+    listEl.querySelectorAll('button[data-edit]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        openEditCustomProductModal(parseInt(btn.dataset.edit), paint);
+      });
+    });
+    listEl.querySelectorAll('button[data-del]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        deleteCustomProduct(parseInt(btn.dataset.del));
+        await saveAppData(APPDATA);
+        paint();
+        renderAll();
+        showToast('Producto eliminado');
+      });
+    });
+  }
+  paint();
+
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
     const categoria = overlay.querySelector('#inpCategoria').value.trim() || 'OTROS';
@@ -1450,9 +1510,85 @@ function openNewProductModal(){
     if(!APPDATA.customProducts) APPDATA.customProducts = [];
     APPDATA.customProducts.push({categoria, producto, medida, precio});
     await saveAppData(APPDATA);
-    overlay.remove();
+    overlay.querySelector('#inpCategoria').value = '';
+    overlay.querySelector('#inpProducto').value = '';
+    overlay.querySelector('#inpMedida').value = '';
+    overlay.querySelector('#inpPrecio').value = '';
+    paint();
     showToast('Producto agregado al catálogo');
+    overlay.querySelector('#inpProducto').focus();
   });
+}
+
+// Edita un producto propio (creado con "Nuevo producto") por si hubo un error al escribirlo.
+// Se edita "en el mismo lugar" del arreglo para no romper los pedidos que ya usan ese producto.
+function openEditCustomProductModal(idx, onSaved){
+  const p = (APPDATA.customProducts||[])[idx];
+  if(!p){ return; }
+  const overlay = openModal(`
+    <h3>Editar producto</h3>
+    <div class="field">
+      <label>Categoría</label>
+      <input type="text" id="inpEditCategoria" value="${escapeAttr(p.categoria||'')}">
+    </div>
+    <div class="field">
+      <label>Nombre del producto</label>
+      <input type="text" id="inpEditProducto" value="${escapeAttr(p.producto||'')}">
+    </div>
+    <div class="field">
+      <label>Medida / presentación (opcional)</label>
+      <input type="text" id="inpEditMedida" value="${escapeAttr(p.medida||'')}">
+    </div>
+    <div class="field">
+      <label>Precio unitario</label>
+      <input type="number" min="0" id="inpEditPrecio" value="${p.precio||0}">
+    </div>
+    <div class="hint">Esto corrige el producto en el catálogo. Los pedidos ya guardados con este producto mostrarán el nombre corregido.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Guardar cambios</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const categoria = overlay.querySelector('#inpEditCategoria').value.trim() || 'OTROS';
+    const producto = overlay.querySelector('#inpEditProducto').value.trim();
+    const medida = overlay.querySelector('#inpEditMedida').value.trim();
+    const precio = parseFloat(overlay.querySelector('#inpEditPrecio').value) || 0;
+    if(!producto){ showToast('Escribe el nombre del producto'); return; }
+    APPDATA.customProducts[idx] = {categoria, producto, medida, precio};
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+    showToast('Producto actualizado');
+    if(onSaved) onSaved();
+  });
+}
+
+// Elimina un producto propio del catálogo, ajustando cualquier pedido que lo estuviera
+// usando (por índice) para que no quede apuntando a un producto equivocado.
+function deleteCustomProduct(idx){
+  const baseLen = CATALOG.productos.length;
+  const deletedGlobalIdx = baseLen + idx;
+
+  if(APPDATA.extras && APPDATA.extras.length){
+    APPDATA.extras = APPDATA.extras
+      .filter(ex => ex.productoIdx !== deletedGlobalIdx)
+      .map(ex => ex.productoIdx > deletedGlobalIdx ? {...ex, productoIdx: ex.productoIdx - 1} : ex);
+  }
+  if(APPDATA.catalogOverrides){
+    Object.keys(APPDATA.catalogOverrides).forEach(distId=>{
+      const ovs = APPDATA.catalogOverrides[distId];
+      Object.keys(ovs).forEach(key=>{
+        const ov = ovs[key];
+        if(ov && typeof ov.productoIdx === 'number'){
+          if(ov.productoIdx === deletedGlobalIdx){ delete ovs[key]; }
+          else if(ov.productoIdx > deletedGlobalIdx){ ov.productoIdx -= 1; }
+        }
+      });
+    });
+  }
+  APPDATA.customProducts.splice(idx, 1);
 }
 
 // Convierte cualquier formato de fecha reconocido a YYYY-MM-DD para precargar un <input type="date">
@@ -1987,6 +2123,8 @@ function showApp(){
   if(!appRendered){ renderAll(); appRendered = true; }
 }
 
+const SESSION_KEY = 'casaDoradaSesionActiva';
+
 function attemptLogin(){
   if(!firebaseReady){ showToast('Cargando datos, espera un momento…'); return; }
   const u = document.getElementById('loginUsuario').value.trim();
@@ -1996,6 +2134,7 @@ function attemptLogin(){
   if(u === auth.usuario && p === auth.password){
     errEl.style.display = 'none';
     document.getElementById('loginPassword').value = '';
+    try{ localStorage.setItem(SESSION_KEY, '1'); }catch(e){}
     showApp();
   }else{
     errEl.style.display = 'block';
@@ -2007,6 +2146,7 @@ document.getElementById('loginUsuario').addEventListener('keydown', e=>{ if(e.ke
 document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
 
 document.getElementById('btnCerrarSesion').addEventListener('click', ()=>{
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('loginUsuario').value = '';
@@ -2063,6 +2203,9 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 
 (async function init(){
   await firebaseReadyPromise;
+  let sesionActiva = false;
+  try{ sesionActiva = localStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
+  if(sesionActiva) showApp();
 })();
 </script>
 </body>
