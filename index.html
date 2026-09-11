@@ -472,51 +472,23 @@
   .print-header{display:none;}
 
   @media print{
-    /* Tamaño carta explícito: sin esto el navegador usa el tamaño de página por defecto
-       del sistema (a veces A4), lo que hace que las tablas se corten o se vean desorganizadas. */
-    @page{ size: letter portrait; margin: 10mm 11mm; }
-    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-    html, body{background:#fff;font-size:11px;}
-
-    /* Se ocultan todos los controles interactivos: nada de botones, iconos, campos de
-       fecha/observación ni la barra lateral — solo queda el contenido listo para leer. */
-    .topbar, .sidebar, .add-btn, .print-btn, .print-btn-modal, .row-actions,
-    thead th:last-child, tbody td:last-child, .order-search-row, .icon-btn, .toast,
-    .dist-header, .obs-add-row, .no-print{display:none !important;}
-
+    @page{ size: portrait; margin: 12mm; }
+    html, body{background:#fff;font-size:12px;}
+    .topbar, .sidebar, .add-btn, .print-btn, .row-actions, thead th:last-child,
+    tbody td:last-child, .order-search-row, .icon-btn,
+    .dist-header-title .icon-btn, .toast{display:none !important;}
     .layout{display:block;max-width:100%;margin:0;min-height:0;}
     .main{padding:0;}
-
-    .print-header{display:block;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid var(--gold);}
-    .print-header h2{margin:0 0 3px;font-size:16px;}
-    .print-header .sub{font-size:9.5px;color:var(--ink-soft);line-height:1.5;}
-
-    .observaciones-block{margin-bottom:10px;}
-    .observaciones-block label{font-size:9px;margin-bottom:4px;}
-    .obs-list{gap:4px;margin-bottom:0;}
-    .obs-item{padding:4px 0;border:none;border-bottom:1px solid #e4d9c2;border-radius:0;background:none;}
-    .obs-item-text{font-size:10px;}
-    .obs-item-date{font-size:8.5px;}
-
-    .totals-row{gap:8px;margin-bottom:12px;}
-    .tcard{box-shadow:none;border:1px solid #999;padding:8px 10px;background:#fff !important;}
-    .tcard .label{font-size:8.5px;}
-    .tcard .val{font-size:14px;margin-top:2px;}
-
-    table{width:100%;box-shadow:none;border:1px solid #999;font-size:9.5px;border-collapse:collapse;}
-    thead{display:table-header-group;}
-    tr{page-break-inside:avoid;}
-    thead th{padding:5px 6px;font-size:8.5px;background:var(--gold-pale) !important;}
-    tbody td{padding:4px 6px;}
-    .prod-medida{font-size:9px;}
-    .edited-tag{display:none;}
-    .entregado-input{
-      border:none;background:none;padding:0;text-align:right;width:auto;font-size:9.5px;
-      -moz-appearance:textfield;
-    }
-    .entregado-input::-webkit-outer-spin-button, .entregado-input::-webkit-inner-spin-button{
-      -webkit-appearance:none;margin:0;
-    }
+    .print-header{display:block;margin-bottom:14px;}
+    .print-header h2{margin:0 0 4px;font-size:18px;}
+    .print-header .sub{font-size:10.5px;color:var(--ink-soft);}
+    table{box-shadow:none;border:1px solid #999;font-size:11px;}
+    .table-scroll{overflow:visible !important;width:100% !important;border-radius:0;}
+    .table-scroll table{width:100% !important;table-layout:fixed;}
+    thead th{padding:5px 8px;font-size:10px;}
+    tbody td{padding:5px 8px;}
+    .entregado-input{border:none;background:none;padding:0;text-align:right;width:auto;}
+    .tcard{box-shadow:none;border:1px solid #999;}
 
     /* Modales que se imprimen (deuda por producto / deuda total) */
     body.printing-modal > *:not(.modal-overlay.printing){display:none !important;}
@@ -526,32 +498,28 @@
     }
     .modal-overlay.printing .modal{
       max-width:100% !important;width:100% !important;max-height:none !important;overflow:visible !important;
-      box-shadow:none !important;padding:0;font-size:11px;border-radius:0;
+      box-shadow:none !important;padding:0;font-size:12px;
     }
-    .modal-overlay.printing .modal h3{font-size:14px;}
-    .modal-overlay.printing .pd-title{display:none;}
-    .modal-overlay.printing .pd-cards{gap:6px;margin-bottom:10px;}
-    .modal-overlay.printing .pd-card{padding:6px 8px;border:1px solid #999;background:#fff !important;}
-    .modal-overlay.printing .pd-card .lab{font-size:8px;}
+    .modal-overlay.printing .modal h3{font-size:15px;}
+    .modal-overlay.printing .no-print{display:none !important;}
+    .modal-overlay.printing .pd-card{padding:6px 8px;}
+    .modal-overlay.printing .pd-card .lab{font-size:8.5px;}
     .modal-overlay.printing .pd-card .v{font-size:12px;}
-    .modal-overlay.printing table{font-size:9.5px;}
-    .modal-overlay.printing thead th{padding:5px 6px;font-size:8.5px;}
-    .modal-overlay.printing tbody td{padding:4px 6px;}
 
     /* ---- Reporte de deuda total: tabla compacta y organizada al imprimir ---- */
     .modal.debt-report-modal{max-width:100% !important;}
     .modal.debt-report-modal .print-header h2{font-size:15px;margin-bottom:2px;}
-    .modal.debt-report-modal .print-header .sub{font-size:9px;}
+    .modal.debt-report-modal .print-header .sub{font-size:9.5px;}
     .modal.debt-report-modal .debt-report-totals{gap:6px;margin-bottom:8px;}
-    .modal.debt-report-modal .pd-card{padding:5px 8px;border:1px solid #999;background:#fff !important;}
-    .modal.debt-report-modal .pd-card .lab{font-size:7.5px;}
-    .modal.debt-report-modal .pd-card .v{font-size:11px;margin-top:1px;}
-    .modal.debt-report-modal table{font-size:8.5px;border:1px solid #999;box-shadow:none;table-layout:fixed;}
+    .modal.debt-report-modal .pd-card{padding:5px 8px;border:1px solid #ccc;background:#fff;}
+    .modal.debt-report-modal .pd-card .lab{font-size:8px;}
+    .modal.debt-report-modal .pd-card .v{font-size:11.5px;margin-top:1px;}
+    .modal.debt-report-modal table{font-size:9.5px;border:1px solid #999;box-shadow:none;table-layout:fixed;}
     .modal.debt-report-modal thead{display:table-header-group;}
-    .modal.debt-report-modal thead th{padding:4px 5px;font-size:7.5px;letter-spacing:.2px;}
-    .modal.debt-report-modal tbody td{padding:3px 5px;font-size:8.5px;line-height:1.25;}
+    .modal.debt-report-modal thead th{padding:4px 6px;font-size:8px;letter-spacing:.2px;}
+    .modal.debt-report-modal tbody td{padding:3px 6px;font-size:9.5px;line-height:1.25;}
     .modal.debt-report-modal tr{page-break-inside:avoid;}
-    .modal.debt-report-modal .cat-row td{padding:4px 5px;font-size:8px;background:#f1ece0 !important;}
+    .modal.debt-report-modal .cat-row td{padding:4px 6px;font-size:9px;background:#f1ece0 !important;}
     .modal.debt-report-modal td, .modal.debt-report-modal th{overflow-wrap:break-word;}
   }
 </style>
@@ -606,13 +574,6 @@
   </div>
   <div class="topbar-extra" id="topbarExtra">
   <div class="topbar-extra-inner">
-  <div class="summary-strip">
-    <div class="summary-item">Distribuidores <b id="sumDist">–</b></div>
-    <div class="summary-item">Total facturado <b id="sumFact">–</b></div>
-    <div class="summary-item debt">Total pendiente por cobrar <b id="sumDeuda">–</b></div>
-    <div class="summary-item">Productos pedidos (unidades) <b id="sumUnidPedidas">–</b></div>
-    <div class="summary-item debt">Unidades pendientes por despachar <b id="sumUnidPendientes">–</b></div>
-  </div>
   <div class="filters-bar">
     <div class="filter-group">
       <label>Ordenar por fecha de pedido</label>
@@ -675,7 +636,6 @@ const DEFAULT_APPDATA = {
   nuevosDistribuidores:[],// [{id, nombre, fecha}] — distribuidores creados desde cero
   customProducts:[],      // [{categoria, producto, medida, precio}] — productos nuevos del catálogo (ej. toallas)
   catalogOverrides:{},    // {distId: {lineKey: {productoIdx, cantidad, precio, eliminado}}} — ediciones a líneas originales
-  catalogProductOverrides:{}, // {idxEnCATALOG: {categoria, producto, medida, precio}} — correcciones a productos del catálogo original
   distNameOverrides:{},   // {distId: nuevoNombre} — renombres de distribuidores/proveedores
   distVendedorOverrides:{},  // {distId: nombreVendedor} — vendedor asignado a cada distribuidor
   distDespachoOverrides:{},  // {distId: 'YYYY-MM-DD'} — fecha máxima de despacho de cada distribuidor
@@ -835,11 +795,9 @@ function parseFechaToTime(fecha){
   return isNaN(t) ? null : t;
 }
 
-// Combined product catalog: original products (con posibles correcciones) + productos propios añadidos
+// Combined product catalog: original products + company products added via "Nuevo producto"
 function getAllProducts(){
-  const overrides = APPDATA.catalogProductOverrides || {};
-  const base = CATALOG.productos.map((p, idx) => overrides[idx] ? {...p, ...overrides[idx]} : p);
-  return [...base, ...(APPDATA.customProducts||[])];
+  return [...CATALOG.productos, ...(APPDATA.customProducts||[])];
 }
 
 // Lista combinada de vendedores: los creados manualmente (registro) + los ya asignados a algún pedido.
@@ -891,14 +849,13 @@ function getOrderLines(distId){
     const key = 'cat-'+idx;
     const ov = overridesForDist[key];
     if(ov && ov.eliminado) return;
-    const base = products[idx] || p; // catálogo con posibles correcciones (nombre/medida/precio)
-    let productoIdx = idx, cantidad = cantOriginal, precio = base.precio;
+    let productoIdx = idx, cantidad = cantOriginal, precio = p.precio;
     if(ov){
       if(ov.productoIdx !== undefined) productoIdx = ov.productoIdx;
       if(ov.cantidad !== undefined) cantidad = ov.cantidad;
       if(ov.precio !== undefined) precio = ov.precio;
     }
-    const prod = products[productoIdx] || base;
+    const prod = products[productoIdx] || p;
     lines.push({key, productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad, origen:'catalogo', editado: !!ov});
   });
 
@@ -1077,11 +1034,6 @@ function renderSummaryStrip(){
     totalDeuda += t.totalPendienteVal;
   });
   const unidades = computeGlobalUnitTotals();
-  document.getElementById('sumDist').textContent = dists.length;
-  document.getElementById('sumFact').textContent = fmt(totalFact);
-  document.getElementById('sumDeuda').textContent = fmt(totalDeuda);
-  document.getElementById('sumUnidPedidas').textContent = fmtNum(unidades.totalUnidadesPedidas);
-  document.getElementById('sumUnidPendientes').textContent = fmtNum(unidades.totalUnidadesPendientes);
 }
 
 let orderSearchTerm = '';
@@ -1132,9 +1084,8 @@ function renderMain(){
 
   main.innerHTML = `
     <div class="print-header">
-      <h2>${escapeHtml(dist.nombre)}${dist.urgente ? ' · 🔥 URGENTE' : ''}</h2>
-      <div class="sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'}${dist.fechaDespacho ? ' · Despacho máx.: '+escapeHtml(String(dist.fechaDespacho)) : ''} · Vendedor: ${dist.vendedor ? escapeHtml(dist.vendedor) : 'Sin asignar'}</div>
-      <div class="sub">Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+      <h2>${escapeHtml(dist.nombre)}</h2>
+      <div class="sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'} · Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
     </div>
     <div class="dist-header">
       <div>
@@ -1497,19 +1448,12 @@ function openNewProductModal(){
       <label>Precio unitario</label>
       <input type="number" min="0" id="inpPrecio" placeholder="0">
     </div>
-    <div class="hint">Quedará disponible para agregarlo al pedido de cualquier distribuidor.</div>
+    <div class="hint">Quedará disponible para agregarlo al pedido de cualquier distribuidor. Si te equivocas al escribirlo, puedes editarlo abajo.</div>
     <div class="modal-actions" style="margin-bottom:2px;">
       <button class="btn-cancel" id="btnCancel">Cerrar</button>
       <button class="btn-confirm" id="btnConfirm">Crear producto</button>
     </div>
-
-    <div class="hint" style="margin-top:16px;margin-bottom:6px;">¿Algún producto tiene un error de digitación? Búscalo aquí para corregirlo — funciona con cualquier producto, incluidos los del catálogo original:</div>
-    <div class="field product-search-wrap" style="margin-bottom:4px;">
-      <input type="text" id="editProductSearch" placeholder="Escribe el nombre, categoría o medida..." autocomplete="off">
-      <div class="product-search-results" id="editProductResults" style="display:none;"></div>
-    </div>
-
-    <div class="hint" style="margin-top:16px;">Productos que has creado tú:</div>
+    <div class="hint" style="margin-top:14px;">Productos que has creado:</div>
     <div class="registry-list" id="misProductosList"></div>
   `);
 
@@ -1517,7 +1461,6 @@ function openNewProductModal(){
     const categorias = Array.from(new Set(getAllProducts().map(p=>p.categoria).filter(Boolean)));
     overlay.querySelector('#dlCategorias').innerHTML = categorias.map(c=>`<option value="${escapeAttr(c)}">`).join('');
 
-    const baseLen = CATALOG.productos.length;
     const custom = APPDATA.customProducts || [];
     const listEl = overlay.querySelector('#misProductosList');
     listEl.innerHTML = custom.length ? custom.map((p, idx) => `
@@ -1532,53 +1475,19 @@ function openNewProductModal(){
 
     listEl.querySelectorAll('button[data-edit]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        openEditProductModal(baseLen + parseInt(btn.dataset.edit), refreshAll);
+        openEditCustomProductModal(parseInt(btn.dataset.edit), paint);
       });
     });
     listEl.querySelectorAll('button[data-del]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
         deleteCustomProduct(parseInt(btn.dataset.del));
         await saveAppData(APPDATA);
-        refreshAll();
+        paint();
         renderAll();
         showToast('Producto eliminado');
       });
     });
   }
-
-  const searchInput = overlay.querySelector('#editProductSearch');
-  const searchResults = overlay.querySelector('#editProductResults');
-  function showProductMatches(term){
-    const t = (term||'').trim().toLowerCase();
-    if(!t){ searchResults.style.display='none'; searchResults.innerHTML=''; return; }
-    const all = getAllProducts();
-    const matches = all
-      .map((p, idx) => ({p, idx}))
-      .filter(({p}) => (p.producto||'').toLowerCase().includes(t) || (p.categoria||'').toLowerCase().includes(t) || (p.medida||'').toLowerCase().includes(t))
-      .slice(0, 25);
-    searchResults.innerHTML = matches.length ? matches.map(({p, idx}) => `
-      <div class="psr-item" data-idx="${idx}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-        <span><span class="psr-cat">${escapeHtml(p.categoria||'')}</span><br>${escapeHtml(p.producto)}${p.medida ? ' · '+escapeHtml(p.medida) : ''}</span>
-        <button class="icon-btn icon-edit" title="Editar" style="flex-shrink:0;">✎</button>
-      </div>`).join('') : `<div class="psr-empty">Sin coincidencias</div>`;
-    searchResults.querySelectorAll('.psr-item').forEach(el=>{
-      el.addEventListener('click', ()=>{
-        openEditProductModal(parseInt(el.dataset.idx), refreshAll);
-      });
-    });
-    searchResults.style.display='block';
-  }
-  function refreshAll(){
-    paint();
-    showProductMatches(searchInput.value);
-  }
-  searchInput.addEventListener('input', ()=> showProductMatches(searchInput.value));
-  document.addEventListener('click', function outsideClick(e){
-    if(!overlay.isConnected){ document.removeEventListener('click', outsideClick); return; }
-    if(!overlay.contains(e.target)) return;
-    if(!searchResults.contains(e.target) && e.target !== searchInput) searchResults.style.display='none';
-  });
-
   paint();
 
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
@@ -1601,15 +1510,11 @@ function openNewProductModal(){
   });
 }
 
-// Edita cualquier producto del catálogo (original o propio) por si hubo un error al escribirlo.
-// Los del catálogo original se corrigen guardando un "override" por índice (no se toca la lista original),
-// y los propios se editan directamente en el mismo lugar del arreglo — así ningún pedido ya guardado se rompe.
-function openEditProductModal(idx, onSaved){
-  const baseLen = CATALOG.productos.length;
-  const isCustom = idx >= baseLen;
-  const p = getAllProducts()[idx];
+// Edita un producto propio (creado con "Nuevo producto") por si hubo un error al escribirlo.
+// Se edita "en el mismo lugar" del arreglo para no romper los pedidos que ya usan ese producto.
+function openEditCustomProductModal(idx, onSaved){
+  const p = (APPDATA.customProducts||[])[idx];
   if(!p){ return; }
-  const tieneCorreccion = !isCustom && APPDATA.catalogProductOverrides && APPDATA.catalogProductOverrides[idx];
   const overlay = openModal(`
     <h3>Editar producto</h3>
     <div class="field">
@@ -1628,39 +1533,20 @@ function openEditProductModal(idx, onSaved){
       <label>Precio unitario</label>
       <input type="number" min="0" id="inpEditPrecio" value="${p.precio||0}">
     </div>
-    <div class="hint">${isCustom
-      ? 'Esto corrige el producto en tu catálogo. Los pedidos ya guardados con este producto mostrarán el nombre corregido.'
-      : 'Este producto viene del catálogo original. La corrección se guarda como una "corrección" propia (sin borrar el original) y se mostrará así en todos los pedidos donde aparezca.'}</div>
+    <div class="hint">Esto corrige el producto en el catálogo. Los pedidos ya guardados con este producto mostrarán el nombre corregido.</div>
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
-      ${tieneCorreccion ? `<button class="btn-danger" id="btnRestore" title="Deshacer la corrección y volver al texto original del catálogo">Restaurar original</button>` : ''}
       <button class="btn-confirm" id="btnConfirm">Guardar cambios</button>
     </div>
   `);
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
-  const btnRestore = overlay.querySelector('#btnRestore');
-  if(btnRestore){
-    btnRestore.addEventListener('click', async ()=>{
-      delete APPDATA.catalogProductOverrides[idx];
-      await saveAppData(APPDATA);
-      overlay.remove();
-      renderAll();
-      showToast('Producto restaurado al original');
-      if(onSaved) onSaved();
-    });
-  }
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
     const categoria = overlay.querySelector('#inpEditCategoria').value.trim() || 'OTROS';
     const producto = overlay.querySelector('#inpEditProducto').value.trim();
     const medida = overlay.querySelector('#inpEditMedida').value.trim();
     const precio = parseFloat(overlay.querySelector('#inpEditPrecio').value) || 0;
     if(!producto){ showToast('Escribe el nombre del producto'); return; }
-    if(isCustom){
-      APPDATA.customProducts[idx - baseLen] = {categoria, producto, medida, precio};
-    }else{
-      if(!APPDATA.catalogProductOverrides) APPDATA.catalogProductOverrides = {};
-      APPDATA.catalogProductOverrides[idx] = {categoria, producto, medida, precio};
-    }
+    APPDATA.customProducts[idx] = {categoria, producto, medida, precio};
     await saveAppData(APPDATA);
     overlay.remove();
     renderAll();
@@ -1671,8 +1557,6 @@ function openEditProductModal(idx, onSaved){
 
 // Elimina un producto propio del catálogo, ajustando cualquier pedido que lo estuviera
 // usando (por índice) para que no quede apuntando a un producto equivocado.
-// (Los productos del catálogo original no se pueden eliminar, solo corregir, porque
-// ya tienen pedidos históricos vinculados directamente por posición en la lista.)
 function deleteCustomProduct(idx){
   const baseLen = CATALOG.productos.length;
   const deletedGlobalIdx = baseLen + idx;
