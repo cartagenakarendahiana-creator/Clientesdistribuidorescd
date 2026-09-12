@@ -99,6 +99,31 @@
     .kpi-strip{grid-template-columns:repeat(2, 1fr);}
   }
 
+  /* ---- Vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario) ---- */
+  .page-section{max-width:1180px;margin:16px auto 24px;padding:0 24px;}
+  .page-card{
+    background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px 24px;box-shadow:var(--shadow-sm);
+  }
+  .page-card-header{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    flex-wrap:wrap;margin-bottom:16px;
+  }
+  .page-card-header h2{font-size:20px;margin:0;}
+  .page-card-header .sub{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .inv-precio-input{
+    width:110px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;
+    text-align:right;font-family:'Inter';font-size:13.5px;
+  }
+  .inv-precio-input:focus{outline:2px solid var(--gold);border-color:var(--gold);}
+  .inv-text-input{
+    width:100%;padding:6px 8px;border:1px solid transparent;border-radius:6px;
+    font-family:'Inter';font-size:13.5px;background:transparent;
+  }
+  .inv-text-input:hover{border-color:var(--line);background:var(--cream-2);}
+  .inv-text-input:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
+  .inv-medida{font-size:12px;color:var(--ink-soft);}
+
   /* ---- Panel de Control (búsqueda + filtros) ---- */
   .control-panel{padding:16px 24px 0;}
   .control-panel-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;}
@@ -527,8 +552,13 @@
     .table-scroll table{width:100% !important;table-layout:fixed;}
     thead th{padding:5px 8px;font-size:10px;}
     tbody td{padding:5px 8px;}
-    .entregado-input{border:none;background:none;padding:0;text-align:right;width:auto;}
+    .entregado-input, .inv-precio-input{border:none;background:none;padding:0;text-align:right;width:auto;}
     .tcard{box-shadow:none;border:1px solid #999;}
+
+    .no-print{display:none !important;}
+    .page-section{max-width:100% !important;margin:0 !important;padding:0 !important;}
+    .page-card{border:none !important;box-shadow:none !important;padding:0 !important;margin-top:0 !important;}
+    .page-card-header button{display:none !important;}
 
     /* Modales que se imprimen (deuda por producto / deuda total) */
     body.printing-modal > *:not(.modal-overlay.printing){display:none !important;}
@@ -627,6 +657,7 @@
     </div>
   </nav>
 
+  <div id="viewResumen" class="view-section">
   <div class="kpi-strip">
     <div class="kpi-card"><div class="lab">Distribuidores</div><b class="v" id="kpiDistribuidores">0</b></div>
     <div class="kpi-card"><div class="lab">Total Facturado</div><b class="v" id="kpiFacturado">$0</b></div>
@@ -706,6 +737,116 @@
     <div class="main-footer">Powered by Netlify</div>
   </div>
 </div>
+  </div>
+
+  <div id="viewPedidos" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div>
+            <h2>Pedidos · Deuda total por producto</h2>
+            <div class="sub">Todo lo pendiente por entregar, agrupado por producto y medida, en todos los distribuidores.</div>
+          </div>
+          <button class="print-btn-modal no-print" id="btnImprimirPedidosView">🖨 Imprimir</button>
+        </div>
+        <div class="print-header">
+          <h2>Casa Dorada · Deuda total por producto</h2>
+          <div class="sub">Impreso el <span id="pvFechaImpresion"></span></div>
+        </div>
+        <div class="debt-report-toolbar no-print">
+          <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría o medida...">
+        </div>
+        <div class="debt-report-totals">
+          <div class="pd-card"><div class="lab">Productos con deuda</div><div class="v" id="pvCountLines">0</div></div>
+          <div class="pd-card"><div class="lab">Unidades pendientes</div><div class="v" id="pvUnid">0</div></div>
+          <div class="pd-card"><div class="lab">Se debe en total</div><div class="v" id="pvVal">$0</div></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <colgroup>
+              <col style="width:14%"><col style="width:38%"><col style="width:16%">
+              <col style="width:12%"><col style="width:10%"><col style="width:10%">
+            </colgroup>
+            <thead><tr><th>Categoría</th><th>Producto</th><th>Medida / Estilo</th><th class="num">Distribuidores</th><th class="num">Pendiente</th><th class="num">Debe</th></tr></thead>
+            <tbody id="pvBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewVendedores" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div>
+            <h2>Vendedores</h2>
+            <div class="sub">Crea aquí tus vendedores para poder elegirlos rápido al asignar un pedido.</div>
+          </div>
+        </div>
+        <div class="registry-add-row no-print">
+          <input type="text" id="inpNuevoVendedorView" placeholder="Nombre del vendedor">
+          <button class="btn-confirm" id="btnAgregarVendedorView" style="flex:0 0 auto;">Agregar</button>
+        </div>
+        <div class="registry-list" id="vendedoresListView"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewDistribuidores" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div>
+            <h2>Distribuidores</h2>
+            <div class="sub">Crea aquí los nombres de tus clientes distribuidores para poder elegirlos rápido al crear un pedido nuevo.</div>
+          </div>
+        </div>
+        <div class="registry-add-row no-print">
+          <input type="text" id="inpNuevoDistribuidorView" placeholder="Nombre del distribuidor / tienda">
+          <button class="btn-confirm" id="btnAgregarDistribuidorView" style="flex:0 0 auto;">Agregar</button>
+        </div>
+        <div class="registry-list" id="distribuidoresListView"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewInventario" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div>
+            <h2>Inventario · Lista de precios</h2>
+            <div class="sub">Consulta y edita los productos y precios del catálogo (incluye la lista de precios original).</div>
+          </div>
+          <button class="global-add-btn no-print" id="btnNuevoProductoView">+ Nuevo producto</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="inventarioSearch" placeholder="Buscar producto, categoría o medida...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Producto</th><th>Medida</th><th class="num">Precio</th><th></th></tr></thead>
+            <tbody id="inventarioBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="page-card" style="margin-top:16px;">
+        <div class="page-card-header">
+          <div>
+            <h3 style="margin:0;font-size:15px;">Deuda por producto</h3>
+            <div class="sub">Busca un producto para ver cuánto se debe de él en todos los distribuidores.</div>
+          </div>
+        </div>
+        <div class="field product-search-wrap no-print">
+          <input type="text" id="invPdSearchInput" placeholder="Ej. Sábana Silver, toalla, cobija..." autocomplete="off">
+          <div class="product-search-results" id="invPdSearchResults" style="display:none;"></div>
+        </div>
+        <div id="invPdResultZone"></div>
+      </div>
+    </div>
+  </div>
 
 <div class="toast" id="toast"></div>
 
@@ -724,6 +865,7 @@ const DEFAULT_APPDATA = {
   extras:[],              // [{distId, productoIdx, cantidad, precio}] — líneas agregadas a un pedido
   nuevosDistribuidores:[],// [{id, nombre, fecha}] — distribuidores creados desde cero
   customProducts:[],      // [{categoria, producto, medida, precio}] — productos nuevos del catálogo (ej. toallas)
+  productOverrides:{},    // {idx: {categoria, producto, medida, precio}} — ediciones a productos ORIGINALES de la lista de precios
   catalogOverrides:{},    // {distId: {lineKey: {productoIdx, cantidad, precio, eliminado}}} — ediciones a líneas originales
   distNameOverrides:{},   // {distId: nuevoNombre} — renombres de distribuidores/proveedores
   distVendedorOverrides:{},  // {distId: nombreVendedor} — vendedor asignado a cada distribuidor
@@ -884,9 +1026,23 @@ function parseFechaToTime(fecha){
   return isNaN(t) ? null : t;
 }
 
-// Combined product catalog: original products + company products added via "Nuevo producto"
+// Combined product catalog: original products (con posibles ediciones) + company products added via "Nuevo producto"
 function getAllProducts(){
-  return [...CATALOG.productos, ...(APPDATA.customProducts||[])];
+  const overrides = APPDATA.productOverrides || {};
+  const base = CATALOG.productos.map((p, idx) => overrides[idx] ? {...p, ...overrides[idx]} : p);
+  return [...base, ...(APPDATA.customProducts||[])];
+}
+
+// Cambia solo el precio de un producto (original o propio) desde la vista de Inventario
+function setProductPrice(idx, precio){
+  const baseLen = CATALOG.productos.length;
+  if(idx >= baseLen){
+    const ci = idx - baseLen;
+    if(APPDATA.customProducts && APPDATA.customProducts[ci]) APPDATA.customProducts[ci] = {...APPDATA.customProducts[ci], precio};
+  }else{
+    if(!APPDATA.productOverrides) APPDATA.productOverrides = {};
+    APPDATA.productOverrides[idx] = {...(APPDATA.productOverrides[idx]||{}), precio};
+  }
 }
 
 // Lista combinada de vendedores: los creados manualmente (registro) + los ya asignados a algún pedido.
@@ -1353,6 +1509,304 @@ function renderAll(){
   renderSidebar();
   renderMain();
   renderSummaryStrip();
+  renderPedidosView();
+  renderVendedoresView();
+  renderDistribuidoresView();
+  renderInventarioView();
+}
+
+// ---------- vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario) ----------
+let currentView = 'resumen';
+function switchView(viewName){
+  currentView = viewName;
+  ['resumen','pedidos','vendedores','distribuidores','inventario'].forEach(name=>{
+    const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
+    if(el) el.style.display = (name === viewName) ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.nav === viewName);
+  });
+  if(viewName === 'pedidos') renderPedidosView();
+  if(viewName === 'vendedores') renderVendedoresView();
+  if(viewName === 'distribuidores') renderDistribuidoresView();
+  if(viewName === 'inventario') renderInventarioView();
+}
+
+// ---- Pedidos: deuda total por producto (agrupada), vista completa ----
+let pedidosViewSearchTerm = '';
+function computeDebtGroups(){
+  const dists = getAllDistributors();
+  const grupos = {};
+  dists.forEach(d=>{
+    getOrderLines(d.id).forEach(l=>{
+      const ent = Math.min(getEntregado(d.id, l.key), l.cantidad);
+      const pend = l.cantidad - ent;
+      if(pend <= 0) return;
+      const pendVal = pend * l.precio;
+      const categoria = l.categoria || 'Sin categoría';
+      const medida = l.medida || '—';
+      const key = categoria+'|'+l.producto+'|'+medida;
+      if(!grupos[key]) grupos[key] = {categoria, producto:l.producto, medida, pend:0, pendVal:0, nDist:new Set()};
+      grupos[key].pend += pend;
+      grupos[key].pendVal += pendVal;
+      grupos[key].nDist.add(d.nombre);
+    });
+  });
+  const rows = Object.values(grupos).map(g => ({...g, nDist: g.nDist.size}));
+  rows.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
+  return rows;
+}
+function renderPedidosView(){
+  const tbody = document.getElementById('pvBody');
+  if(!tbody) return;
+  const rows = computeDebtGroups();
+  const t = pedidosViewSearchTerm.trim().toLowerCase();
+  const filtered = !t ? rows : rows.filter(r =>
+    r.producto.toLowerCase().includes(t) || r.categoria.toLowerCase().includes(t) || r.medida.toLowerCase().includes(t)
+  );
+  let fVal=0, fUnid=0, lastCat=null, bodyHtml='';
+  filtered.forEach(r=>{
+    if(r.categoria !== lastCat){
+      bodyHtml += `<tr class="cat-row"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
+      lastCat = r.categoria;
+    }
+    fVal += r.pendVal; fUnid += r.pend;
+    bodyHtml += `<tr><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
+      <td class="num">${r.nDist}</td><td class="num">${fmtNum(r.pend)}</td><td class="num pend-val pos">${fmt(r.pendVal)}</td></tr>`;
+  });
+  tbody.innerHTML = bodyHtml || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
+  document.getElementById('pvCountLines').textContent = filtered.length;
+  document.getElementById('pvUnid').textContent = fmtNum(fUnid);
+  document.getElementById('pvVal').textContent = fmt(fVal);
+  const fechaEl = document.getElementById('pvFechaImpresion');
+  if(fechaEl) fechaEl.textContent = new Date().toLocaleDateString('es-CO');
+}
+
+// ---- Vendedores: vista completa (antes era un modal) ----
+function renderVendedoresView(){
+  const listEl = document.getElementById('vendedoresListView');
+  if(!listEl) return;
+  const asignados = new Set(getAllDistributors().map(d=>d.vendedor).filter(Boolean));
+  const todos = getAllVendedores();
+  listEl.innerHTML = todos.length ? todos.map(v => `
+    <div class="registry-item">
+      <span>${escapeHtml(v)}</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        ${asignados.has(v) ? `<span class="tag">En uso</span>` : ''}
+        <button class="icon-btn icon-delete no-print" data-v="${escapeAttr(v)}" title="Quitar del listado">🗑</button>
+      </span>
+    </div>`).join('') : `<div class="registry-empty">Aún no has creado vendedores.</div>`;
+  listEl.querySelectorAll('button[data-v]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      APPDATA.vendedoresRegistry = (APPDATA.vendedoresRegistry||[]).filter(v=>v!==btn.dataset.v);
+      await saveAppData(APPDATA);
+      renderAll();
+    });
+  });
+}
+
+// ---- Distribuidores: vista completa (antes era un modal) ----
+function renderDistribuidoresView(){
+  const listEl = document.getElementById('distribuidoresListView');
+  if(!listEl) return;
+  const conPedidos = new Set(getAllDistributors().map(d=>d.nombre));
+  const todos = getAllDistribuidorNombres();
+  listEl.innerHTML = todos.length ? todos.map(n => `
+    <div class="registry-item">
+      <span>${escapeHtml(n)}</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
+        <button class="icon-btn icon-delete no-print" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
+      </span>
+    </div>`).join('') : `<div class="registry-empty">Aún no has creado distribuidores.</div>`;
+  listEl.querySelectorAll('button[data-n]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
+      await saveAppData(APPDATA);
+      renderAll();
+    });
+  });
+}
+
+// ---- Inventario: lista de precios completa, editable (incluye los productos originales) ----
+let inventarioSearchTerm = '';
+function renderInventarioView(){
+  const body = document.getElementById('inventarioBody');
+  if(!body) return;
+  const baseLen = CATALOG.productos.length;
+  const products = getAllProducts();
+  const term = inventarioSearchTerm.trim().toLowerCase();
+  const rows = products
+    .map((p, idx) => ({p, idx}))
+    .filter(({p}) => !term || (p.producto||'').toLowerCase().includes(term) || (p.categoria||'').toLowerCase().includes(term) || (p.medida||'').toLowerCase().includes(term));
+  rows.sort((a,b)=> (a.p.categoria||'').localeCompare(b.p.categoria||'') || (a.p.producto||'').localeCompare(b.p.producto||'') || (a.p.medida||'').localeCompare(b.p.medida||''));
+
+  let lastCat = null;
+  let html = '';
+  rows.forEach(({p, idx})=>{
+    const cat = p.categoria || 'Sin categoría';
+    if(cat !== lastCat){
+      html += `<tr class="cat-row"><td colspan="4">${escapeHtml(cat)}</td></tr>`;
+      lastCat = cat;
+    }
+    const isCustom = idx >= baseLen;
+    const isOverridden = !isCustom && APPDATA.productOverrides && APPDATA.productOverrides[idx];
+    html += `<tr>
+      <td><span class="prod-name">${escapeHtml(p.producto)}</span>${isOverridden ? '<span class="edited-tag">✎ editado</span>' : ''}${isCustom ? '<span class="edited-tag">producto propio</span>' : ''}</td>
+      <td class="inv-medida">${escapeHtml(p.medida||'—')}</td>
+      <td class="num"><input type="number" min="0" class="inv-precio-input" data-idx="${idx}" value="${p.precio||0}"></td>
+      <td class="row-actions">
+        <button class="icon-btn icon-edit inv-edit-btn" data-idx="${idx}" title="Editar producto">✎</button>
+        ${isOverridden ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
+        ${isCustom ? `<button class="icon-btn icon-delete inv-delete-btn" data-idx="${idx}" title="Eliminar producto">🗑</button>` : ''}
+      </td>
+    </tr>`;
+  });
+  body.innerHTML = html || `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
+
+  body.querySelectorAll('.inv-precio-input').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const idx = parseInt(e.target.dataset.idx, 10);
+      let v = parseFloat(e.target.value);
+      if(isNaN(v) || v<0) v = 0;
+      setProductPrice(idx, v);
+      await saveAppData(APPDATA);
+      renderAll();
+      showToast('Precio actualizado');
+    });
+  });
+  body.querySelectorAll('.inv-edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openEditProductModal(parseInt(btn.dataset.idx, 10)));
+  });
+  body.querySelectorAll('.inv-restore-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = parseInt(btn.dataset.idx, 10);
+      if(APPDATA.productOverrides) delete APPDATA.productOverrides[idx];
+      await saveAppData(APPDATA);
+      renderAll();
+      showToast('Producto restaurado a su versión original');
+    });
+  });
+  body.querySelectorAll('.inv-delete-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = parseInt(btn.dataset.idx, 10);
+      if(!confirm('¿Eliminar este producto del catálogo?')) return;
+      deleteCustomProduct(idx - baseLen);
+      await saveAppData(APPDATA);
+      renderAll();
+      showToast('Producto eliminado');
+    });
+  });
+}
+
+// Edita cualquier producto (uno original de la lista de precios, o uno propio) de forma unificada
+function openEditProductModal(idx){
+  const products = getAllProducts();
+  const p = products[idx];
+  if(!p) return;
+  const baseLen = CATALOG.productos.length;
+  const isCustom = idx >= baseLen;
+  const overlay = openModal(`
+    <h3>Editar producto</h3>
+    <div class="field">
+      <label>Categoría</label>
+      <input type="text" id="inpEditProdCategoria" value="${escapeAttr(p.categoria||'')}">
+    </div>
+    <div class="field">
+      <label>Nombre del producto</label>
+      <input type="text" id="inpEditProdNombre" value="${escapeAttr(p.producto||'')}">
+    </div>
+    <div class="field">
+      <label>Medida / presentación (opcional)</label>
+      <input type="text" id="inpEditProdMedida" value="${escapeAttr(p.medida||'')}">
+    </div>
+    <div class="field">
+      <label>Precio unitario</label>
+      <input type="number" min="0" id="inpEditProdPrecio" value="${p.precio||0}">
+    </div>
+    <div class="hint">${isCustom
+      ? 'Esto corrige el producto en el catálogo. Los pedidos ya guardados con este producto mostrarán los datos corregidos.'
+      : 'Esto corrige el producto en la lista de precios original. Los pedidos que ya usan este producto mostrarán los datos corregidos.'}</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Guardar cambios</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const categoria = overlay.querySelector('#inpEditProdCategoria').value.trim() || 'OTROS';
+    const producto = overlay.querySelector('#inpEditProdNombre').value.trim();
+    const medida = overlay.querySelector('#inpEditProdMedida').value.trim();
+    const precio = parseFloat(overlay.querySelector('#inpEditProdPrecio').value) || 0;
+    if(!producto){ showToast('Escribe el nombre del producto'); return; }
+    if(isCustom){
+      APPDATA.customProducts[idx-baseLen] = {categoria, producto, medida, precio};
+    }else{
+      if(!APPDATA.productOverrides) APPDATA.productOverrides = {};
+      APPDATA.productOverrides[idx] = {categoria, producto, medida, precio};
+    }
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+    showToast('Producto actualizado');
+  });
+}
+
+// ---- Inventario: deuda por producto (buscador embebido en la misma vista) ----
+function renderInvProductDebt(productoIdx){
+  const zone = document.getElementById('invPdResultZone');
+  if(!zone) return;
+  const products = getAllProducts();
+  const dists = getAllDistributors();
+  const prod = products[productoIdx];
+  if(!prod) return;
+  let totalPedidoUnid=0, totalEntregadoUnid=0, totalPendienteUnid=0, totalPendienteVal=0, totalPedidoVal=0;
+  const porDistribuidor = [];
+  dists.forEach(d=>{
+    const lines = getOrderLines(d.id).filter(l=>l.productoIdx===productoIdx);
+    if(!lines.length) return;
+    let dPedido=0, dEntregado=0, dPendiente=0, dPendienteVal=0, dPedidoVal=0;
+    lines.forEach(l=>{
+      const ent = Math.min(getEntregado(d.id, l.key), l.cantidad);
+      dPedido += l.cantidad;
+      dEntregado += ent;
+      dPendiente += (l.cantidad-ent);
+      dPendienteVal += (l.cantidad-ent) * l.precio;
+      dPedidoVal += l.cantidad * l.precio;
+    });
+    totalPedidoUnid += dPedido;
+    totalEntregadoUnid += dEntregado;
+    totalPendienteUnid += dPendiente;
+    totalPendienteVal += dPendienteVal;
+    totalPedidoVal += dPedidoVal;
+    if(dPendienteVal > 0){
+      porDistribuidor.push({nombre:d.nombre, id:d.id, dPendiente, dPendienteVal});
+    }
+  });
+  porDistribuidor.sort((a,b)=> b.dPendienteVal - a.dPendienteVal);
+
+  zone.innerHTML = `
+    <div class="product-debt-summary">
+      <div class="pd-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span>${escapeHtml(prod.producto)} ${prod.medida ? '· '+escapeHtml(prod.medida) : ''}</span>
+      </div>
+      <div class="pd-cards">
+        <div class="pd-card"><div class="lab">Pedido total</div><div class="v">${fmt(totalPedidoVal)}</div></div>
+        <div class="pd-card"><div class="lab">Unidades pedidas</div><div class="v">${fmtNum(totalPedidoUnid)}</div></div>
+        <div class="pd-card"><div class="lab">Unidades pendientes</div><div class="v">${fmtNum(totalPendienteUnid)}</div></div>
+        <div class="pd-card"><div class="lab">Se debe en total</div><div class="v" style="color:var(--gold-dark);">${fmt(totalPendienteVal)}</div></div>
+      </div>
+      ${porDistribuidor.length ? `
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Distribuidor</th><th class="num">Unid. pendientes</th><th class="num">Debe</th></tr></thead>
+        <tbody>
+          ${porDistribuidor.map(r=>`<tr><td>${escapeHtml(r.nombre)}</td><td class="num">${fmtNum(r.dPendiente)}</td><td class="num pend-val pos">${fmt(r.dPendienteVal)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      </div>` : `<p style="color:var(--ink-soft);font-size:13px;">Nadie debe este producto actualmente — está totalmente entregado o sin pedidos.</p>`}
+    </div>
+  `;
 }
 
 // ---------- modals ----------
@@ -2207,31 +2661,98 @@ document.getElementById('btnLimpiarFiltrosTop').addEventListener('click', ()=>{
 });
 
 // ---------- barra de pestañas superior ----------
-// La app es de una sola pantalla (sidebar + detalle), así que "Resumen" y "Distribuidores"
-// mantienen la vista principal activa, mientras que "Pedidos", "Vendedores" e "Inventario"
-// abren el panel correspondiente que ya existía en la barra de herramientas.
-function setActiveNavTab(tabName){
-  document.querySelectorAll('.nav-tab').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.nav === tabName);
+// Cada pestaña ahora es una vista completa: cambian de pantalla dentro de la misma app,
+// sin abrir modales. Ver switchView() más arriba.
+document.getElementById('navTabResumen').addEventListener('click', ()=> switchView('resumen'));
+document.getElementById('navTabPedidos').addEventListener('click', ()=> switchView('pedidos'));
+document.getElementById('navTabVendedores').addEventListener('click', ()=> switchView('vendedores'));
+document.getElementById('navTabDistribuidores').addEventListener('click', ()=> switchView('distribuidores'));
+document.getElementById('navTabInventario').addEventListener('click', ()=> switchView('inventario'));
+
+// Vista "Pedidos": búsqueda e impresión
+document.getElementById('pedidosViewSearch').addEventListener('input', (e)=>{
+  pedidosViewSearchTerm = e.target.value;
+  renderPedidosView();
+});
+document.getElementById('btnImprimirPedidosView').addEventListener('click', ()=> window.print());
+
+// Vista "Vendedores": agregar nuevo
+document.getElementById('btnAgregarVendedorView').addEventListener('click', async ()=>{
+  const inp = document.getElementById('inpNuevoVendedorView');
+  const val = inp.value.trim();
+  if(!val){ showToast('Escribe un nombre'); return; }
+  if(!APPDATA.vendedoresRegistry) APPDATA.vendedoresRegistry = [];
+  if(!APPDATA.vendedoresRegistry.includes(val)) APPDATA.vendedoresRegistry.push(val);
+  await saveAppData(APPDATA);
+  inp.value = '';
+  renderAll();
+});
+document.getElementById('inpNuevoVendedorView').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnAgregarVendedorView').click(); }
+});
+
+// Vista "Distribuidores": agregar nuevo
+document.getElementById('btnAgregarDistribuidorView').addEventListener('click', async ()=>{
+  const inp = document.getElementById('inpNuevoDistribuidorView');
+  const val = inp.value.trim();
+  if(!val){ showToast('Escribe un nombre'); return; }
+  if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
+  if(!APPDATA.distribuidoresRegistry.includes(val)) APPDATA.distribuidoresRegistry.push(val);
+  await saveAppData(APPDATA);
+  inp.value = '';
+  renderAll();
+  showToast('Distribuidor creado. Ya puedes elegirlo al crear un pedido.');
+});
+document.getElementById('inpNuevoDistribuidorView').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnAgregarDistribuidorView').click(); }
+});
+
+// Vista "Inventario": búsqueda, nuevo producto y deuda por producto
+document.getElementById('inventarioSearch').addEventListener('input', (e)=>{
+  inventarioSearchTerm = e.target.value;
+  renderInventarioView();
+});
+document.getElementById('btnNuevoProductoView').addEventListener('click', openNewProductModal);
+
+(function wireInventarioDebtSearch(){
+  const input = document.getElementById('invPdSearchInput');
+  const resultsBox = document.getElementById('invPdSearchResults');
+  function showMatches(term){
+    const products = getAllProducts();
+    const t = term.trim().toLowerCase();
+    if(!t){ resultsBox.style.display='none'; resultsBox.innerHTML=''; return; }
+    const matches = products
+      .map((p, idx) => ({p, idx}))
+      .filter(({p}) => (p.producto||'').toLowerCase().startsWith(t) || (p.categoria||'').toLowerCase().startsWith(t) || (p.medida||'').toLowerCase().startsWith(t))
+      .slice(0, 30);
+    if(!matches.length){
+      resultsBox.innerHTML = `<div class="psr-empty">Sin coincidencias</div>`;
+    }else{
+      resultsBox.innerHTML = matches.map(({p,idx}) =>
+        `<div class="psr-item" data-idx="${idx}">
+           <div class="psr-cat">${escapeHtml(p.categoria||'')}</div>
+           <div>${escapeHtml(p.producto)} ${p.medida ? '· '+escapeHtml(p.medida) : ''}</div>
+         </div>`
+      ).join('');
+      resultsBox.querySelectorAll('.psr-item').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          const idx = parseInt(el.dataset.idx, 10);
+          const products = getAllProducts();
+          input.value = products[idx].producto + (products[idx].medida ? ' · '+products[idx].medida : '');
+          resultsBox.style.display='none';
+          renderInvProductDebt(idx);
+        });
+      });
+    }
+    resultsBox.style.display='block';
+  }
+  input.addEventListener('input', ()=> showMatches(input.value));
+  input.addEventListener('focus', ()=> { if(input.value.trim()) showMatches(input.value); });
+  document.addEventListener('click', (e)=>{
+    if(!resultsBox.contains(e.target) && e.target !== input) resultsBox.style.display='none';
   });
-}
-document.getElementById('navTabResumen').addEventListener('click', ()=>setActiveNavTab('resumen'));
-document.getElementById('navTabDistribuidores').addEventListener('click', ()=>{
-  setActiveNavTab('distribuidores');
-  document.getElementById('btnGestionarDistribuidores').click();
-});
-document.getElementById('navTabVendedores').addEventListener('click', ()=>{
-  setActiveNavTab('vendedores');
-  document.getElementById('btnGestionarVendedores').click();
-});
-document.getElementById('navTabPedidos').addEventListener('click', ()=>{
-  setActiveNavTab('pedidos');
-  document.getElementById('btnDeudaTotal').click();
-});
-document.getElementById('navTabInventario').addEventListener('click', ()=>{
-  setActiveNavTab('inventario');
-  document.getElementById('btnFiltroProducto').click();
-});
+})();
+
 document.getElementById('tabTodos').addEventListener('click', ()=>{ sidebarTab='todos'; renderSidebar(); });
 document.getElementById('tabPorSaldar').addEventListener('click', ()=>{ sidebarTab='porsaldar'; renderSidebar(); });
 document.getElementById('tabSaldados').addEventListener('click', ()=>{ sidebarTab='saldados'; renderSidebar(); });
