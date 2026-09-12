@@ -876,6 +876,7 @@ const DEFAULT_APPDATA = {
   distUrgenteOverrides:{},   // {distId: true/false} — marca este pedido como urgente
   vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
   distribuidoresRegistry:[], // [nombre, ...] — distribuidores/clientes creados manualmente (aunque no tengan pedidos aún)
+  distribuidoresEliminados:[], // [distId, ...] — pedidos/distribuidores borrados (ej. digitados dos veces por error)
   auth:{usuario:'admin', password:'CasaDorada2026'} // usuario y contraseña para entrar a la app
 };
 // ---------- Firebase: base de datos compartida ----------
@@ -962,7 +963,8 @@ const fmtNum = n => Math.round(n).toLocaleString('es-CO');
 function getAllDistributors(){
   const base = CATALOG.distribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha}));
   const custom = APPDATA.nuevosDistribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha, vendedor: d.vendedor, fechaDespacho: d.fechaDespacho}));
-  const all = [...base, ...custom];
+  const eliminados = APPDATA.distribuidoresEliminados || [];
+  const all = [...base, ...custom].filter(d => !eliminados.includes(d.id));
   return all.map(d => ({
     ...d,
     nombre: (APPDATA.distNameOverrides && APPDATA.distNameOverrides[d.id]) || d.nombre,
@@ -972,6 +974,16 @@ function getAllDistributors(){
     observaciones: getObservaciones(d.id),
     urgente: !!(APPDATA.distUrgenteOverrides && APPDATA.distUrgenteOverrides[d.id])
   }));
+}
+
+// Borra por completo un pedido/distribuidor (ej. cuando quedó digitado dos veces por error).
+// No borra físicamente los datos viejos (por seguridad), solo lo marca como eliminado
+// para que desaparezca de todas las listas (Todos, Pendientes, Saldados, etc.).
+async function eliminarDistribuidor(distId){
+  if(!APPDATA.distribuidoresEliminados) APPDATA.distribuidoresEliminados = [];
+  if(!APPDATA.distribuidoresEliminados.includes(distId)) APPDATA.distribuidoresEliminados.push(distId);
+  if(selectedDistId === distId) selectedDistId = null;
+  await saveAppData(APPDATA);
 }
 
 // ---------- observaciones (varias notas por distribuidor/pedido) ----------
@@ -1408,6 +1420,7 @@ function renderMain(){
         <button class="print-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir pedido</button>
         <button class="btn-nuevo-pedido" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido para este cliente</button>
         <button class="add-btn" id="btnAgregarLinea">+ Agregar producto al pedido</button>
+        <button class="icon-btn icon-delete" id="btnEliminarPedido" title="Eliminar este pedido por completo" style="border:1px solid #B3261E;color:#B3261E;padding:8px 14px;border-radius:8px;background:#fff;">🗑 Eliminar pedido</button>
       </div>
     </div>
     <div class="observaciones-block">
@@ -1482,6 +1495,12 @@ function renderMain(){
   });
   const btnAgregar = document.getElementById('btnAgregarLinea');
   if(btnAgregar) btnAgregar.addEventListener('click', ()=> openAddProductModal(selectedDistId));
+  document.getElementById('btnEliminarPedido').addEventListener('click', async ()=>{
+    const ok = confirm(`¿Seguro que quieres eliminar por completo el pedido de "${dist.nombre}"?\n\nEsta acción no se puede deshacer.`);
+    if(!ok) return;
+    await eliminarDistribuidor(selectedDistId);
+    renderAll();
+  });
   document.getElementById('btnRenameDist').addEventListener('click', ()=> openEditDistModal(dist));
   document.getElementById('inpFechaDespachoInline').addEventListener('change', async (e)=>{
     const val = e.target.value;
