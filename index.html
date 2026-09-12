@@ -1419,6 +1419,7 @@ function renderMain(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="print-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir pedido</button>
         <button class="btn-nuevo-pedido" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido para este cliente</button>
+        <button class="btn-nuevo-pedido" id="btnDuplicarPedido" title="Copiar todas las líneas de este pedido a un distribuidor NUEVO y distinto">⧉ Duplicar pedido para otro distribuidor</button>
         <button class="add-btn" id="btnAgregarLinea">+ Agregar producto al pedido</button>
         <button class="icon-btn icon-delete" id="btnEliminarPedido" title="Eliminar este pedido por completo" style="border:1px solid #B3261E;color:#B3261E;padding:8px 14px;border-radius:8px;background:#fff;">🗑 Eliminar pedido</button>
       </div>
@@ -1540,6 +1541,7 @@ function renderMain(){
     if(e.key === 'Enter'){ e.preventDefault(); submitNuevaObservacion(); }
   });
   document.getElementById('btnNuevoPedidoCliente').addEventListener('click', ()=> openNewOrderForClientModal(dist));
+  document.getElementById('btnDuplicarPedido').addEventListener('click', ()=> openDuplicatePedidoModal(dist));
 
   const searchInp = document.getElementById('searchProductoPedido');
   if(searchInp){
@@ -2485,6 +2487,61 @@ function openNewOrderForClientModal(dist){
     overlay.remove();
     renderAll();
     showToast('Nuevo pedido creado para ' + dist.nombre);
+  });
+}
+
+// Duplica un pedido completo (todas sus líneas de producto, cantidades y precios) hacia un
+// distribuidor NUEVO y distinto — útil cuando llega un pedido igual o parecido para otro cliente.
+// El pedido original NO se toca; se crean copias como líneas "extra" del nuevo distribuidor.
+function openDuplicatePedidoModal(dist){
+  const sourceLines = getOrderLines(dist.id);
+  const overlay = openModal(`
+    <h3>Duplicar pedido de ${escapeHtml(dist.nombre)}</h3>
+    <div class="hint">Se copiarán las ${sourceLines.length} línea(s) de producto de este pedido (con sus cantidades y precios) a un pedido nuevo, para un distribuidor DISTINTO. El pedido original no se modifica.</div>
+    <div class="field">
+      <label>Nombre del nuevo distribuidor</label>
+      <input type="text" id="inpNombreDup" placeholder="Ej. Almacén La Rebaja">
+    </div>
+    <div class="field">
+      <label>Vendedor asignado (opcional)</label>
+      <input type="text" id="inpVendedorDup" list="dlVendedoresDup" value="${escapeAttr(dist.vendedor||'')}">
+      <datalist id="dlVendedoresDup">${getAllVendedores().map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Fecha del pedido (opcional)</label>
+      <input type="date" id="inpFechaDup">
+    </div>
+    <div class="field">
+      <label>Fecha máxima de despacho (opcional)</label>
+      <input type="date" id="inpFechaDespachoDup">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Duplicar pedido</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const nombre = overlay.querySelector('#inpNombreDup').value.trim();
+    if(!nombre){ showToast('Escribe el nombre del nuevo distribuidor'); return; }
+    if(normalizeText(nombre) === normalizeText(dist.nombre)){
+      showToast('Escribe el nombre de un distribuidor distinto al original');
+      return;
+    }
+    const vendedor = overlay.querySelector('#inpVendedorDup').value.trim();
+    const fecha = overlay.querySelector('#inpFechaDup').value;
+    const fechaDespacho = overlay.querySelector('#inpFechaDespachoDup').value;
+    const id = 'dup-' + Date.now();
+    APPDATA.nuevosDistribuidores.push({id, nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    registerVendedor(vendedor);
+    sourceLines.forEach(l=>{
+      APPDATA.extras.push({distId:id, productoIdx: l.productoIdx, cantidad: l.cantidad, precio: l.precio});
+    });
+    await saveAppData(APPDATA);
+    selectedDistId = id;
+    overlay.remove();
+    renderAll();
+    showToast('Pedido duplicado para ' + nombre);
   });
 }
 
