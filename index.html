@@ -213,16 +213,17 @@
   .dist-list{max-height:calc(100vh - 320px);overflow-y:auto;padding:8px 8px 16px;}
   .sidebar-tabs{display:flex;gap:6px;padding:0 14px 12px;flex-wrap:wrap;}
   .sidebar-tab-btn{
-    flex:1;min-width:80px;padding:7px 6px;border-radius:20px;border:1px solid var(--line);background:var(--cream-2);
-    color:var(--ink-soft);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter';
-    display:flex;align-items:center;justify-content:center;gap:5px;transition:background .15s,border-color .15s,color .15s;
+    flex:0 1 auto;min-width:0;padding:7px 10px;border-radius:20px;border:1px solid var(--line);background:var(--cream-2);
+    color:var(--ink-soft);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter';white-space:nowrap;
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:background .15s,border-color .15s,color .15s;
   }
   .sidebar-tab-btn:hover{background:var(--line);}
   .sidebar-tab-btn.active{background:var(--gold);border-color:var(--gold);color:var(--white);}
   .sidebar-tab-btn.vencidos-tab.active{background:#B3261E;border-color:#B3261E;}
   .sidebar-tab-btn.saldados-tab.active{background:#3E7B4F;border-color:#3E7B4F;}
   .sidebar-tab-btn .count{
-    background:rgba(0,0,0,.12);border-radius:20px;padding:0 6px;font-size:10.5px;min-width:16px;text-align:center;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+    background:rgba(0,0,0,.12);border-radius:20px;padding:0 6px;height:15px;font-size:10.5px;min-width:16px;text-align:center;
   }
   .sidebar-tab-btn.active .count{background:rgba(255,255,255,.28);}
   .urgente-badge{
@@ -1045,6 +1046,25 @@ function setProductPrice(idx, precio){
   }
 }
 
+// ---- Búsqueda de productos: solo compara contra los datos del PRODUCTO (categoría, nombre, medida),
+// tolerando plural/singular (ej. "FUNDAS" encuentra "Funda de Almohada...") y acentos, para que
+// al buscar solo aparezca lo que realmente coincide con el producto buscado.
+function normalizeText(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+function matchesProductSearch(p, term){
+  const t = normalizeText(term);
+  if(!t) return true;
+  const haystack = normalizeText((p.categoria||'')+' '+(p.producto||'')+' '+(p.medida||''));
+  const words = t.split(/\s+/).filter(Boolean);
+  return words.every(w=>{
+    if(haystack.includes(w)) return true;
+    if(w.endsWith('s') && haystack.includes(w.slice(0,-1))) return true; // plural -> singular
+    if(!w.endsWith('s') && haystack.includes(w+'s')) return true;        // singular -> plural
+    return false;
+  });
+}
+
 // Lista combinada de vendedores: los creados manualmente (registro) + los ya asignados a algún pedido.
 // Se conserva el ORDEN EN QUE SE VAN AÑADIENDO (no alfabético): primero el registro (en el orden
 // en que se crearon con "Gestionar Vendedores"), y al final cualquier vendedor que haya sido escrito
@@ -1312,12 +1332,8 @@ function renderMain(){
   const allLines = getOrderLines(selectedDistId).sort((a,b)=> (a.categoria||'').localeCompare(b.categoria||'') || a.producto.localeCompare(b.producto));
   const totals = distTotals(selectedDistId);
 
-  const term = orderSearchTerm.trim().toLowerCase();
-  const lines = term ? allLines.filter(l =>
-    (l.producto||'').toLowerCase().includes(term) ||
-    (l.medida||'').toLowerCase().includes(term) ||
-    (l.categoria||'').toLowerCase().includes(term)
-  ) : allLines;
+  const term = orderSearchTerm.trim();
+  const lines = term ? allLines.filter(l => matchesProductSearch(l, term)) : allLines;
 
   let lastCat = null;
   let rowsHtml = '';
@@ -1560,10 +1576,8 @@ function renderPedidosView(){
   const tbody = document.getElementById('pvBody');
   if(!tbody) return;
   const rows = computeDebtGroups();
-  const t = pedidosViewSearchTerm.trim().toLowerCase();
-  const filtered = !t ? rows : rows.filter(r =>
-    r.producto.toLowerCase().includes(t) || r.categoria.toLowerCase().includes(t) || r.medida.toLowerCase().includes(t)
-  );
+  const t = pedidosViewSearchTerm.trim();
+  const filtered = !t ? rows : rows.filter(r => matchesProductSearch(r, t));
   let fVal=0, fUnid=0, lastCat=null, bodyHtml='';
   filtered.forEach(r=>{
     if(r.categoria !== lastCat){
@@ -1635,10 +1649,10 @@ function renderInventarioView(){
   if(!body) return;
   const baseLen = CATALOG.productos.length;
   const products = getAllProducts();
-  const term = inventarioSearchTerm.trim().toLowerCase();
+  const term = inventarioSearchTerm.trim();
   const rows = products
     .map((p, idx) => ({p, idx}))
-    .filter(({p}) => !term || (p.producto||'').toLowerCase().includes(term) || (p.categoria||'').toLowerCase().includes(term) || (p.medida||'').toLowerCase().includes(term));
+    .filter(({p}) => matchesProductSearch(p, term));
   rows.sort((a,b)=> (a.p.categoria||'').localeCompare(b.p.categoria||'') || (a.p.producto||'').localeCompare(b.p.producto||'') || (a.p.medida||'').localeCompare(b.p.medida||''));
 
   let lastCat = null;
@@ -1855,10 +1869,10 @@ function printModal(overlay){
 
 // Construye las <option> de un <select> de productos, opcionalmente filtradas por texto de búsqueda
 function buildProductOptions(products, term, selectedIdx){
-  const t = (term||'').trim().toLowerCase();
+  const t = (term||'').trim();
   return products
     .map((p, idx) => ({p, idx}))
-    .filter(({p}) => !t || (p.producto||'').toLowerCase().includes(t) || (p.categoria||'').toLowerCase().includes(t) || (p.medida||'').toLowerCase().includes(t))
+    .filter(({p}) => matchesProductSearch(p, t))
     .map(({p, idx}) =>
       `<option value="${idx}" data-precio="${p.precio||0}" ${idx===selectedIdx?'selected':''}>${escapeHtml(p.categoria||'')} — ${escapeHtml(p.producto)} (${escapeHtml(p.medida||'')})</option>`
     ).join('');
@@ -2226,11 +2240,11 @@ function openProductDebtFilter(){
   const zone = overlay.querySelector('#pdResultZone');
 
   function showMatches(term){
-    const t = term.trim().toLowerCase();
+    const t = term.trim();
     if(!t){ resultsBox.style.display='none'; resultsBox.innerHTML=''; return; }
     const matches = products
       .map((p, idx) => ({p, idx}))
-      .filter(({p}) => (p.producto||'').toLowerCase().startsWith(t) || (p.categoria||'').toLowerCase().startsWith(t) || (p.medida||'').toLowerCase().startsWith(t))
+      .filter(({p}) => matchesProductSearch(p, t))
       .slice(0, 30);
     if(!matches.length){
       resultsBox.innerHTML = `<div class="psr-empty">Sin coincidencias</div>`;
@@ -2500,10 +2514,8 @@ function openTotalDebtReport(){
   const searchInp = overlay.querySelector('#tdrSearch');
 
   function paint(term){
-    const t = (term||'').trim().toLowerCase();
-    const filtered = !t ? rows : rows.filter(r =>
-      r.producto.toLowerCase().includes(t) || r.categoria.toLowerCase().includes(t) || r.medida.toLowerCase().includes(t)
-    );
+    const t = (term||'').trim();
+    const filtered = !t ? rows : rows.filter(r => matchesProductSearch(r, t));
     let fVal=0, fUnid=0;
     let lastCat = null;
     let bodyHtml = '';
@@ -2719,11 +2731,11 @@ document.getElementById('btnNuevoProductoView').addEventListener('click', openNe
   const resultsBox = document.getElementById('invPdSearchResults');
   function showMatches(term){
     const products = getAllProducts();
-    const t = term.trim().toLowerCase();
+    const t = term.trim();
     if(!t){ resultsBox.style.display='none'; resultsBox.innerHTML=''; return; }
     const matches = products
       .map((p, idx) => ({p, idx}))
-      .filter(({p}) => (p.producto||'').toLowerCase().startsWith(t) || (p.categoria||'').toLowerCase().startsWith(t) || (p.medida||'').toLowerCase().startsWith(t))
+      .filter(({p}) => matchesProductSearch(p, t))
       .slice(0, 30);
     if(!matches.length){
       resultsBox.innerHTML = `<div class="psr-empty">Sin coincidencias</div>`;
