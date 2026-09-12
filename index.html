@@ -1065,6 +1065,21 @@ function matchesProductSearch(p, term){
   });
 }
 
+// Como matchesProductSearch, pero SOLO compara contra el nombre del producto (no categoría, medida, etc.)
+// Se usa en el buscador de "Deuda total por producto" para que filtre únicamente por producto.
+function matchesProductNameOnly(p, term){
+  const t = normalizeText(term);
+  if(!t) return true;
+  const haystack = normalizeText(p.producto||'');
+  const words = t.split(/\s+/).filter(Boolean);
+  return words.every(w=>{
+    if(haystack.includes(w)) return true;
+    if(w.endsWith('s') && haystack.includes(w.slice(0,-1))) return true; // plural -> singular
+    if(!w.endsWith('s') && haystack.includes(w+'s')) return true;        // singular -> plural
+    return false;
+  });
+}
+
 // Lista combinada de vendedores: los creados manualmente (registro) + los ya asignados a algún pedido.
 // Se conserva el ORDEN EN QUE SE VAN AÑADIENDO (no alfabético): primero el registro (en el orden
 // en que se crearon con "Gestionar Vendedores"), y al final cualquier vendedor que haya sido escrito
@@ -2515,7 +2530,7 @@ function openTotalDebtReport(){
 
   function paint(term){
     const t = (term||'').trim();
-    const filtered = !t ? rows : rows.filter(r => matchesProductSearch(r, t));
+    const filtered = !t ? rows : rows.filter(r => matchesProductNameOnly(r, t));
     let fVal=0, fUnid=0;
     let lastCat = null;
     let bodyHtml = '';
