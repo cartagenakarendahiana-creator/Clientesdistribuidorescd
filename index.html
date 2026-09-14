@@ -193,6 +193,7 @@
     cursor:pointer;transition:background .15s;
   }
   .login-btn:hover{background:var(--gold-dark);}
+  .login-btn:disabled{background:var(--ink-soft);cursor:not-allowed;opacity:.7;}
 
   .layout{display:flex;gap:20px;max-width:1180px;margin:0 auto;min-height:calc(100vh - 96px);padding:0 24px 24px;}
   .sidebar{
@@ -369,6 +370,11 @@
   /* ---- Reporte de deuda total ---- */
   .debt-report-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
   .debt-report-toolbar input{flex:1;min-width:180px;}
+  .debt-report-toolbar select{
+    padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--white);
+    font-family:'Inter';font-size:13px;color:var(--ink);
+  }
+  .debt-report-toolbar select:focus{outline:2px solid var(--gold);border-color:var(--gold);}
   .debt-report-totals{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .debt-report-totals .pd-card{flex:1;min-width:130px;background:var(--cream-2);border-radius:8px;padding:10px 12px;}
   .debt-report-totals .pd-card .lab{font-size:10.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;}
@@ -611,7 +617,7 @@
     </div>
     <div class="login-error" id="loginError" style="display:none;">Usuario o contraseña incorrectos.</div>
     <div class="login-error" id="firebaseWarning" style="display:none;">⚠️ Falta configurar Firebase (ver firebaseConfig en el código). Mientras tanto no se guardan datos.</div>
-    <button class="login-btn" id="btnLogin">Entrar</button>
+    <button class="login-btn" id="btnLogin" disabled>Conectando…</button>
   </div>
 </div>
 
@@ -756,6 +762,11 @@
         </div>
         <div class="debt-report-toolbar no-print">
           <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría o medida...">
+          <select id="pedidosViewOrden">
+            <option value="az">Orden: Categoría / Producto (A-Z)</option>
+            <option value="deuda_desc">Deuda: Mayor a menor</option>
+            <option value="deuda_asc">Deuda: Menor a mayor</option>
+          </select>
         </div>
         <div class="debt-report-totals">
           <div class="pd-card"><div class="lab">Productos con deuda</div><div class="v" id="pvCountLines">0</div></div>
@@ -896,6 +907,7 @@ let dataRef = null;
 let firebaseReady = false;
 let firebaseReadyResolve;
 const firebaseReadyPromise = new Promise(res => firebaseReadyResolve = res);
+let pendingLocalWrite = null; // JSON del último dato que enviamos, para reconocer el eco de Firebase
 
 function initFirebaseSync(){
   if(!FIREBASE_CONFIGURADO){
@@ -917,11 +929,19 @@ function initFirebaseSync(){
   }
   dataRef.on('value', (snap)=>{
     const val = snap.val();
+    const valJSON = JSON.stringify(val);
+    // Cuando NOSOTROS guardamos, Firebase nos devuelve ("eco") ese mismo cambio por este
+    // mismo listener. Sin esta comprobación, cada guardado propio disparaba un renderAll()
+    // extra e innecesario (ya habíamos actualizado la pantalla localmente al guardar).
+    // Si los datos que llegan coinciden con lo último que enviamos, solo sincronizamos
+    // la referencia de APPDATA sin volver a dibujar nada.
+    const esEcoPropio = pendingLocalWrite !== null && valJSON === pendingLocalWrite;
+    pendingLocalWrite = null;
     APPDATA = val ? {...structuredClone(DEFAULT_APPDATA), ...val} : structuredClone(DEFAULT_APPDATA);
     if(!firebaseReady){
       firebaseReady = true;
       firebaseReadyResolve();
-    }else if(appRendered){
+    }else if(appRendered && !esEcoPropio){
       renderAll();
     }
   }, (err)=>{
@@ -938,9 +958,11 @@ async function saveAppData(data){
     return;
   }
   try{
+    pendingLocalWrite = JSON.stringify(data);
     await dataRef.set(data);
     showToast('Guardado');
   }catch(e){
+    pendingLocalWrite = null;
     console.error('firebase save error', e);
     showToast('No se pudo guardar, intenta de nuevo');
   }
@@ -957,6 +979,16 @@ function showToast(msg){
 
 const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
 const fmtNum = n => Math.round(n).toLocaleString('es-CO');
+
+// Pequeña utilidad para retrasar una función hasta que el usuario haga una pausa breve
+// al escribir (evita reconstruir tablas grandes en cada tecla presionada).
+function debounce(fn, wait){
+  let timer;
+  return function(...args){
+    clearTimeout(timer);
+    timer = setTimeout(()=> fn.apply(this, args), wait);
+  };
+}
 
 // ---------- data model ----------
 // Build full distributor list (catalog + custom-added), applying name overrides
@@ -1378,7 +1410,7 @@ function renderMain(){
           <span class="prod-medida">${escapeHtml(l.medida||'')}</span></td>
       <td class="num">${fmt(l.precio)}</td>
       <td class="num">${l.cantidad}</td>
-      <td class="num"><input type="number" min="0" class="entregado-input" data-key="${escapeAttr(l.key)}" value="${ent}"></td>
+      <td class="num"><input type="number" min="0" max="${l.cantidad}" class="entregado-input" data-key="${escapeAttr(l.key)}" value="${ent}"></td>
       <td class="num">${pend}</td>
       <td class="num pend-val ${pendVal>0?'pos':'zero'}">${fmt(pendVal)}</td>
       <td class="row-actions">
@@ -1464,9 +1496,14 @@ function renderMain(){
 
   main.querySelectorAll('.entregado-input').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
+      const key = e.target.dataset.key;
+      const line = allLines.find(l=>l.key===key);
       let v = parseFloat(e.target.value);
       if(isNaN(v) || v<0) v = 0;
-      setEntregado(selectedDistId, e.target.dataset.key, v);
+      // No permitimos guardar más unidades entregadas que las pedidas: evita datos
+      // inconsistentes (antes solo se "corregía" al redibujar, lo cual confundía).
+      if(line && v > line.cantidad) v = line.cantidad;
+      setEntregado(selectedDistId, key, v);
       await saveAppData(APPDATA);
       renderMain();
       renderSidebar();
@@ -1545,26 +1582,47 @@ function renderMain(){
 
   const searchInp = document.getElementById('searchProductoPedido');
   if(searchInp){
+    const debouncedSearch = debounce(()=>{
+      renderMain();
+      const val = document.getElementById('searchProductoPedido');
+      if(val){ val.focus(); const p = val.value.length; val.setSelectionRange(p,p); }
+    }, 150);
     searchInp.addEventListener('input', (e)=>{
       orderSearchTerm = e.target.value;
-      renderMain();
-      document.getElementById('searchProductoPedido').focus();
-      const val = document.getElementById('searchProductoPedido');
-      if(val){ const p = val.value.length; val.setSelectionRange(p,p); }
+      debouncedSearch();
     });
   }
 
   document.getElementById('btnImprimirPedido').addEventListener('click', ()=> window.print());
 }
 
+// Optimización de rendimiento: cada vista (Resumen/Pedidos/Vendedores/Distribuidores/Inventario)
+// vive en su propia sección del DOM y solo una está visible a la vez (ver switchView). Antes,
+// renderAll() reconstruía las 5 vistas completas —incluyendo las 4 que están ocultas— en CADA
+// acción del usuario (marcar una entrega, cambiar un precio, etc.), lo que rehacía cientos de
+// filas de tabla y volvía a enlazar sus eventos sin necesidad. Ahora solo se re-dibuja lo que
+// el usuario realmente está viendo; cuando cambia de pestaña, switchView() se encarga de refrescar
+// esa vista con los datos más recientes.
 function renderAll(){
-  renderSidebar();
-  renderMain();
-  renderSummaryStrip();
-  renderPedidosView();
-  renderVendedoresView();
-  renderDistribuidoresView();
-  renderInventarioView();
+  switch(currentView){
+    case 'resumen':
+      renderSidebar();
+      renderMain();
+      renderSummaryStrip();
+      break;
+    case 'pedidos':
+      renderPedidosView();
+      break;
+    case 'vendedores':
+      renderVendedoresView();
+      break;
+    case 'distribuidores':
+      renderDistribuidoresView();
+      break;
+    case 'inventario':
+      renderInventarioView();
+      break;
+  }
 }
 
 // ---------- vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario) ----------
@@ -1578,6 +1636,9 @@ function switchView(viewName){
   document.querySelectorAll('.nav-tab').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.nav === viewName);
   });
+  // Cada vista se refresca justo al entrar en ella, así siempre muestra los datos más
+  // recientes aunque se hayan cambiado mientras el usuario estaba en otra pestaña.
+  if(viewName === 'resumen'){ renderSidebar(); renderMain(); renderSummaryStrip(); }
   if(viewName === 'pedidos') renderPedidosView();
   if(viewName === 'vendedores') renderVendedoresView();
   if(viewName === 'distribuidores') renderDistribuidoresView();
@@ -1586,6 +1647,7 @@ function switchView(viewName){
 
 // ---- Pedidos: deuda total por producto (agrupada), vista completa ----
 let pedidosViewSearchTerm = '';
+let pedidosViewOrden = 'az';
 function computeDebtGroups(){
   const dists = getAllDistributors();
   const grupos = {};
@@ -1613,15 +1675,25 @@ function renderPedidosView(){
   if(!tbody) return;
   const rows = computeDebtGroups();
   const t = pedidosViewSearchTerm.trim();
-  const filtered = !t ? rows : rows.filter(r => matchesProductSearch(r, t));
+  let filtered = !t ? rows.slice() : rows.filter(r => matchesProductSearch(r, t));
+
+  if(pedidosViewOrden === 'deuda_desc'){
+    filtered.sort((a,b)=> b.pendVal - a.pendVal);
+  }else if(pedidosViewOrden === 'deuda_asc'){
+    filtered.sort((a,b)=> a.pendVal - b.pendVal);
+  }else{
+    filtered.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
+  }
+
   let fVal=0, fUnid=0, lastCat=null, bodyHtml='';
+  const agruparPorCategoria = pedidosViewOrden === 'az';
   filtered.forEach(r=>{
-    if(r.categoria !== lastCat){
+    if(agruparPorCategoria && r.categoria !== lastCat){
       bodyHtml += `<tr class="cat-row"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
       lastCat = r.categoria;
     }
     fVal += r.pendVal; fUnid += r.pend;
-    bodyHtml += `<tr><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
+    bodyHtml += `<tr><td>${agruparPorCategoria ? '' : escapeHtml(r.categoria)}</td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
       <td class="num">${r.nDist}</td><td class="num">${fmtNum(r.pend)}</td><td class="num pend-val pos">${fmt(r.pendVal)}</td></tr>`;
   });
   tbody.innerHTML = bodyHtml || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
@@ -2578,6 +2650,11 @@ function openTotalDebtReport(){
     <h3 class="no-print">Deuda total de productos — total por medida/estilo</h3>
     <div class="debt-report-toolbar no-print">
       <input type="text" id="tdrSearch" placeholder="Filtrar por producto, categoría o medida...">
+      <select id="tdrOrden">
+        <option value="az">Orden: Categoría / Producto (A-Z)</option>
+        <option value="deuda_desc">Deuda: Mayor a menor</option>
+        <option value="deuda_asc">Deuda: Menor a mayor</option>
+      </select>
       <button class="print-btn-modal" id="btnImprimirDeudaTotal">🖨 Imprimir</button>
     </div>
     <div class="debt-report-totals">
@@ -2603,20 +2680,31 @@ function openTotalDebtReport(){
   modalEl.classList.add('wide', 'debt-report-modal');
   const tbody = overlay.querySelector('#tdrBody');
   const searchInp = overlay.querySelector('#tdrSearch');
+  const ordenSel = overlay.querySelector('#tdrOrden');
 
-  function paint(term){
+  function paint(term, orden){
     const t = (term||'').trim();
-    const filtered = !t ? rows : rows.filter(r => matchesProductNameOnly(r, t));
+    let filtered = !t ? rows.slice() : rows.filter(r => matchesProductNameOnly(r, t));
+
+    if(orden === 'deuda_desc'){
+      filtered.sort((a,b)=> b.pendVal - a.pendVal);
+    }else if(orden === 'deuda_asc'){
+      filtered.sort((a,b)=> a.pendVal - b.pendVal);
+    }else{
+      filtered.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
+    }
+
     let fVal=0, fUnid=0;
     let lastCat = null;
     let bodyHtml = '';
+    const agruparPorCategoria = orden === 'az';
     filtered.forEach(r=>{
-      if(r.categoria !== lastCat){
+      if(agruparPorCategoria && r.categoria !== lastCat){
         bodyHtml += `<tr class="cat-row"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
         lastCat = r.categoria;
       }
       fVal += r.pendVal; fUnid += r.pend;
-      bodyHtml += `<tr><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
+      bodyHtml += `<tr><td>${agruparPorCategoria ? '' : escapeHtml(r.categoria)}</td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
         <td class="num">${r.nDist}</td><td class="num">${fmtNum(r.pend)}</td><td class="num pend-val pos">${fmt(r.pendVal)}</td></tr>`;
     });
     tbody.innerHTML = bodyHtml || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
@@ -2624,8 +2712,9 @@ function openTotalDebtReport(){
     overlay.querySelector('#tdrUnid').textContent = fmtNum(fUnid);
     overlay.querySelector('#tdrVal').textContent = fmt(fVal);
   }
-  paint('');
-  searchInp.addEventListener('input', ()=> paint(searchInp.value));
+  paint('', 'az');
+  searchInp.addEventListener('input', debounce(()=> paint(searchInp.value, ordenSel.value), 150));
+  ordenSel.addEventListener('change', ()=> paint(searchInp.value, ordenSel.value));
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
   overlay.querySelector('#btnImprimirDeudaTotal').addEventListener('click', ()=> printModal(overlay));
 }
@@ -2773,8 +2862,12 @@ document.getElementById('navTabDistribuidores').addEventListener('click', ()=> s
 document.getElementById('navTabInventario').addEventListener('click', ()=> switchView('inventario'));
 
 // Vista "Pedidos": búsqueda e impresión
-document.getElementById('pedidosViewSearch').addEventListener('input', (e)=>{
+document.getElementById('pedidosViewSearch').addEventListener('input', debounce((e)=>{
   pedidosViewSearchTerm = e.target.value;
+  renderPedidosView();
+}, 150));
+document.getElementById('pedidosViewOrden').addEventListener('change', (e)=>{
+  pedidosViewOrden = e.target.value;
   renderPedidosView();
 });
 document.getElementById('btnImprimirPedidosView').addEventListener('click', ()=> window.print());
@@ -2811,10 +2904,10 @@ document.getElementById('inpNuevoDistribuidorView').addEventListener('keydown', 
 });
 
 // Vista "Inventario": búsqueda, nuevo producto y deuda por producto
-document.getElementById('inventarioSearch').addEventListener('input', (e)=>{
+document.getElementById('inventarioSearch').addEventListener('input', debounce((e)=>{
   inventarioSearchTerm = e.target.value;
   renderInventarioView();
-});
+}, 150));
 document.getElementById('btnNuevoProductoView').addEventListener('click', openNewProductModal);
 
 (function wireInventarioDebtSearch(){
@@ -2977,6 +3070,9 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 
 (async function init(){
   await firebaseReadyPromise;
+  const btnLogin = document.getElementById('btnLogin');
+  btnLogin.disabled = false;
+  btnLogin.textContent = 'Entrar';
   let sesionActiva = false;
   try{ sesionActiva = localStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
   if(sesionActiva) showApp();
