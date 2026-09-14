@@ -764,8 +764,8 @@
           <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría o medida...">
           <select id="pedidosViewOrden">
             <option value="az">Orden: Categoría / Producto (A-Z)</option>
-            <option value="deuda_desc">Deuda: Mayor a menor</option>
-            <option value="deuda_asc">Deuda: Menor a mayor</option>
+            <option value="pend_desc">Pendiente: Mayor a menor</option>
+            <option value="pend_asc">Pendiente: Menor a mayor</option>
           </select>
         </div>
         <div class="debt-report-totals">
@@ -1677,10 +1677,10 @@ function renderPedidosView(){
   const t = pedidosViewSearchTerm.trim();
   let filtered = !t ? rows.slice() : rows.filter(r => matchesProductSearch(r, t));
 
-  if(pedidosViewOrden === 'deuda_desc'){
-    filtered.sort((a,b)=> b.pendVal - a.pendVal);
-  }else if(pedidosViewOrden === 'deuda_asc'){
-    filtered.sort((a,b)=> a.pendVal - b.pendVal);
+  if(pedidosViewOrden === 'pend_desc'){
+    filtered.sort((a,b)=> b.pend - a.pend);
+  }else if(pedidosViewOrden === 'pend_asc'){
+    filtered.sort((a,b)=> a.pend - b.pend);
   }else{
     filtered.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
   }
@@ -2652,8 +2652,8 @@ function openTotalDebtReport(){
       <input type="text" id="tdrSearch" placeholder="Filtrar por producto, categoría o medida...">
       <select id="tdrOrden">
         <option value="az">Orden: Categoría / Producto (A-Z)</option>
-        <option value="deuda_desc">Deuda: Mayor a menor</option>
-        <option value="deuda_asc">Deuda: Menor a mayor</option>
+        <option value="pend_desc">Pendiente: Mayor a menor</option>
+        <option value="pend_asc">Pendiente: Menor a mayor</option>
       </select>
       <button class="print-btn-modal" id="btnImprimirDeudaTotal">🖨 Imprimir</button>
     </div>
@@ -2686,10 +2686,10 @@ function openTotalDebtReport(){
     const t = (term||'').trim();
     let filtered = !t ? rows.slice() : rows.filter(r => matchesProductNameOnly(r, t));
 
-    if(orden === 'deuda_desc'){
-      filtered.sort((a,b)=> b.pendVal - a.pendVal);
-    }else if(orden === 'deuda_asc'){
-      filtered.sort((a,b)=> a.pendVal - b.pendVal);
+    if(orden === 'pend_desc'){
+      filtered.sort((a,b)=> b.pend - a.pend);
+    }else if(orden === 'pend_asc'){
+      filtered.sort((a,b)=> a.pend - b.pend);
     }else{
       filtered.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
     }
