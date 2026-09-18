@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root{
     --cream:#F9FAFB;
@@ -193,7 +194,6 @@
     cursor:pointer;transition:background .15s;
   }
   .login-btn:hover{background:var(--gold-dark);}
-  .login-btn:disabled{background:var(--ink-soft);cursor:not-allowed;opacity:.7;}
 
   .layout{display:flex;gap:20px;max-width:1180px;margin:0 auto;min-height:calc(100vh - 96px);padding:0 24px 24px;}
   .sidebar{
@@ -370,11 +370,6 @@
   /* ---- Reporte de deuda total ---- */
   .debt-report-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
   .debt-report-toolbar input{flex:1;min-width:180px;}
-  .debt-report-toolbar select{
-    padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--white);
-    font-family:'Inter';font-size:13px;color:var(--ink);
-  }
-  .debt-report-toolbar select:focus{outline:2px solid var(--gold);border-color:var(--gold);}
   .debt-report-totals{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .debt-report-totals .pd-card{flex:1;min-width:130px;background:var(--cream-2);border-radius:8px;padding:10px 12px;}
   .debt-report-totals .pd-card .lab{font-size:10.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;}
@@ -599,6 +594,86 @@
     .modal.debt-report-modal .cat-row td{padding:4px 6px;font-size:9px;background:#f1ece0 !important;}
     .modal.debt-report-modal td, .modal.debt-report-modal th{overflow-wrap:break-word;}
   }
+
+  /* ---------- Vistas de Producción (Productividad, Costos de Productos, Costos y Utilidades) ---------- */
+  .prod-view .prod-page-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px;margin-bottom:18px;}
+  .prod-view .prod-filters{display:flex;gap:12px;align-items:end;flex-wrap:wrap;}
+  .prod-view .prod-field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;}
+  .prod-view .prod-field input, .prod-view .prod-field select{
+    border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+    font-family:'Inter',sans-serif; font-size:13.5px; background:var(--white); color:var(--ink); min-width:150px;
+  }
+  .prod-view .prod-field input:focus, .prod-view .prod-field select:focus{outline:2px solid var(--gold); border-color:var(--gold);}
+  .prod-view .prod-btn{
+    border-radius:8px; padding:9px 16px; font-size:13.5px; cursor:pointer; border:1px solid transparent;
+    font-family:'Inter',sans-serif; font-weight:600;
+  }
+  .prod-view .prod-btn-primary{background:var(--gold-dark); border-color:var(--gold-dark); color:var(--white);}
+  .prod-view .prod-btn-primary:hover{background:#644c22;}
+  .prod-view .prod-btn-outline{background:var(--white); border-color:var(--gold); color:var(--gold-dark);}
+  .prod-view .prod-btn-outline:hover{background:var(--gold-pale);}
+
+  .prod-view .prod-grid{display:grid; grid-template-columns: repeat(12, 1fr); gap:18px;}
+  .prod-view .prod-card{
+    background:var(--white); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow-sm); padding:18px 20px;
+  }
+  .prod-view .prod-card h3{font-size:14.5px; margin:0 0 14px; color:var(--ink); font-weight:700;}
+  .prod-view .col-12{grid-column: span 12;}
+  .prod-view .col-6{grid-column: span 6;}
+  @media (max-width: 900px){ .prod-view .col-6{grid-column: span 12;} }
+
+  .prod-view .prod-card-filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+
+  .prod-view table.prod-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  .prod-view table.prod-table thead th{
+    text-align:left; padding:9px 10px; color:var(--ink-soft); font-weight:600;
+    border-bottom:2px solid var(--line); white-space:nowrap;
+  }
+  .prod-view table.prod-table tbody td{padding:9px 10px; border-bottom:1px solid var(--line);}
+  .prod-view table.prod-table tbody tr:hover{background:var(--cream-2);}
+  .prod-view .prod-pill{display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:600;}
+  .prod-view .prod-pill.high{background:#E7F1E7; color:#4C7A52;}
+  .prod-view .prod-pill.mid{background:var(--gold-pale); color:var(--gold-dark);}
+  .prod-view .prod-pill.low{background:#F7E4DA; color:#B65B2E;}
+
+  .prod-view .prod-stat-grid{display:grid; grid-template-columns: repeat(2, 1fr); gap:14px;}
+  .prod-view .prod-stat{border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--cream);}
+  .prod-view .prod-stat .num{font-size:22px; color:var(--gold-dark); font-weight:700;}
+  .prod-view .prod-stat .lbl{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+
+  .prod-view .prod-table-wrap{overflow-x:auto;}
+  .prod-view .prod-chart-box{position:relative; height:260px;}
+
+  /* ---------- Menús desplegables de navegación (Distribuidores / Producción) ---------- */
+  .nav-tabs{position:relative;}
+  .nav-dropdown{position:relative;}
+  .nav-dropdown-btn{
+    display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;color:var(--ink-soft);
+    padding:12px 14px 11px;border-bottom:2px solid transparent;
+    transition:color .15s,border-color .15s;
+  }
+  .nav-dropdown-btn:hover{color:var(--ink);}
+  .nav-dropdown-btn .dots{flex-shrink:0;color:var(--ink-soft);}
+  .nav-dropdown-btn .chev{flex-shrink:0;color:var(--ink-soft);transition:transform .15s;}
+  .nav-dropdown.open .nav-dropdown-btn,
+  .nav-dropdown.has-active .nav-dropdown-btn{color:var(--ink);border-bottom-color:var(--gold);}
+  .nav-dropdown.open .nav-dropdown-btn .chev{transform:rotate(180deg);}
+  .nav-dropdown-menu{
+    position:absolute;top:100%;left:0;margin-top:4px;min-width:250px;
+    background:var(--white);border:1px solid var(--line);border-radius:10px;
+    box-shadow:var(--shadow);padding:6px;display:none;z-index:40;
+  }
+  .nav-dropdown.open .nav-dropdown-menu{display:block;}
+  .nav-dropdown-item{
+    display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);
+    padding:9px 12px;border-radius:8px;
+  }
+  .nav-dropdown-item:hover{background:var(--cream-2);}
+  .nav-dropdown-item.active{background:var(--gold-pale);color:var(--gold-dark);font-weight:600;}
+  @media print{ .nav-tabs{display:none;} }
 </style>
 </head>
 <body>
@@ -617,7 +692,7 @@
     </div>
     <div class="login-error" id="loginError" style="display:none;">Usuario o contraseña incorrectos.</div>
     <div class="login-error" id="firebaseWarning" style="display:none;">⚠️ Falta configurar Firebase (ver firebaseConfig en el código). Mientras tanto no se guardan datos.</div>
-    <button class="login-btn" id="btnLogin" disabled>Conectando…</button>
+    <button class="login-btn" id="btnLogin">Entrar</button>
   </div>
 </div>
 
@@ -656,11 +731,50 @@
 
   <nav class="nav-tabs">
     <div class="nav-tabs-inner">
-      <button class="nav-tab active" id="navTabResumen" data-nav="resumen">Resumen</button>
-      <button class="nav-tab" id="navTabPedidos" data-nav="pedidos">Pedidos</button>
-      <button class="nav-tab" id="navTabVendedores" data-nav="vendedores">Vendedores</button>
-      <button class="nav-tab" id="navTabDistribuidores" data-nav="distribuidores">Distribuidores</button>
-      <button class="nav-tab" id="navTabInventario" data-nav="inventario">Inventario</button>
+      <div class="nav-dropdown" id="navDropdownDistribuidores">
+        <button class="nav-dropdown-btn" id="navBtnDistribuidores" type="button">
+          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          Distribuidores
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="nav-dropdown-item active" data-nav="resumen" type="button">Resumen</button>
+          <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
+          <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
+          <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Distribuidores</button>
+          <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario</button>
+        </div>
+      </div>
+      <div class="nav-dropdown" id="navDropdownProduccion">
+        <button class="nav-dropdown-btn" id="navBtnProduccion" type="button">
+          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          Producción
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="nav-dropdown-item" data-nav="productividad" type="button">Productividad</button>
+          <button class="nav-dropdown-item" data-nav="produccioncostos" type="button">Producción</button>
+          <button class="nav-dropdown-item" data-nav="costosutilidades" type="button">Dashboard de Costos y Utilidades</button>
+        </div>
+      </div>
+      <div class="nav-dropdown" id="navDropdownPlanta">
+        <button class="nav-dropdown-btn" id="navBtnPlanta" type="button">
+          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          Gestión de Planta
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="nav-dropdown-item" data-nav="operarios" type="button">Operarios</button>
+          <button class="nav-dropdown-item" data-nav="plantaproductos" type="button">Productos</button>
+          <button class="nav-dropdown-item" data-nav="insumos" type="button">Insumos</button>
+          <button class="nav-dropdown-item" data-nav="operaciones" type="button">Operaciones</button>
+          <button class="nav-dropdown-item" data-nav="asignaciones" type="button">Asignaciones</button>
+          <button class="nav-dropdown-item" data-nav="ordenesproduccion" type="button">Órdenes de Producción</button>
+          <button class="nav-dropdown-item" data-nav="costosfijos" type="button">Costos Fijos</button>
+          <button class="nav-dropdown-item" data-nav="novedades" type="button">Novedades</button>
+          <button class="nav-dropdown-item" data-nav="jornadalaboral" type="button">Jornada Laboral</button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -762,11 +876,6 @@
         </div>
         <div class="debt-report-toolbar no-print">
           <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría o medida...">
-          <select id="pedidosViewOrden">
-            <option value="az">Orden: Categoría / Producto (A-Z)</option>
-            <option value="pend_desc">Pendiente: Mayor a menor</option>
-            <option value="pend_asc">Pendiente: Menor a mayor</option>
-          </select>
         </div>
         <div class="debt-report-totals">
           <div class="pd-card"><div class="lab">Productos con deuda</div><div class="v" id="pvCountLines">0</div></div>
@@ -860,6 +969,466 @@
     </div>
   </div>
 
+  <div id="viewProductividad" class="view-section prod-view" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="prod-page-head">
+          <div>
+            <h2>Productividad de Operarios</h2>
+            <div class="sub">Asignaciones y productividad por operario, operación, producto y turno.</div>
+          </div>
+          <div class="prod-filters">
+            <div class="prod-field">
+              <label for="prodDesde">Desde</label>
+              <input type="date" id="prodDesde" value="2026-09-01">
+            </div>
+            <div class="prod-field">
+              <label for="prodHasta">Hasta</label>
+              <input type="date" id="prodHasta" value="2026-09-30">
+            </div>
+            <button class="prod-btn prod-btn-primary" id="prodAplicarBtn">Aplicar</button>
+          </div>
+        </div>
+
+        <div class="prod-grid">
+
+          <!-- Tabla detallada -->
+          <div class="prod-card col-12">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:2px;">
+              <h3 style="margin:0;">Productividad Detallada por Operario, Operación y Producto</h3>
+              <button class="global-add-btn no-print" id="btnProdNuevaFila">+ Nueva fila</button>
+            </div>
+            <div class="prod-card-filters">
+              <div class="prod-field">
+                <label>Operario</label>
+                <select id="prodFOperario"><option value="">Todos</option></select>
+              </div>
+              <div class="prod-field">
+                <label>Operación</label>
+                <select id="prodFOperacion"><option value="">Todas</option></select>
+              </div>
+              <div class="prod-field">
+                <label>Producto</label>
+                <select id="prodFProducto"><option value="">Todos</option></select>
+              </div>
+              <button class="prod-btn prod-btn-outline" id="prodLimpiarBtn" style="align-self:end;">Limpiar filtros</button>
+            </div>
+            <div class="prod-table-wrap">
+              <table class="prod-table" id="prodDetailTable">
+                <thead>
+                  <tr><th>Operario</th><th>Operación</th><th>Producto</th><th>Asignaciones</th><th>Productividad</th><th>Estado</th><th></th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Productividad por empleado -->
+          <div class="prod-card col-6">
+            <h3>Productividad por Empleado (%)</h3>
+            <div class="prod-card-filters">
+              <div class="prod-field">
+                <label>Mostrar</label>
+                <select id="prodFTop">
+                  <option value="5">Top 5</option>
+                  <option value="10" selected>Top 10</option>
+                  <option value="20">Top 20</option>
+                </select>
+              </div>
+              <div class="prod-field">
+                <label>Ordenar por</label>
+                <select id="prodFOrden">
+                  <option value="productividad" selected>Productividad</option>
+                  <option value="asignaciones">Asignaciones</option>
+                </select>
+              </div>
+            </div>
+            <div class="prod-chart-box"><canvas id="prodChartEmpleado"></canvas></div>
+          </div>
+
+          <!-- Asignaciones por día del mes -->
+          <div class="prod-card col-6">
+            <h3>Asignaciones por Día del Mes</h3>
+            <div class="prod-chart-box"><canvas id="prodChartDias"></canvas></div>
+          </div>
+
+          <!-- Productividad por turno -->
+          <div class="prod-card col-6">
+            <h3>Productividad por Turno (%)</h3>
+            <div class="prod-chart-box"><canvas id="prodChartTurno"></canvas></div>
+          </div>
+
+          <!-- Productividad por operación -->
+          <div class="prod-card col-6">
+            <h3>Productividad por Operación (%)</h3>
+            <div class="prod-chart-box"><canvas id="prodChartOperacion"></canvas></div>
+          </div>
+
+          <!-- Resumen de productividad -->
+          <div class="prod-card col-6">
+            <h3>Resumen de Productividad</h3>
+            <div class="prod-stat-grid">
+              <div class="prod-stat"><div class="num" id="prodStatProm">–</div><div class="lbl">Promedio general</div></div>
+              <div class="prod-stat"><div class="num" id="prodStatMax">–</div><div class="lbl">Operario más productivo</div></div>
+              <div class="prod-stat"><div class="num" id="prodStatMin">–</div><div class="lbl">Operario menos productivo</div></div>
+              <div class="prod-stat"><div class="num" id="prodStatOperarios">–</div><div class="lbl">Operarios activos</div></div>
+            </div>
+          </div>
+
+          <!-- Resumen de asignaciones -->
+          <div class="prod-card col-6">
+            <h3>Resumen de Asignaciones</h3>
+            <div class="prod-stat-grid">
+              <div class="prod-stat"><div class="num" id="prodStatTotalAsig">–</div><div class="lbl">Total asignaciones</div></div>
+              <div class="prod-stat"><div class="num" id="prodStatCompletadas">–</div><div class="lbl">Completadas</div></div>
+              <div class="prod-stat"><div class="num" id="prodStatPendientes">–</div><div class="lbl">Pendientes</div></div>
+              <div class="prod-stat"><div class="num" id="prodStatDiario">–</div><div class="lbl">Promedio diario</div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewProduccioncostos" class="view-section prod-view" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="prod-page-head">
+          <div>
+            <h2>Producción · Costos de Productos</h2>
+            <div class="sub">Costo de material, mano de obra y tiempo de producción por producto.</div>
+          </div>
+          <div class="prod-filters">
+            <div class="prod-field">
+              <label for="costMetodoManoObra">Mano de obra según</label>
+              <select id="costMetodoManoObra">
+                <option value="tiempo">Tiempo estándar × tarifa/min</option>
+                <option value="destajo">Destajo por operación (asignaciones)</option>
+              </select>
+            </div>
+            <div class="prod-field" id="costTarifaWrap">
+              <label for="costTarifaMin">Tarifa por minuto ($)</label>
+              <input type="number" id="costTarifaMin" min="0" placeholder="Ej. 120">
+            </div>
+            <button class="prod-btn prod-btn-primary" id="costGuardarBtn">Guardar</button>
+          </div>
+        </div>
+
+        <div class="prod-grid">
+          <div class="prod-card col-12">
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(4,1fr);">
+              <div class="prod-stat"><div class="num" id="costStatMaterialProm">–</div><div class="lbl">Costo material promedio</div></div>
+              <div class="prod-stat"><div class="num" id="costStatManoObraProm">–</div><div class="lbl">Costo mano de obra promedio</div></div>
+              <div class="prod-stat"><div class="num" id="costStatTotalProm">–</div><div class="lbl">Costo total promedio</div></div>
+              <div class="prod-stat"><div class="num" id="costStatTiempoProm">–</div><div class="lbl">Tiempo de producción promedio</div></div>
+            </div>
+          </div>
+
+          <div class="prod-card col-12">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:2px;">
+              <h3 style="margin:0;">Costos por Producto</h3>
+            </div>
+            <div class="prod-card-filters">
+              <div class="prod-field" style="min-width:220px;">
+                <label>Buscar</label>
+                <input type="text" id="costProductoSearch" placeholder="Buscar producto, categoría...">
+              </div>
+            </div>
+            <div class="prod-table-wrap">
+              <table class="prod-table" id="costProductoTable">
+                <thead>
+                  <tr><th>Producto</th><th>Categoría</th><th>Tiempo</th><th>Costo material</th><th>Costo mano de obra</th><th>Costo total</th><th>Precio venta</th><th>Margen</th><th>Insumos</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="hint" style="margin-top:8px;">El costo de material sale del desglose de insumos (columna "Insumos" → botón "Desglosar"), como en el ejemplo de 1 Juego de Sábanas = Elástico + Bolso + Hilo. Si un producto no tiene desglose, se usa su campo manual "Costo material" (vista Productos).</div>
+          </div>
+
+          <div class="prod-card col-6">
+            <h3>Costo Total por Producto (10 más costosos)</h3>
+            <div class="prod-chart-box"><canvas id="costChartTop"></canvas></div>
+          </div>
+
+          <div class="prod-card col-6">
+            <h3>Composición del Costo (Material vs Mano de Obra)</h3>
+            <div class="prod-chart-box"><canvas id="costChartComposicion"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewCostosutilidades" class="view-section prod-view" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="prod-page-head">
+          <div>
+            <h2>Dashboard de Costos y Utilidades</h2>
+            <div class="sub">Costos fijos, costo variable, utilidad y margen por producto.</div>
+          </div>
+        </div>
+
+        <div class="prod-grid">
+          <div class="prod-card col-12">
+            <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
+              <div>
+                <h3 style="margin:0;">Utilidad Real del Mes</h3>
+                <div class="sub" style="margin-top:2px;">Facturación − Costos Fijos − Costos Variables (Producción × Mes × Producto)</div>
+              </div>
+              <div class="prod-field">
+                <label for="utilMesSelector">Mes</label>
+                <input type="month" id="utilMesSelector">
+              </div>
+            </div>
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-top:10px;">
+              <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes (Venta)</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesFijos">–</div><div class="lbl">Costos Fijos</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesVariables">–</div><div class="lbl">Costos Variables (producción real)</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesNeta">–</div><div class="lbl">Utilidad Neta</div></div>
+            </div>
+            <div class="prod-table-wrap" style="margin-top:14px;">
+              <table class="prod-table" id="utilMesTable">
+                <thead>
+                  <tr><th>Producto</th><th>Producción del mes</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="hint" style="margin-top:8px;">La producción del mes sale de "Órdenes de Producción" (fecha de entrega). El costo variable unitario es el desglose de insumos + mano de obra de cada producto.</div>
+          </div>
+
+          <div class="prod-card col-12">
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(4,1fr);">
+              <div class="prod-stat"><div class="num" id="utilStatFijos">–</div><div class="lbl">Costos fijos mensuales</div></div>
+              <div class="prod-stat"><div class="num" id="utilStatVariable">–</div><div class="lbl">Costo variable promedio/producto</div></div>
+              <div class="prod-stat"><div class="num" id="utilStatUtilidad">–</div><div class="lbl">Utilidad promedio/producto</div></div>
+              <div class="prod-stat"><div class="num" id="utilStatMargen">–</div><div class="lbl">Margen promedio</div></div>
+            </div>
+          </div>
+
+          <div class="prod-card col-12">
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(2,1fr);">
+              <div class="prod-stat"><div class="num" id="utilStatMejor" style="font-size:15px;">–</div><div class="lbl">Producto más rentable</div></div>
+              <div class="prod-stat"><div class="num" id="utilStatPeor" style="font-size:15px;">–</div><div class="lbl">Producto menos rentable</div></div>
+            </div>
+          </div>
+
+          <div class="prod-card col-6">
+            <h3>Costo Total vs Precio de Venta</h3>
+            <div class="prod-chart-box"><canvas id="utilChartCostoVsPrecio"></canvas></div>
+          </div>
+
+          <div class="prod-card col-6">
+            <h3>Costos Fijos por Categoría (mensual)</h3>
+            <div class="prod-chart-box"><canvas id="utilChartFijos"></canvas></div>
+          </div>
+
+          <div class="prod-card col-12">
+            <h3>Utilidad y Margen por Producto</h3>
+            <div class="prod-table-wrap">
+              <table class="prod-table" id="utilProductoTable">
+                <thead>
+                  <tr><th>Producto</th><th>Costo total</th><th>Precio venta</th><th>Utilidad</th><th>Margen</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="hint" style="margin-top:8px;">Agrega el campo "Precio de venta" a un producto (en la vista Productos) para que aparezca aquí con su utilidad y margen.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= GESTIÓN DE PLANTA (9 módulos, guardado real en Firebase) ================= -->
+
+  <div id="viewOperarios" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Operarios</h2><div class="sub">Gestión de operarios de planta.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoOperario">+ Nuevo operario</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="operariosSearch" placeholder="Buscar operario, cargo, turno...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Nombre</th><th>Cargo</th><th>Turno</th><th>Teléfono</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="operariosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewPlantaproductos" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Productos</h2><div class="sub">Gestión de productos (ficha de producción).</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoPlantaProducto">+ Nuevo producto</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="plantaproductosSearch" placeholder="Buscar producto, categoría...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Producto</th><th>Categoría</th><th>Unidad</th><th class="num">Tiempo estándar</th><th class="num">Costo material</th><th class="num">Precio venta</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="plantaproductosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewInsumos" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Insumos</h2><div class="sub">Catálogo de insumos.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoInsumo">+ Nuevo insumo</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="insumosSearch" placeholder="Buscar insumo, proveedor...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Insumo</th><th>Unidad</th><th class="num">Stock</th><th class="num">Costo unitario</th><th>Proveedor</th><th></th></tr></thead>
+            <tbody id="insumosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewOperaciones" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Operaciones</h2><div class="sub">Catálogo de operaciones.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevaOperacion">+ Nueva operación</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="operacionesSearch" placeholder="Buscar operación, área...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Operación</th><th>Área</th><th class="num">Tiempo estándar</th><th class="num">Pago por unidad</th><th>Descripción</th><th></th></tr></thead>
+            <tbody id="operacionesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewAsignaciones" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Asignaciones</h2><div class="sub">Gestión de asignaciones de operarios a operaciones y productos.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevaAsignacion">+ Nueva asignación</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="asignacionesSearch" placeholder="Buscar operario, operación, producto...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Operario</th><th>Operación</th><th>Producto</th><th>Fecha</th><th>Turno</th><th class="num">Cantidad</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="asignacionesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewOrdenesproduccion" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Órdenes de Producción</h2><div class="sub">Planificación de órdenes.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevaOrden">+ Nueva orden</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="ordenesproduccionSearch" placeholder="Buscar orden, producto...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Orden</th><th>Producto</th><th class="num">Cantidad</th><th>Inicio</th><th>Entrega</th><th>Prioridad</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="ordenesproduccionBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewCostosfijos" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Costos Fijos</h2><div class="sub">Costos estructurales.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoCostoFijo">+ Nuevo costo fijo</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="costosfijosSearch" placeholder="Buscar concepto, categoría...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Concepto</th><th>Categoría</th><th class="num">Valor</th><th>Periodicidad</th><th></th></tr></thead>
+            <tbody id="costosfijosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewNovedades" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Novedades</h2><div class="sub">Incapacidades y permisos.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevaNovedad">+ Nueva novedad</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="novedadesSearch" placeholder="Buscar operario, tipo...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Operario</th><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Observaciones</th><th></th></tr></thead>
+            <tbody id="novedadesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewJornadalaboral" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Jornada Laboral</h2><div class="sub">Horario laboral y días.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoTurno">+ Nuevo turno</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Turno</th><th>Hora inicio</th><th>Hora fin</th><th>Días</th><th>Observaciones</th><th></th></tr></thead>
+            <tbody id="jornadalaboralBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <div class="toast" id="toast"></div>
 
 </div>
@@ -888,7 +1457,19 @@ const DEFAULT_APPDATA = {
   vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
   distribuidoresRegistry:[], // [nombre, ...] — distribuidores/clientes creados manualmente (aunque no tengan pedidos aún)
   distribuidoresEliminados:[], // [distId, ...] — pedidos/distribuidores borrados (ej. digitados dos veces por error)
-  auth:{usuario:'admin', password:'CasaDorada2026'} // usuario y contraseña para entrar a la app
+  auth:{usuario:'admin', password:'CasaDorada2026'}, // usuario y contraseña para entrar a la app
+  // ---- Gestión de Planta (guardado real en Firebase, igual que Vendedores/Distribuidores) ----
+  plantaOperarios:[],        // [{id, nombre, cedula, cargo, turno, telefono, fechaIngreso, activo}]
+  plantaProductos:[],        // [{id, nombre, categoria, unidad, tiempoEstandar, costoMaterial, materiales:[{insumo,cantidad,costoUnitario}], precioVenta, activo}]
+  costeoConfig:{ metodoManoObra:'tiempo', tarifaPorMinuto:0 }, // config del panel Producción · Costos de Productos
+  plantaInsumos:[],          // [{id, nombre, unidad, stock, costoUnitario, proveedor}]
+  plantaOperaciones:[],      // [{id, nombre, area, tiempoEstandar, pagoPorUnidad, descripcion}]
+  plantaAsignaciones:[],     // [{id, operario, operacion, producto, fecha, turno, cantidad, estado}]
+  plantaOrdenes:[],          // [{id, numero, producto, cantidad, fechaInicio, fechaEntrega, prioridad, estado}]
+  plantaCostosFijos:[],      // [{id, concepto, categoria, valorMensual, periodicidad}]
+  plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
+  plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
+  plantaProductividad:[]     // [{id, operario, operacion, producto, turno, fecha, asignaciones, productividad, estado}] — filas editables del dashboard de Productividad
 };
 // ---------- Firebase: base de datos compartida ----------
 // 1) Ve a https://console.firebase.google.com → "Agregar proyecto" (gratis)
@@ -907,7 +1488,6 @@ let dataRef = null;
 let firebaseReady = false;
 let firebaseReadyResolve;
 const firebaseReadyPromise = new Promise(res => firebaseReadyResolve = res);
-let pendingLocalWrite = null; // JSON del último dato que enviamos, para reconocer el eco de Firebase
 
 function initFirebaseSync(){
   if(!FIREBASE_CONFIGURADO){
@@ -929,19 +1509,11 @@ function initFirebaseSync(){
   }
   dataRef.on('value', (snap)=>{
     const val = snap.val();
-    const valJSON = JSON.stringify(val);
-    // Cuando NOSOTROS guardamos, Firebase nos devuelve ("eco") ese mismo cambio por este
-    // mismo listener. Sin esta comprobación, cada guardado propio disparaba un renderAll()
-    // extra e innecesario (ya habíamos actualizado la pantalla localmente al guardar).
-    // Si los datos que llegan coinciden con lo último que enviamos, solo sincronizamos
-    // la referencia de APPDATA sin volver a dibujar nada.
-    const esEcoPropio = pendingLocalWrite !== null && valJSON === pendingLocalWrite;
-    pendingLocalWrite = null;
     APPDATA = val ? {...structuredClone(DEFAULT_APPDATA), ...val} : structuredClone(DEFAULT_APPDATA);
     if(!firebaseReady){
       firebaseReady = true;
       firebaseReadyResolve();
-    }else if(appRendered && !esEcoPropio){
+    }else if(appRendered){
       renderAll();
     }
   }, (err)=>{
@@ -958,11 +1530,9 @@ async function saveAppData(data){
     return;
   }
   try{
-    pendingLocalWrite = JSON.stringify(data);
     await dataRef.set(data);
     showToast('Guardado');
   }catch(e){
-    pendingLocalWrite = null;
     console.error('firebase save error', e);
     showToast('No se pudo guardar, intenta de nuevo');
   }
@@ -979,16 +1549,6 @@ function showToast(msg){
 
 const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
 const fmtNum = n => Math.round(n).toLocaleString('es-CO');
-
-// Pequeña utilidad para retrasar una función hasta que el usuario haga una pausa breve
-// al escribir (evita reconstruir tablas grandes en cada tecla presionada).
-function debounce(fn, wait){
-  let timer;
-  return function(...args){
-    clearTimeout(timer);
-    timer = setTimeout(()=> fn.apply(this, args), wait);
-  };
-}
 
 // ---------- data model ----------
 // Build full distributor list (catalog + custom-added), applying name overrides
@@ -1410,7 +1970,7 @@ function renderMain(){
           <span class="prod-medida">${escapeHtml(l.medida||'')}</span></td>
       <td class="num">${fmt(l.precio)}</td>
       <td class="num">${l.cantidad}</td>
-      <td class="num"><input type="number" min="0" max="${l.cantidad}" class="entregado-input" data-key="${escapeAttr(l.key)}" value="${ent}"></td>
+      <td class="num"><input type="number" min="0" class="entregado-input" data-key="${escapeAttr(l.key)}" value="${ent}"></td>
       <td class="num">${pend}</td>
       <td class="num pend-val ${pendVal>0?'pos':'zero'}">${fmt(pendVal)}</td>
       <td class="row-actions">
@@ -1496,14 +2056,9 @@ function renderMain(){
 
   main.querySelectorAll('.entregado-input').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
-      const key = e.target.dataset.key;
-      const line = allLines.find(l=>l.key===key);
       let v = parseFloat(e.target.value);
       if(isNaN(v) || v<0) v = 0;
-      // No permitimos guardar más unidades entregadas que las pedidas: evita datos
-      // inconsistentes (antes solo se "corregía" al redibujar, lo cual confundía).
-      if(line && v > line.cantidad) v = line.cantidad;
-      setEntregado(selectedDistId, key, v);
+      setEntregado(selectedDistId, e.target.dataset.key, v);
       await saveAppData(APPDATA);
       renderMain();
       renderSidebar();
@@ -1582,72 +2137,390 @@ function renderMain(){
 
   const searchInp = document.getElementById('searchProductoPedido');
   if(searchInp){
-    const debouncedSearch = debounce(()=>{
-      renderMain();
-      const val = document.getElementById('searchProductoPedido');
-      if(val){ val.focus(); const p = val.value.length; val.setSelectionRange(p,p); }
-    }, 150);
     searchInp.addEventListener('input', (e)=>{
       orderSearchTerm = e.target.value;
-      debouncedSearch();
+      renderMain();
+      document.getElementById('searchProductoPedido').focus();
+      const val = document.getElementById('searchProductoPedido');
+      if(val){ const p = val.value.length; val.setSelectionRange(p,p); }
     });
   }
 
   document.getElementById('btnImprimirPedido').addEventListener('click', ()=> window.print());
 }
 
-// Optimización de rendimiento: cada vista (Resumen/Pedidos/Vendedores/Distribuidores/Inventario)
-// vive en su propia sección del DOM y solo una está visible a la vez (ver switchView). Antes,
-// renderAll() reconstruía las 5 vistas completas —incluyendo las 4 que están ocultas— en CADA
-// acción del usuario (marcar una entrega, cambiar un precio, etc.), lo que rehacía cientos de
-// filas de tabla y volvía a enlazar sus eventos sin necesidad. Ahora solo se re-dibuja lo que
-// el usuario realmente está viendo; cuando cambia de pestaña, switchView() se encarga de refrescar
-// esa vista con los datos más recientes.
 function renderAll(){
-  switch(currentView){
-    case 'resumen':
-      renderSidebar();
-      renderMain();
-      renderSummaryStrip();
-      break;
-    case 'pedidos':
-      renderPedidosView();
-      break;
-    case 'vendedores':
-      renderVendedoresView();
-      break;
-    case 'distribuidores':
-      renderDistribuidoresView();
-      break;
-    case 'inventario':
-      renderInventarioView();
-      break;
-  }
+  renderSidebar();
+  renderMain();
+  renderSummaryStrip();
+  renderPedidosView();
+  renderVendedoresView();
+  renderDistribuidoresView();
+  renderInventarioView();
+  Object.keys(PLANTA_MODULES).forEach(renderPlantaModule);
+  const viewProdEl = document.getElementById('viewProductividad');
+  if(prodViewWired && viewProdEl && viewProdEl.style.display !== 'none') prodRefreshAll();
+  const viewCostProdEl = document.getElementById('viewProduccioncostos');
+  if(costViewWired && viewCostProdEl && viewCostProdEl.style.display !== 'none') renderCostosProductosView();
+  const viewUtilEl = document.getElementById('viewCostosutilidades');
+  if(viewUtilEl && viewUtilEl.style.display !== 'none') renderCostosUtilidadesView();
 }
 
-// ---------- vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario) ----------
+// ---------- vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario / Producción) ----------
 let currentView = 'resumen';
 function switchView(viewName){
   currentView = viewName;
-  ['resumen','pedidos','vendedores','distribuidores','inventario'].forEach(name=>{
+  ['resumen','pedidos','vendedores','distribuidores','inventario','productividad','produccioncostos','costosutilidades',
+   'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','novedades','jornadalaboral'
+  ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
     if(el) el.style.display = (name === viewName) ? '' : 'none';
   });
-  document.querySelectorAll('.nav-tab').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.nav === viewName);
+  document.querySelectorAll('.nav-dropdown-item').forEach(item=>{
+    item.classList.toggle('active', item.dataset.nav === viewName);
   });
-  // Cada vista se refresca justo al entrar en ella, así siempre muestra los datos más
-  // recientes aunque se hayan cambiado mientras el usuario estaba en otra pestaña.
-  if(viewName === 'resumen'){ renderSidebar(); renderMain(); renderSummaryStrip(); }
+  document.querySelectorAll('.nav-dropdown').forEach(dd=>{
+    dd.classList.toggle('has-active', !!dd.querySelector('.nav-dropdown-item.active'));
+  });
   if(viewName === 'pedidos') renderPedidosView();
   if(viewName === 'vendedores') renderVendedoresView();
   if(viewName === 'distribuidores') renderDistribuidoresView();
   if(viewName === 'inventario') renderInventarioView();
+  if(viewName === 'productividad') renderProduccionView();
+  if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
+  if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
+  if(typeof PLANTA_MODULES !== 'undefined' && PLANTA_MODULES[viewName]) renderPlantaModule(viewName);
+}
+
+// ---------- Menús desplegables de navegación (Distribuidores / Producción) ----------
+function closeAllNavDropdowns(){
+  document.querySelectorAll('.nav-dropdown').forEach(dd => dd.classList.remove('open'));
+}
+document.querySelectorAll('.nav-dropdown-btn').forEach(btn=>{
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const dd = btn.closest('.nav-dropdown');
+    const willOpen = !dd.classList.contains('open');
+    closeAllNavDropdowns();
+    if(willOpen) dd.classList.add('open');
+  });
+});
+document.querySelectorAll('.nav-dropdown-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    switchView(item.dataset.nav);
+    closeAllNavDropdowns();
+  });
+});
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.nav-dropdown')) closeAllNavDropdowns();
+});
+document.querySelectorAll('.nav-dropdown').forEach(dd=>{
+  dd.classList.toggle('has-active', !!dd.querySelector('.nav-dropdown-item.active'));
+});
+
+// ---------- Vista "Producción": productividad de operarios (datos reales y editables, guardados en Firebase) ----------
+const PROD_TURNOS = ["Mañana","Tarde","Noche"];
+const prodGoldPalette = ['#9E7B3B','#C9A25B','#7C5F2C','#E3D3AC','#5A4520'];
+
+function getProdDetalle(){
+  if(!APPDATA.plantaProductividad) APPDATA.plantaProductividad = [];
+  return APPDATA.plantaProductividad;
+}
+
+function prodDistinct(field){
+  const set = new Set();
+  getProdDetalle().forEach(r => { if(r[field]) set.add(r[field]); });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+
+// Vuelve a llenar un <select> de filtro conservando su primera opción ("Todos"/"Todas") y la selección actual
+function prodFillSelect(id, values){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  const current = sel.value;
+  const firstOption = sel.options[0] ? sel.options[0].outerHTML : '<option value="">Todos</option>';
+  sel.innerHTML = firstOption + values.map(v=>`<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join('');
+  if(values.includes(current)) sel.value = current;
+}
+
+function prodPillClass(p){ return p>=85 ? 'high' : p>=70 ? 'mid' : 'low'; }
+
+function prodRenderTable(){
+  const fo = document.getElementById('prodFOperario').value;
+  const fp = document.getElementById('prodFOperacion').value;
+  const fpr = document.getElementById('prodFProducto').value;
+  const all = getProdDetalle();
+  const filtered = all.map((r, idx) => ({r, idx})).filter(({r}) =>
+    (!fo || r.operario===fo) && (!fp || r.operacion===fp) && (!fpr || r.producto===fpr)
+  );
+  const tbody = document.querySelector('#prodDetailTable tbody');
+  tbody.innerHTML = filtered.length ? filtered.map(({r, idx}) => `
+    <tr>
+      <td>${escapeHtml(r.operario||'—')}</td>
+      <td>${escapeHtml(r.operacion||'—')}</td>
+      <td>${escapeHtml(r.producto||'—')}</td>
+      <td>${fmtNum(r.asignaciones||0)}</td>
+      <td><span class="prod-pill ${prodPillClass(r.productividad||0)}">${r.productividad||0}%</span></td>
+      <td><span class="badge ${r.estado==='completada'?'saldado':'debe'}">${r.estado==='completada'?'Completada':'Pendiente'}</span></td>
+      <td class="row-actions no-print">
+        <button class="icon-btn icon-edit" data-prod-edit="${idx}" title="Editar">✎</button>
+        <button class="icon-btn icon-delete" data-prod-delete="${idx}" title="Eliminar">🗑</button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:22px 10px;">${all.length ? 'No hay filas para estos filtros' : 'Todavía no hay filas. Usa "+ Nueva fila" para crear la primera.'}</td></tr>`;
+  prodUpdateSummaries(filtered.length ? filtered.map(x=>x.r) : all);
+}
+
+function prodUpdateSummaries(rows){
+  const porOperario = {};
+  rows.forEach(r => {
+    if(!r.operario) return;
+    porOperario[r.operario] = porOperario[r.operario] || {suma:0,n:0,asig:0};
+    porOperario[r.operario].suma += (r.productividad||0);
+    porOperario[r.operario].n += 1;
+    porOperario[r.operario].asig += (r.asignaciones||0);
+  });
+  const entries = Object.entries(porOperario).map(([nombre,v]) => ({nombre, prom: v.suma/v.n, asig: v.asig}));
+  const promGeneral = entries.length ? entries.reduce((a,e)=>a+e.prom,0)/entries.length : 0;
+  const maxE = entries.reduce((a,e)=> (!a || e.prom > a.prom) ? e : a, null);
+  const minE = entries.reduce((a,e)=> (!a || e.prom < a.prom) ? e : a, null);
+
+  document.getElementById('prodStatProm').textContent = entries.length ? promGeneral.toFixed(1)+'%' : '–';
+  document.getElementById('prodStatMax').textContent = maxE ? maxE.nombre.split(' ')[0] : '–';
+  document.getElementById('prodStatMin').textContent = minE ? minE.nombre.split(' ')[0] : '–';
+  document.getElementById('prodStatOperarios').textContent = entries.length;
+
+  const totalAsig = rows.reduce((a,r)=>a+(r.asignaciones||0),0);
+  const completadas = rows.filter(r=>r.estado==='completada').reduce((a,r)=>a+(r.asignaciones||0),0);
+  const diasConDatos = new Set(rows.filter(r=>r.fecha).map(r=>r.fecha)).size;
+  document.getElementById('prodStatTotalAsig').textContent = totalAsig;
+  document.getElementById('prodStatCompletadas').textContent = completadas;
+  document.getElementById('prodStatPendientes').textContent = totalAsig - completadas;
+  document.getElementById('prodStatDiario').textContent = diasConDatos ? Math.round(totalAsig/diasConDatos) : totalAsig;
+}
+
+function prodBuildEmpleadoData(){
+  const top = parseInt(document.getElementById('prodFTop').value,10);
+  const orden = document.getElementById('prodFOrden').value;
+  const agg = {};
+  getProdDetalle().forEach(r => {
+    if(!r.operario) return;
+    agg[r.operario] = agg[r.operario] || {prod:0,n:0,asig:0};
+    agg[r.operario].prod += (r.productividad||0); agg[r.operario].n += 1; agg[r.operario].asig += (r.asignaciones||0);
+  });
+  let arr = Object.entries(agg).map(([nombre,v]) => ({nombre, productividad: Math.round(v.prod/v.n), asignaciones: v.asig}));
+  arr.sort((a,b) => orden==='productividad' ? b.productividad-a.productividad : b.asignaciones-a.asignaciones);
+  return arr.slice(0, top);
+}
+
+let prodChartEmpleado, prodChartDias, prodChartTurno, prodChartOperacion;
+
+function prodRenderEmpleadoChart(){
+  const data = prodBuildEmpleadoData();
+  const cfg = {
+    type: 'bar',
+    data: {
+      labels: data.map(d=>d.nombre),
+      datasets: [{ label:'Productividad (%)', data: data.map(d=>d.productividad), backgroundColor:'#9E7B3B', borderRadius:4 }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{ x:{ max:100, grid:{color:'#F0EAD9'} }, y:{ grid:{display:false} } }
+    }
+  };
+  if(prodChartEmpleado) prodChartEmpleado.destroy();
+  prodChartEmpleado = new Chart(document.getElementById('prodChartEmpleado'), cfg);
+}
+
+function prodRenderDiasChart(){
+  const dias = Array.from({length:31}, (_,i)=>i+1);
+  const sums = new Array(31).fill(0);
+  getProdDetalle().forEach(r=>{
+    if(!r.fecha) return;
+    const d = new Date(r.fecha+'T00:00:00');
+    if(isNaN(d)) return;
+    sums[d.getDate()-1] += (r.asignaciones||0);
+  });
+  if(prodChartDias) prodChartDias.destroy();
+  prodChartDias = new Chart(document.getElementById('prodChartDias'), {
+    type:'line',
+    data:{ labels:dias, datasets:[{ label:'Asignaciones', data:sums, borderColor:'#7C5F2C', backgroundColor:'rgba(158,123,59,.15)', fill:true, tension:.35, pointRadius:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ grid:{color:'#F0EAD9'} } }
+  });
+}
+
+function prodRenderTurnoChart(){
+  const agg = {}; PROD_TURNOS.forEach(t=>agg[t]={sum:0,n:0});
+  getProdDetalle().forEach(r=>{
+    if(!r.turno || !agg[r.turno]) return;
+    agg[r.turno].sum += (r.productividad||0); agg[r.turno].n += 1;
+  });
+  const valores = PROD_TURNOS.map(t => agg[t].n ? Math.round(agg[t].sum/agg[t].n) : 0);
+  if(prodChartTurno) prodChartTurno.destroy();
+  prodChartTurno = new Chart(document.getElementById('prodChartTurno'), {
+    type:'doughnut',
+    data:{ labels:PROD_TURNOS, datasets:[{ data:valores, backgroundColor:prodGoldPalette }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}} }
+  });
+}
+
+function prodRenderOperacionChart(){
+  const agg = {};
+  getProdDetalle().forEach(r=>{
+    if(!r.operacion) return;
+    agg[r.operacion] = agg[r.operacion] || {sum:0,n:0};
+    agg[r.operacion].sum += (r.productividad||0); agg[r.operacion].n += 1;
+  });
+  const labels = Object.keys(agg).sort((a,b)=>a.localeCompare(b));
+  const valores = labels.map(o => agg[o].n ? Math.round(agg[o].sum/agg[o].n) : 0);
+  if(prodChartOperacion) prodChartOperacion.destroy();
+  prodChartOperacion = new Chart(document.getElementById('prodChartOperacion'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Productividad (%)', data:valores, backgroundColor:'#C9A25B', borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{max:100, grid:{color:'#F0EAD9'}}, x:{grid:{display:false}} } }
+  });
+}
+
+// Modal para crear/editar una fila de productividad (sugiere nombres ya creados en Operarios/Operaciones/Productos,
+// pero también acepta texto libre) — se guarda igual que el resto de la app, con saveAppData(APPDATA).
+function openProdRowModal(idx){
+  const rows = getProdDetalle();
+  const editing = (idx !== undefined && idx !== null && rows[idx]);
+  const r = editing ? rows[idx] : {};
+  const operarioOpts = (APPDATA.plantaOperarios||[]).map(o=>o.nombre).filter(Boolean);
+  const operacionOpts = (APPDATA.plantaOperaciones||[]).map(o=>o.nombre).filter(Boolean);
+  const productoOpts = (APPDATA.plantaProductos||[]).map(o=>o.nombre).filter(Boolean);
+  const overlay = openModal(`
+    <h3>${editing ? 'Editar' : 'Nueva'} fila de productividad</h3>
+    <div class="field">
+      <label>Operario *</label>
+      <input type="text" id="prInpOperario" list="dlProdOperarios" value="${escapeAttr(r.operario||'')}" placeholder="Ej. Ana Gómez">
+      <datalist id="dlProdOperarios">${operarioOpts.map(n=>`<option value="${escapeAttr(n)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Operación</label>
+      <input type="text" id="prInpOperacion" list="dlProdOperaciones" value="${escapeAttr(r.operacion||'')}" placeholder="Ej. Costura">
+      <datalist id="dlProdOperaciones">${operacionOpts.map(n=>`<option value="${escapeAttr(n)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Producto</label>
+      <input type="text" id="prInpProducto" list="dlProdProductos" value="${escapeAttr(r.producto||'')}" placeholder="Ej. Silla Colonial">
+      <datalist id="dlProdProductos">${productoOpts.map(n=>`<option value="${escapeAttr(n)}">`).join('')}</datalist>
+    </div>
+    <div class="field">
+      <label>Turno</label>
+      <select id="prInpTurno">
+        <option value="" ${!r.turno?'selected':''}>Sin turno</option>
+        ${PROD_TURNOS.map(t=>`<option value="${t}" ${r.turno===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>Fecha</label>
+      <input type="date" id="prInpFecha" value="${escapeAttr(r.fecha||'')}">
+    </div>
+    <div class="field">
+      <label>Asignaciones *</label>
+      <input type="number" id="prInpAsignaciones" min="0" value="${r.asignaciones!==undefined?r.asignaciones:''}" placeholder="Ej. 24">
+    </div>
+    <div class="field">
+      <label>Productividad (%) *</label>
+      <input type="number" id="prInpProductividad" min="0" max="100" value="${r.productividad!==undefined?r.productividad:''}" placeholder="Ej. 88">
+    </div>
+    <div class="field">
+      <label>Estado</label>
+      <select id="prInpEstado">
+        <option value="pendiente" ${r.estado!=='completada'?'selected':''}>Pendiente</option>
+        <option value="completada" ${r.estado==='completada'?'selected':''}>Completada</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      ${editing ? `<button class="btn-danger" id="btnDeleteInModal">Eliminar</button>` : ''}
+      <button class="btn-confirm" id="btnConfirm">Guardar</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  if(editing){
+    overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
+      if(!confirm('¿Eliminar esta fila?')) return;
+      rows.splice(idx,1);
+      await saveAppData(APPDATA);
+      overlay.remove();
+      prodRefreshAll();
+    });
+  }
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const operario = overlay.querySelector('#prInpOperario').value.trim();
+    const asignacionesVal = overlay.querySelector('#prInpAsignaciones').value;
+    const productividadVal = overlay.querySelector('#prInpProductividad').value;
+    if(!operario){ showToast('Escribe el nombre del operario'); return; }
+    if(asignacionesVal===''){ showToast('Escribe el número de asignaciones'); return; }
+    if(productividadVal===''){ showToast('Escribe el porcentaje de productividad'); return; }
+    const newRow = {
+      id: editing ? r.id : ('pr'+Date.now()+Math.random().toString(36).slice(2,7)),
+      operario,
+      operacion: overlay.querySelector('#prInpOperacion').value.trim(),
+      producto: overlay.querySelector('#prInpProducto').value.trim(),
+      turno: overlay.querySelector('#prInpTurno').value,
+      fecha: overlay.querySelector('#prInpFecha').value || '',
+      asignaciones: Math.max(0, Number(asignacionesVal)),
+      productividad: Math.max(0, Math.min(100, Number(productividadVal))),
+      estado: overlay.querySelector('#prInpEstado').value
+    };
+    if(editing){ rows[idx] = newRow; } else { rows.push(newRow); }
+    await saveAppData(APPDATA);
+    overlay.remove();
+    prodRefreshAll();
+  });
+}
+
+function prodRefreshAll(){
+  prodFillSelect('prodFOperario', prodDistinct('operario'));
+  prodFillSelect('prodFOperacion', prodDistinct('operacion'));
+  prodFillSelect('prodFProducto', prodDistinct('producto'));
+  prodRenderTable();
+  prodRenderEmpleadoChart();
+  prodRenderDiasChart();
+  prodRenderTurnoChart();
+  prodRenderOperacionChart();
+}
+
+let prodViewWired = false;
+function renderProduccionView(){
+  if(!prodViewWired){
+    document.getElementById('prodFOperario').addEventListener('change', prodRenderTable);
+    document.getElementById('prodFOperacion').addEventListener('change', prodRenderTable);
+    document.getElementById('prodFProducto').addEventListener('change', prodRenderTable);
+    document.getElementById('prodLimpiarBtn').addEventListener('click', () => {
+      document.getElementById('prodFOperario').value='';
+      document.getElementById('prodFOperacion').value='';
+      document.getElementById('prodFProducto').value='';
+      prodRenderTable();
+    });
+    document.getElementById('prodAplicarBtn').addEventListener('click', prodRenderTable);
+    document.getElementById('prodFTop').addEventListener('change', prodRenderEmpleadoChart);
+    document.getElementById('prodFOrden').addEventListener('change', prodRenderEmpleadoChart);
+    document.getElementById('btnProdNuevaFila').addEventListener('click', ()=> openProdRowModal());
+    document.querySelector('#prodDetailTable tbody').addEventListener('click', (e)=>{
+      const editBtn = e.target.closest('[data-prod-edit]');
+      if(editBtn){ openProdRowModal(parseInt(editBtn.dataset.prodEdit,10)); return; }
+      const delBtn = e.target.closest('[data-prod-delete]');
+      if(delBtn){
+        const idx = parseInt(delBtn.dataset.prodDelete,10);
+        if(!confirm('¿Eliminar esta fila?')) return;
+        getProdDetalle().splice(idx,1);
+        saveAppData(APPDATA).then(prodRefreshAll);
+      }
+    });
+    prodViewWired = true;
+  }
+  // Chart.js necesita que el canvas ya sea visible para medir su tamaño,
+  // así que las gráficas se (re)crean cada vez que se abre esta pestaña o cambian los datos.
+  prodRefreshAll();
 }
 
 // ---- Pedidos: deuda total por producto (agrupada), vista completa ----
 let pedidosViewSearchTerm = '';
-let pedidosViewOrden = 'az';
 function computeDebtGroups(){
   const dists = getAllDistributors();
   const grupos = {};
@@ -1675,25 +2548,15 @@ function renderPedidosView(){
   if(!tbody) return;
   const rows = computeDebtGroups();
   const t = pedidosViewSearchTerm.trim();
-  let filtered = !t ? rows.slice() : rows.filter(r => matchesProductSearch(r, t));
-
-  if(pedidosViewOrden === 'pend_desc'){
-    filtered.sort((a,b)=> b.pend - a.pend);
-  }else if(pedidosViewOrden === 'pend_asc'){
-    filtered.sort((a,b)=> a.pend - b.pend);
-  }else{
-    filtered.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
-  }
-
+  const filtered = !t ? rows : rows.filter(r => matchesProductSearch(r, t));
   let fVal=0, fUnid=0, lastCat=null, bodyHtml='';
-  const agruparPorCategoria = pedidosViewOrden === 'az';
   filtered.forEach(r=>{
-    if(agruparPorCategoria && r.categoria !== lastCat){
+    if(r.categoria !== lastCat){
       bodyHtml += `<tr class="cat-row"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
       lastCat = r.categoria;
     }
     fVal += r.pendVal; fUnid += r.pend;
-    bodyHtml += `<tr><td>${agruparPorCategoria ? '' : escapeHtml(r.categoria)}</td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
+    bodyHtml += `<tr><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
       <td class="num">${r.nDist}</td><td class="num">${fmtNum(r.pend)}</td><td class="num pend-val pos">${fmt(r.pendVal)}</td></tr>`;
   });
   tbody.innerHTML = bodyHtml || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
@@ -2650,11 +3513,6 @@ function openTotalDebtReport(){
     <h3 class="no-print">Deuda total de productos — total por medida/estilo</h3>
     <div class="debt-report-toolbar no-print">
       <input type="text" id="tdrSearch" placeholder="Filtrar por producto, categoría o medida...">
-      <select id="tdrOrden">
-        <option value="az">Orden: Categoría / Producto (A-Z)</option>
-        <option value="pend_desc">Pendiente: Mayor a menor</option>
-        <option value="pend_asc">Pendiente: Menor a mayor</option>
-      </select>
       <button class="print-btn-modal" id="btnImprimirDeudaTotal">🖨 Imprimir</button>
     </div>
     <div class="debt-report-totals">
@@ -2680,31 +3538,20 @@ function openTotalDebtReport(){
   modalEl.classList.add('wide', 'debt-report-modal');
   const tbody = overlay.querySelector('#tdrBody');
   const searchInp = overlay.querySelector('#tdrSearch');
-  const ordenSel = overlay.querySelector('#tdrOrden');
 
-  function paint(term, orden){
+  function paint(term){
     const t = (term||'').trim();
-    let filtered = !t ? rows.slice() : rows.filter(r => matchesProductNameOnly(r, t));
-
-    if(orden === 'pend_desc'){
-      filtered.sort((a,b)=> b.pend - a.pend);
-    }else if(orden === 'pend_asc'){
-      filtered.sort((a,b)=> a.pend - b.pend);
-    }else{
-      filtered.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
-    }
-
+    const filtered = !t ? rows : rows.filter(r => matchesProductNameOnly(r, t));
     let fVal=0, fUnid=0;
     let lastCat = null;
     let bodyHtml = '';
-    const agruparPorCategoria = orden === 'az';
     filtered.forEach(r=>{
-      if(agruparPorCategoria && r.categoria !== lastCat){
+      if(r.categoria !== lastCat){
         bodyHtml += `<tr class="cat-row"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
         lastCat = r.categoria;
       }
       fVal += r.pendVal; fUnid += r.pend;
-      bodyHtml += `<tr><td>${agruparPorCategoria ? '' : escapeHtml(r.categoria)}</td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
+      bodyHtml += `<tr><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
         <td class="num">${r.nDist}</td><td class="num">${fmtNum(r.pend)}</td><td class="num pend-val pos">${fmt(r.pendVal)}</td></tr>`;
     });
     tbody.innerHTML = bodyHtml || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
@@ -2712,9 +3559,8 @@ function openTotalDebtReport(){
     overlay.querySelector('#tdrUnid').textContent = fmtNum(fUnid);
     overlay.querySelector('#tdrVal').textContent = fmt(fVal);
   }
-  paint('', 'az');
-  searchInp.addEventListener('input', debounce(()=> paint(searchInp.value, ordenSel.value), 150));
-  ordenSel.addEventListener('change', ()=> paint(searchInp.value, ordenSel.value));
+  paint('');
+  searchInp.addEventListener('input', ()=> paint(searchInp.value));
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
   overlay.querySelector('#btnImprimirDeudaTotal').addEventListener('click', ()=> printModal(overlay));
 }
@@ -2852,22 +3698,14 @@ document.getElementById('btnLimpiarFiltrosTop').addEventListener('click', ()=>{
   document.getElementById('filtroVendedorTop').value = '';
 });
 
-// ---------- barra de pestañas superior ----------
-// Cada pestaña ahora es una vista completa: cambian de pantalla dentro de la misma app,
-// sin abrir modales. Ver switchView() más arriba.
-document.getElementById('navTabResumen').addEventListener('click', ()=> switchView('resumen'));
-document.getElementById('navTabPedidos').addEventListener('click', ()=> switchView('pedidos'));
-document.getElementById('navTabVendedores').addEventListener('click', ()=> switchView('vendedores'));
-document.getElementById('navTabDistribuidores').addEventListener('click', ()=> switchView('distribuidores'));
-document.getElementById('navTabInventario').addEventListener('click', ()=> switchView('inventario'));
+// ---------- navegación superior ----------
+// Ahora cada opción vive dentro de uno de los dos desplegables (Distribuidores / Producción).
+// Cada una es una vista completa: cambian de pantalla dentro de la misma app, sin abrir modales.
+// Ver switchView() y el wiring de .nav-dropdown-* más arriba.
 
 // Vista "Pedidos": búsqueda e impresión
-document.getElementById('pedidosViewSearch').addEventListener('input', debounce((e)=>{
+document.getElementById('pedidosViewSearch').addEventListener('input', (e)=>{
   pedidosViewSearchTerm = e.target.value;
-  renderPedidosView();
-}, 150));
-document.getElementById('pedidosViewOrden').addEventListener('change', (e)=>{
-  pedidosViewOrden = e.target.value;
   renderPedidosView();
 });
 document.getElementById('btnImprimirPedidosView').addEventListener('click', ()=> window.print());
@@ -2904,10 +3742,10 @@ document.getElementById('inpNuevoDistribuidorView').addEventListener('keydown', 
 });
 
 // Vista "Inventario": búsqueda, nuevo producto y deuda por producto
-document.getElementById('inventarioSearch').addEventListener('input', debounce((e)=>{
+document.getElementById('inventarioSearch').addEventListener('input', (e)=>{
   inventarioSearchTerm = e.target.value;
   renderInventarioView();
-}, 150));
+});
 document.getElementById('btnNuevoProductoView').addEventListener('click', openNewProductModal);
 
 (function wireInventarioDebtSearch(){
@@ -3059,6 +3897,757 @@ function openChangeAuthModal(){
 }
 document.getElementById('btnCambiarAcceso').addEventListener('click', openChangeAuthModal);
 
+// ================= GESTIÓN DE PLANTA: motor genérico de módulos (CRUD con guardado real en Firebase) =================
+// Cada módulo se define una sola vez (campos + columnas) y comparte el mismo motor de
+// listar / buscar / crear / editar / eliminar, guardando siempre con saveAppData(APPDATA),
+// exactamente igual que Vendedores/Distribuidores.
+
+const PLANTA_MODULES = {
+  operarios:{
+    dataKey:'plantaOperarios', bodyId:'operariosBody', searchId:'operariosSearch', addBtnId:'btnNuevoOperario',
+    title:'operario', titleCap:'Operario',
+    fields:[
+      {key:'nombre', label:'Nombre completo', type:'text', required:true, placeholder:'Ej. Juana Pérez'},
+      {key:'cedula', label:'Cédula / Documento', type:'text', placeholder:'Ej. 1017123456'},
+      {key:'cargo', label:'Cargo', type:'text', placeholder:'Ej. Operaria de costura'},
+      {key:'turno', label:'Turno', type:'select', options:[{value:'',label:'Sin turno'},{value:'Mañana',label:'Mañana'},{value:'Tarde',label:'Tarde'},{value:'Noche',label:'Noche'}]},
+      {key:'telefono', label:'Teléfono', type:'text', placeholder:'Ej. 3001234567'},
+      {key:'fechaIngreso', label:'Fecha de ingreso', type:'date'},
+      {key:'activo', label:'Estado', type:'select', default:'activo', options:[{value:'activo',label:'Activo'},{value:'inactivo',label:'Inactivo'}]}
+    ],
+    columns:[
+      {key:'nombre', label:'Nombre'},
+      {key:'cargo', label:'Cargo', format:v=>v||'—'},
+      {key:'turno', label:'Turno', format:v=>v||'—'},
+      {key:'telefono', label:'Teléfono', format:v=>v||'—'},
+      {key:'activo', label:'Estado', html:true, format:v=>`<span class="badge ${v==='inactivo'?'saldado':'debe'}">${v==='inactivo'?'Inactivo':'Activo'}</span>`}
+    ]
+  },
+  plantaproductos:{
+    dataKey:'plantaProductos', bodyId:'plantaproductosBody', searchId:'plantaproductosSearch', addBtnId:'btnNuevoPlantaProducto',
+    title:'producto', titleCap:'Producto',
+    fields:[
+      {key:'nombre', label:'Nombre del producto', type:'text', required:true, placeholder:'Ej. Sábana Silver'},
+      {key:'categoria', label:'Categoría', type:'text', placeholder:'Ej. Sábanas'},
+      {key:'unidad', label:'Unidad de medida', type:'text', placeholder:'Ej. Unidad, Juego, Metro'},
+      {key:'tiempoEstandar', label:'Tiempo estándar (min)', type:'number', placeholder:'Ej. 20'},
+      {key:'costoMaterial', label:'Costo de material (tela e insumos)', type:'number', placeholder:'Ej. 15000 — se ignora si el producto tiene desglose de insumos en Producción · Costos de Productos'},
+      {key:'precioVenta', label:'Precio de venta', type:'number', placeholder:'Ej. 35000'},
+      {key:'activo', label:'Estado', type:'select', default:'activo', options:[{value:'activo',label:'Activo'},{value:'inactivo',label:'Inactivo'}]}
+    ],
+    columns:[
+      {key:'nombre', label:'Producto'},
+      {key:'categoria', label:'Categoría', format:v=>v||'—'},
+      {key:'unidad', label:'Unidad', format:v=>v||'—'},
+      {key:'tiempoEstandar', label:'Tiempo estándar', format:v=>v?`${v} min`:'—'},
+      {key:'costoMaterial', label:'Costo material', format:(v,item)=> (Array.isArray(item.materiales)&&item.materiales.length) ? fmt(costeoMaterialPorProducto(item))+' (desglose)' : (v?fmt(v):'—')},
+      {key:'precioVenta', label:'Precio venta', format:v=>v?fmt(v):'—'},
+      {key:'activo', label:'Estado', html:true, format:v=>`<span class="badge ${v==='inactivo'?'saldado':'debe'}">${v==='inactivo'?'Inactivo':'Activo'}</span>`}
+    ]
+  },
+  insumos:{
+    dataKey:'plantaInsumos', bodyId:'insumosBody', searchId:'insumosSearch', addBtnId:'btnNuevoInsumo',
+    title:'insumo', titleCap:'Insumo',
+    fields:[
+      {key:'nombre', label:'Nombre del insumo', type:'text', required:true, placeholder:'Ej. Tela Silver blanca'},
+      {key:'unidad', label:'Unidad de medida', type:'text', placeholder:'Ej. Metro, Rollo, Kg'},
+      {key:'stock', label:'Stock actual', type:'number', placeholder:'Ej. 120'},
+      {key:'costoUnitario', label:'Costo unitario', type:'number', placeholder:'Ej. 8000'},
+      {key:'proveedor', label:'Proveedor', type:'text', placeholder:'Ej. Textiles del Valle'}
+    ],
+    columns:[
+      {key:'nombre', label:'Insumo'},
+      {key:'unidad', label:'Unidad', format:v=>v||'—'},
+      {key:'stock', label:'Stock', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
+      {key:'costoUnitario', label:'Costo unitario', format:v=>v?fmt(v):'—'},
+      {key:'proveedor', label:'Proveedor', format:v=>v||'—'}
+    ]
+  },
+  operaciones:{
+    dataKey:'plantaOperaciones', bodyId:'operacionesBody', searchId:'operacionesSearch', addBtnId:'btnNuevaOperacion',
+    title:'operación', titleCap:'Operación',
+    fields:[
+      {key:'nombre', label:'Nombre de la operación', type:'text', required:true, placeholder:'Ej. Fileteado'},
+      {key:'area', label:'Área / Proceso', type:'text', placeholder:'Ej. Costura'},
+      {key:'tiempoEstandar', label:'Tiempo estándar (min)', type:'number', placeholder:'Ej. 5'},
+      {key:'pagoPorUnidad', label:'Pago por unidad (destajo)', type:'number', placeholder:'Ej. 500'},
+      {key:'descripcion', label:'Descripción', type:'textarea', placeholder:'Detalles de la operación'}
+    ],
+    columns:[
+      {key:'nombre', label:'Operación'},
+      {key:'area', label:'Área', format:v=>v||'—'},
+      {key:'tiempoEstandar', label:'Tiempo estándar', format:v=>v?`${v} min`:'—'},
+      {key:'pagoPorUnidad', label:'Pago por unidad', format:v=>v?fmt(v):'—'},
+      {key:'descripcion', label:'Descripción', format:v=>v||'—'}
+    ]
+  },
+  asignaciones:{
+    dataKey:'plantaAsignaciones', bodyId:'asignacionesBody', searchId:'asignacionesSearch', addBtnId:'btnNuevaAsignacion',
+    title:'asignación', titleCap:'Asignación',
+    fields:[
+      {key:'operario', label:'Operario', type:'select', required:true, options:()=>plantaSelectOptions('operarios','nombre','Selecciona un operario')},
+      {key:'operacion', label:'Operación', type:'select', required:true, options:()=>plantaSelectOptions('operaciones','nombre','Selecciona una operación')},
+      {key:'producto', label:'Producto', type:'select', options:()=>plantaSelectOptions('plantaproductos','nombre','Selecciona un producto')},
+      {key:'fecha', label:'Fecha', type:'date'},
+      {key:'turno', label:'Turno', type:'select', options:[{value:'',label:'Sin turno'},{value:'Mañana',label:'Mañana'},{value:'Tarde',label:'Tarde'},{value:'Noche',label:'Noche'}]},
+      {key:'cantidad', label:'Cantidad asignada', type:'number', placeholder:'Ej. 30'},
+      {key:'estado', label:'Estado', type:'select', default:'pendiente', options:[{value:'pendiente',label:'Pendiente'},{value:'completada',label:'Completada'}]}
+    ],
+    columns:[
+      {key:'operario', label:'Operario', format:v=>v||'—'},
+      {key:'operacion', label:'Operación', format:v=>v||'—'},
+      {key:'producto', label:'Producto', format:v=>v||'—'},
+      {key:'fecha', label:'Fecha', format:v=>v||'—'},
+      {key:'turno', label:'Turno', format:v=>v||'—'},
+      {key:'cantidad', label:'Cantidad', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
+      {key:'estado', label:'Estado', html:true, format:v=>`<span class="badge ${v==='completada'?'saldado':'debe'}">${v==='completada'?'Completada':'Pendiente'}</span>`}
+    ]
+  },
+  ordenesproduccion:{
+    dataKey:'plantaOrdenes', bodyId:'ordenesproduccionBody', searchId:'ordenesproduccionSearch', addBtnId:'btnNuevaOrden',
+    title:'orden de producción', titleCap:'Orden de Producción',
+    fields:[
+      {key:'numero', label:'Número de orden', type:'text', required:true, placeholder:'Ej. OP-001'},
+      {key:'producto', label:'Producto', type:'select', options:()=>plantaSelectOptions('plantaproductos','nombre','Selecciona un producto')},
+      {key:'cantidad', label:'Cantidad', type:'number', placeholder:'Ej. 100'},
+      {key:'fechaInicio', label:'Fecha de inicio', type:'date'},
+      {key:'fechaEntrega', label:'Fecha de entrega', type:'date'},
+      {key:'prioridad', label:'Prioridad', type:'select', default:'media', options:[{value:'alta',label:'Alta'},{value:'media',label:'Media'},{value:'baja',label:'Baja'}]},
+      {key:'estado', label:'Estado', type:'select', default:'pendiente', options:[{value:'pendiente',label:'Pendiente'},{value:'en_proceso',label:'En proceso'},{value:'completada',label:'Completada'}]}
+    ],
+    columns:[
+      {key:'numero', label:'Orden'},
+      {key:'producto', label:'Producto', format:v=>v||'—'},
+      {key:'cantidad', label:'Cantidad', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
+      {key:'fechaInicio', label:'Inicio', format:v=>v||'—'},
+      {key:'fechaEntrega', label:'Entrega', format:v=>v||'—'},
+      {key:'prioridad', label:'Prioridad', html:true, format:v=>`<span class="badge ${v==='alta'?'debe':'saldado'}">${v==='alta'?'Alta':v==='baja'?'Baja':'Media'}</span>`},
+      {key:'estado', label:'Estado', format:v=>({pendiente:'Pendiente',en_proceso:'En proceso',completada:'Completada'}[v]||'Pendiente')}
+    ]
+  },
+  costosfijos:{
+    dataKey:'plantaCostosFijos', bodyId:'costosfijosBody', searchId:'costosfijosSearch', addBtnId:'btnNuevoCostoFijo',
+    title:'costo fijo', titleCap:'Costo Fijo',
+    fields:[
+      {key:'concepto', label:'Concepto', type:'text', required:true, placeholder:'Ej. Arriendo de planta'},
+      {key:'categoria', label:'Categoría', type:'select', options:[{value:'Arriendo',label:'Arriendo'},{value:'Servicios',label:'Servicios públicos'},{value:'Nómina administrativa',label:'Nómina administrativa'},{value:'Seguros',label:'Seguros'},{value:'Otro',label:'Otro'}]},
+      {key:'valorMensual', label:'Valor', type:'number', placeholder:'Ej. 2500000'},
+      {key:'periodicidad', label:'Periodicidad', type:'select', default:'mensual', options:[{value:'mensual',label:'Mensual'},{value:'anual',label:'Anual'}]}
+    ],
+    columns:[
+      {key:'concepto', label:'Concepto'},
+      {key:'categoria', label:'Categoría', format:v=>v||'—'},
+      {key:'valorMensual', label:'Valor', format:v=>v?fmt(v):'—'},
+      {key:'periodicidad', label:'Periodicidad', format:v=>v==='anual'?'Anual':'Mensual'}
+    ]
+  },
+  novedades:{
+    dataKey:'plantaNovedades', bodyId:'novedadesBody', searchId:'novedadesSearch', addBtnId:'btnNuevaNovedad',
+    title:'novedad', titleCap:'Novedad',
+    fields:[
+      {key:'operario', label:'Operario', type:'select', required:true, options:()=>plantaSelectOptions('operarios','nombre','Selecciona un operario')},
+      {key:'tipo', label:'Tipo', type:'select', default:'permiso', options:[{value:'incapacidad',label:'Incapacidad'},{value:'permiso',label:'Permiso'},{value:'vacaciones',label:'Vacaciones'},{value:'licencia',label:'Licencia'}]},
+      {key:'fechaInicio', label:'Desde', type:'date'},
+      {key:'fechaFin', label:'Hasta', type:'date'},
+      {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Detalles de la novedad'}
+    ],
+    columns:[
+      {key:'operario', label:'Operario', format:v=>v||'—'},
+      {key:'tipo', label:'Tipo', format:v=>({incapacidad:'Incapacidad',permiso:'Permiso',vacaciones:'Vacaciones',licencia:'Licencia'}[v]||'Permiso')},
+      {key:'fechaInicio', label:'Desde', format:v=>v||'—'},
+      {key:'fechaFin', label:'Hasta', format:v=>v||'—'},
+      {key:'observaciones', label:'Observaciones', format:v=>v||'—'}
+    ]
+  },
+  jornadalaboral:{
+    dataKey:'plantaJornada', bodyId:'jornadalaboralBody', searchId:null, addBtnId:'btnNuevoTurno',
+    title:'turno', titleCap:'Turno',
+    fields:[
+      {key:'nombre', label:'Nombre del turno', type:'text', required:true, placeholder:'Ej. Turno Mañana'},
+      {key:'horaInicio', label:'Hora de inicio', type:'time'},
+      {key:'horaFin', label:'Hora de fin', type:'time'},
+      {key:'dias', label:'Días', type:'text', placeholder:'Ej. Lunes a Viernes'},
+      {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Detalles del turno'}
+    ],
+    columns:[
+      {key:'nombre', label:'Turno'},
+      {key:'horaInicio', label:'Hora inicio', format:v=>v||'—'},
+      {key:'horaFin', label:'Hora fin', format:v=>v||'—'},
+      {key:'dias', label:'Días', format:v=>v||'—'},
+      {key:'observaciones', label:'Observaciones', format:v=>v||'—'}
+    ]
+  }
+};
+
+// Devuelve las opciones {value,label} de un módulo de planta para usarlas en un <select> de otro módulo
+function plantaSelectOptions(moduleKey, labelField, placeholder){
+  const mod = PLANTA_MODULES[moduleKey];
+  const list = APPDATA[mod.dataKey] || [];
+  return [{value:'', label: placeholder || 'Selecciona'}, ...list.map(item => ({value:item[labelField], label:item[labelField]}))];
+}
+
+function getPlantaList(moduleKey){
+  const mod = PLANTA_MODULES[moduleKey];
+  if(!APPDATA[mod.dataKey]) APPDATA[mod.dataKey] = [];
+  return APPDATA[mod.dataKey];
+}
+
+function renderPlantaModule(moduleKey){
+  const mod = PLANTA_MODULES[moduleKey];
+  const body = document.getElementById(mod.bodyId);
+  if(!body) return;
+  const searchEl = mod.searchId ? document.getElementById(mod.searchId) : null;
+  const term = (searchEl && searchEl.value || '').toLowerCase().trim();
+  const raw = getPlantaList(moduleKey);
+  let rows = raw.map((item, idx) => ({item, idx}));
+  if(term){
+    rows = rows.filter(({item}) => mod.columns.some(c => String(item[c.key] ?? '').toLowerCase().includes(term)));
+  }
+  const colCount = mod.columns.length + 1;
+  if(!rows.length){
+    body.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">${raw.length ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay registros. Usa el botón "+ Nuevo" para crear el primero.'}</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(({item, idx}) => `
+    <tr>
+      ${mod.columns.map(c => {
+        const rawVal = item[c.key];
+        const out = c.format ? c.format(rawVal, item) : String(rawVal ?? '—');
+        return `<td>${c.html ? out : escapeHtml(String(out))}</td>`;
+      }).join('')}
+      <td class="row-actions no-print">
+        <button class="icon-btn icon-edit" data-planta-edit="${moduleKey}" data-idx="${idx}" title="Editar">✎</button>
+        <button class="icon-btn icon-delete" data-planta-delete="${moduleKey}" data-idx="${idx}" title="Eliminar">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function buildPlantaFieldHtml(f, currentValue){
+  const val = (currentValue !== undefined && currentValue !== null) ? currentValue : (f.default !== undefined ? f.default : '');
+  if(f.type === 'select'){
+    const opts = typeof f.options === 'function' ? f.options() : (f.options || []);
+    return `<div class="field"><label>${escapeHtml(f.label)}${f.required?' *':''}</label>
+      <select id="pf_${f.key}">${opts.map(o=>`<option value="${escapeAttr(o.value)}" ${String(o.value)===String(val)?'selected':''}>${escapeHtml(o.label)}</option>`).join('')}</select>
+    </div>`;
+  }
+  if(f.type === 'textarea'){
+    return `<div class="field"><label>${escapeHtml(f.label)}${f.required?' *':''}</label>
+      <textarea id="pf_${f.key}" rows="3" placeholder="${escapeAttr(f.placeholder||'')}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:vertical;">${escapeHtml(val)}</textarea>
+    </div>`;
+  }
+  return `<div class="field"><label>${escapeHtml(f.label)}${f.required?' *':''}</label>
+    <input type="${f.type||'text'}" id="pf_${f.key}" value="${escapeAttr(val)}" placeholder="${escapeAttr(f.placeholder||'')}">
+  </div>`;
+}
+
+function openPlantaModal(moduleKey, idx){
+  const mod = PLANTA_MODULES[moduleKey];
+  const list = getPlantaList(moduleKey);
+  const editing = (idx !== undefined && idx !== null && list[idx]);
+  const record = editing ? list[idx] : {};
+  const overlay = openModal(`
+    <h3>${editing ? 'Editar' : 'Nuevo'} ${mod.titleCap}</h3>
+    ${mod.fields.map(f => buildPlantaFieldHtml(f, record[f.key])).join('')}
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      ${editing ? `<button class="btn-danger" id="btnDeleteInModal">Eliminar</button>` : ''}
+      <button class="btn-confirm" id="btnConfirm">Guardar</button>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
+  if(editing){
+    overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
+      if(!confirm(`¿Eliminar este ${mod.title}?`)) return;
+      list.splice(idx, 1);
+      await saveAppData(APPDATA);
+      overlay.remove();
+      renderPlantaModule(moduleKey);
+    });
+  }
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const newRecord = editing ? {...record} : {id: 'p' + Date.now() + Math.random().toString(36).slice(2,7)};
+    for(const f of mod.fields){
+      const el = overlay.querySelector('#pf_' + f.key);
+      let v = el.value;
+      if(f.type === 'number') v = (v === '' ? '' : Number(v));
+      if(f.required && (v === '' || v === null || v === undefined)){
+        showToast(`Completa el campo "${f.label}"`);
+        el.focus();
+        return;
+      }
+      newRecord[f.key] = v;
+    }
+    if(editing){ list[idx] = newRecord; } else { list.push(newRecord); }
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderPlantaModule(moduleKey);
+  });
+}
+
+function initPlantaModule(moduleKey){
+  const mod = PLANTA_MODULES[moduleKey];
+  const addBtn = mod.addBtnId ? document.getElementById(mod.addBtnId) : null;
+  if(addBtn) addBtn.addEventListener('click', ()=> openPlantaModal(moduleKey));
+  const searchEl = mod.searchId ? document.getElementById(mod.searchId) : null;
+  if(searchEl) searchEl.addEventListener('input', ()=> renderPlantaModule(moduleKey));
+  const body = document.getElementById(mod.bodyId);
+  if(body){
+    body.addEventListener('click', (e)=>{
+      const editBtn = e.target.closest('[data-planta-edit]');
+      if(editBtn){ openPlantaModal(moduleKey, parseInt(editBtn.dataset.idx, 10)); return; }
+      const delBtn = e.target.closest('[data-planta-delete]');
+      if(delBtn){
+        const idx = parseInt(delBtn.dataset.idx, 10);
+        if(!confirm(`¿Eliminar este ${mod.title}?`)) return;
+        getPlantaList(moduleKey).splice(idx, 1);
+        saveAppData(APPDATA).then(()=> renderPlantaModule(moduleKey));
+      }
+    });
+  }
+}
+Object.keys(PLANTA_MODULES).forEach(initPlantaModule);
+
+// ================= Producción · Costos de Productos + Dashboard de Costos y Utilidades =================
+function costeoCfg(){
+  if(!APPDATA.costeoConfig) APPDATA.costeoConfig = {metodoManoObra:'tiempo', tarifaPorMinuto:0};
+  return APPDATA.costeoConfig;
+}
+
+// Costo de mano de obra de un producto según el método elegido:
+// - 'tiempo': tiempo estándar (min) del producto × tarifa por minuto configurada
+// - 'destajo': suma del pago por unidad de las operaciones que se le han asignado al producto (en Asignaciones)
+function costeoManoObraPorProducto(prod){
+  const cfg = costeoCfg();
+  if(cfg.metodoManoObra === 'destajo'){
+    const asigs = (APPDATA.plantaAsignaciones || []).filter(a => a.producto === prod.nombre);
+    const opsUsadas = [...new Set(asigs.map(a => a.operacion).filter(Boolean))];
+    const ops = APPDATA.plantaOperaciones || [];
+    return opsUsadas.reduce((sum, opName) => {
+      const op = ops.find(o => o.nombre === opName);
+      return sum + (op && op.pagoPorUnidad ? Number(op.pagoPorUnidad) : 0);
+    }, 0);
+  }
+  const tiempo = Number(prod.tiempoEstandar) || 0;
+  return tiempo * (Number(cfg.tarifaPorMinuto) || 0);
+}
+
+// Suma el desglose de insumos de un producto (ej. Elástico + Bolso + Hilo) para obtener el costo variable de material.
+// Si el producto todavía no tiene desglose, se usa el campo manual "Costo material" (compatibilidad con productos existentes).
+function costeoMaterialPorProducto(prod){
+  const materiales = Array.isArray(prod.materiales) ? prod.materiales : [];
+  if(materiales.length){
+    return materiales.reduce((s,m) => s + (Number(m.cantidad)||0) * (Number(m.costoUnitario)||0), 0);
+  }
+  return Number(prod.costoMaterial) || 0;
+}
+
+function costeoCalcularProducto(prod){
+  const material = costeoMaterialPorProducto(prod);
+  const manoObra = costeoManoObraPorProducto(prod);
+  const total = material + manoObra;
+  const precioVenta = Number(prod.precioVenta) || 0;
+  const utilidad = precioVenta ? (precioVenta - total) : null;
+  const margen = (precioVenta > 0) ? (utilidad / precioVenta * 100) : null;
+  return { material, manoObra, total, tiempo: Number(prod.tiempoEstandar) || 0, precioVenta: precioVenta || null, utilidad, margen };
+}
+
+function costeoGetProductos(){
+  return (APPDATA.plantaProductos || []).filter(p => p.activo !== 'inactivo');
+}
+
+function costeoFijosMensuales(){
+  return (APPDATA.plantaCostosFijos || []).reduce((sum, c) => {
+    const v = Number(c.valorMensual) || 0;
+    return sum + (c.periodicidad === 'anual' ? v / 12 : v);
+  }, 0);
+}
+
+function costeoMargenClase(m){ return m >= 30 ? 'high' : (m >= 10 ? 'mid' : 'low'); }
+
+// ---------- Panel: Producción · Costos de Productos ----------
+let costViewWired = false;
+let costChartTopInst = null, costChartCompInst = null;
+
+function renderCostosProductosView(){
+  const cfg = costeoCfg();
+  const metodoSel = document.getElementById('costMetodoManoObra');
+  const tarifaWrap = document.getElementById('costTarifaWrap');
+  const tarifaInput = document.getElementById('costTarifaMin');
+  if(metodoSel) metodoSel.value = cfg.metodoManoObra;
+  if(tarifaInput) tarifaInput.value = cfg.tarifaPorMinuto || '';
+  if(tarifaWrap) tarifaWrap.style.display = cfg.metodoManoObra === 'tiempo' ? '' : 'none';
+
+  const term = (document.getElementById('costProductoSearch')?.value || '').toLowerCase().trim();
+  let productos = costeoGetProductos();
+  if(term) productos = productos.filter(p => (p.nombre||'').toLowerCase().includes(term) || (p.categoria||'').toLowerCase().includes(term));
+  const rows = productos.map(p => ({ p, c: costeoCalcularProducto(p) }));
+
+  const body = document.querySelector('#costProductoTable tbody');
+  if(body){
+    if(!rows.length){
+      body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">${(APPDATA.plantaProductos||[]).length ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay productos. Créalos en la vista "Productos".'}</td></tr>`;
+    }else{
+      body.innerHTML = rows.map(({p,c}) => {
+        const margenHtml = c.margen === null ? '—' : `<span class="prod-pill ${costeoMargenClase(c.margen)}">${c.margen.toFixed(0)}%</span>`;
+        const nMat = Array.isArray(p.materiales) ? p.materiales.length : 0;
+        return `<tr>
+          <td>${escapeHtml(p.nombre||'—')}</td>
+          <td>${escapeHtml(p.categoria||'—')}</td>
+          <td>${c.tiempo ? c.tiempo+' min' : '—'}</td>
+          <td>${c.material ? fmt(c.material) : '—'}</td>
+          <td>${c.manoObra ? fmt(c.manoObra) : '—'}</td>
+          <td><strong>${fmt(c.total)}</strong></td>
+          <td>${c.precioVenta ? fmt(c.precioVenta) : '—'}</td>
+          <td>${margenHtml}</td>
+          <td><button class="prod-btn prod-btn-outline" data-materiales-edit="${escapeAttr(p.id)}" style="padding:4px 10px;font-size:12px;">${nMat ? nMat+' insumo'+(nMat>1?'s':'') : 'Desglosar'}</button></td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  const n = rows.length;
+  const sumC = fn => rows.reduce((s,r) => s + fn(r.c), 0);
+  document.getElementById('costStatMaterialProm').textContent = n ? fmt(sumC(c=>c.material)/n) : '–';
+  document.getElementById('costStatManoObraProm').textContent = n ? fmt(sumC(c=>c.manoObra)/n) : '–';
+  document.getElementById('costStatTotalProm').textContent = n ? fmt(sumC(c=>c.total)/n) : '–';
+  document.getElementById('costStatTiempoProm').textContent = n ? fmtNum(sumC(c=>c.tiempo)/n) + ' min' : '–';
+
+  renderCostChartTop(rows);
+  renderCostChartComposicion(rows);
+}
+
+function renderCostChartTop(rows){
+  const ctx = document.getElementById('costChartTop');
+  if(!ctx || typeof Chart === 'undefined') return;
+  const top = [...rows].sort((a,b) => b.c.total - a.c.total).slice(0,10);
+  if(costChartTopInst) costChartTopInst.destroy();
+  costChartTopInst = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: top.map(r=>r.p.nombre), datasets: [{ label:'Costo total', data: top.map(r=>r.c.total), backgroundColor:'#9E7B3B', borderRadius:4 }] },
+    options: { indexAxis:'y', plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true } } }
+  });
+}
+
+function renderCostChartComposicion(rows){
+  const ctx = document.getElementById('costChartComposicion');
+  if(!ctx || typeof Chart === 'undefined') return;
+  const totalMaterial = rows.reduce((s,r) => s + r.c.material, 0);
+  const totalManoObra = rows.reduce((s,r) => s + r.c.manoObra, 0);
+  if(costChartCompInst) costChartCompInst.destroy();
+  costChartCompInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels:['Material','Mano de obra'], datasets:[{ data:[totalMaterial,totalManoObra], backgroundColor:['#C9A25B','#7C5F2C'] }] },
+    options: { plugins:{ legend:{ position:'bottom' } } }
+  });
+}
+
+// ---------- Modal: Desglose de insumos (Costo Variable) de un producto ----------
+// Ej. del diagrama: 1 Juego de Sábanas = Elástico $300 + Bolso $90 + Hilo $50 = $1.250
+function costeoInsumosCatalogo(){
+  return (APPDATA.plantaInsumos || []).map(i => ({ nombre: i.nombre, costoUnitario: Number(i.costoUnitario)||0 }));
+}
+
+function openMaterialesModal(productId){
+  const idx = (APPDATA.plantaProductos||[]).findIndex(p => p.id === productId);
+  if(idx < 0) return;
+  const prod = APPDATA.plantaProductos[idx];
+  const filas = Array.isArray(prod.materiales) && prod.materiales.length
+    ? prod.materiales.map(m => ({...m}))
+    : [];
+  const catalogo = costeoInsumosCatalogo();
+
+  const filaHtml = (m, i) => `
+    <div class="mat-row" data-mat-row="${i}" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <select class="mat-insumo" style="flex:1.4;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;">
+        <option value="">Insumo libre (escribe abajo)</option>
+        ${catalogo.map(c => `<option value="${escapeAttr(c.nombre)}" data-costo="${c.costoUnitario}" ${c.nombre===m.insumo?'selected':''}>${escapeHtml(c.nombre)}</option>`).join('')}
+      </select>
+      <input class="mat-nombre" type="text" placeholder="Nombre (ej. Elástico)" value="${escapeAttr(m.insumo||'')}" style="flex:1.2;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;">
+      <input class="mat-cantidad" type="number" min="0" step="any" placeholder="Cant." value="${m.cantidad ?? 1}" style="width:64px;padding:8px 8px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;text-align:right;">
+      <input class="mat-costo" type="number" min="0" step="any" placeholder="$ unit." value="${m.costoUnitario ?? ''}" style="width:90px;padding:8px 8px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;text-align:right;">
+      <div class="mat-subtotal" style="width:90px;text-align:right;font-size:13px;font-weight:600;color:var(--ink);">$0</div>
+      <button type="button" class="icon-btn icon-delete mat-remove" title="Quitar">🗑</button>
+    </div>`;
+
+  const overlay = openModal(`
+    <h3>Desglose de insumos · ${escapeHtml(prod.nombre||'')}</h3>
+    <div class="hint" style="margin-bottom:10px;">Cada fila es un insumo (elástico, bolso, hilo...). Cantidad × costo unitario = subtotal. La suma es el nuevo "Costo material" (variable) del producto.</div>
+    <div id="matRowsWrap">${filas.map(filaHtml).join('')}</div>
+    <button type="button" class="prod-btn prod-btn-outline" id="btnMatAgregar" style="margin-top:4px;">+ Agregar insumo</button>
+    <div style="display:flex;justify-content:flex-end;gap:14px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">
+      <span style="font-size:13px;color:var(--ink-soft);">Costo variable total (material):</span>
+      <strong id="matTotal" style="font-size:17px;color:var(--gold-dark);">$0</strong>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Guardar desglose</button>
+    </div>
+  `);
+
+  const wrap = overlay.querySelector('#matRowsWrap');
+  const totalEl = overlay.querySelector('#matTotal');
+
+  function recalcRow(rowEl){
+    const cant = Number(rowEl.querySelector('.mat-cantidad').value) || 0;
+    const costo = Number(rowEl.querySelector('.mat-costo').value) || 0;
+    rowEl.querySelector('.mat-subtotal').textContent = fmt(cant * costo);
+  }
+  function recalcAll(){
+    let total = 0;
+    wrap.querySelectorAll('.mat-row').forEach(rowEl => {
+      recalcRow(rowEl);
+      const cant = Number(rowEl.querySelector('.mat-cantidad').value) || 0;
+      const costo = Number(rowEl.querySelector('.mat-costo').value) || 0;
+      total += cant * costo;
+    });
+    totalEl.textContent = fmt(total);
+  }
+  function addRow(m){
+    const i = wrap.querySelectorAll('.mat-row').length;
+    wrap.insertAdjacentHTML('beforeend', filaHtml(m || {}, i));
+    recalcAll();
+  }
+
+  wrap.addEventListener('input', (e) => {
+    if(e.target.classList.contains('mat-cantidad') || e.target.classList.contains('mat-costo')) recalcAll();
+  });
+  wrap.addEventListener('change', (e) => {
+    if(e.target.classList.contains('mat-insumo')){
+      const sel = e.target;
+      const opt = sel.options[sel.selectedIndex];
+      const rowEl = sel.closest('.mat-row');
+      if(sel.value){
+        rowEl.querySelector('.mat-nombre').value = sel.value;
+        const costo = opt.dataset.costo;
+        if(costo) rowEl.querySelector('.mat-costo').value = costo;
+      }
+      recalcAll();
+    }
+  });
+  wrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mat-remove');
+    if(btn){ btn.closest('.mat-row').remove(); recalcAll(); }
+  });
+  overlay.querySelector('#btnMatAgregar').addEventListener('click', () => addRow());
+
+  if(!filas.length) addRow();
+  recalcAll();
+
+  overlay.querySelector('#btnCancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async () => {
+    const nuevos = [];
+    wrap.querySelectorAll('.mat-row').forEach(rowEl => {
+      const insumo = (rowEl.querySelector('.mat-nombre').value || '').trim();
+      const cantidad = Number(rowEl.querySelector('.mat-cantidad').value) || 0;
+      const costoUnitario = Number(rowEl.querySelector('.mat-costo').value) || 0;
+      if(insumo || cantidad || costoUnitario) nuevos.push({ insumo, cantidad, costoUnitario });
+    });
+    prod.materiales = nuevos;
+    prod.costoMaterial = costeoMaterialPorProducto(prod);
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderCostosProductosView();
+    renderCostosUtilidadesView();
+    showToast('Desglose de insumos guardado');
+  });
+}
+
+function initCostosProductosView(){
+  if(costViewWired) return;
+  costViewWired = true;
+  document.getElementById('costMetodoManoObra').addEventListener('change', ()=>{
+    const tiempo = document.getElementById('costMetodoManoObra').value === 'tiempo';
+    document.getElementById('costTarifaWrap').style.display = tiempo ? '' : 'none';
+  });
+  document.getElementById('costGuardarBtn').addEventListener('click', async ()=>{
+    const cfg = costeoCfg();
+    cfg.metodoManoObra = document.getElementById('costMetodoManoObra').value;
+    cfg.tarifaPorMinuto = Number(document.getElementById('costTarifaMin').value) || 0;
+    await saveAppData(APPDATA);
+    renderCostosProductosView();
+    renderCostosUtilidadesView();
+  });
+  document.getElementById('costProductoSearch').addEventListener('input', renderCostosProductosView);
+  const tbodyMat = document.querySelector('#costProductoTable tbody');
+  if(tbodyMat){
+    tbodyMat.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-materiales-edit]');
+      if(btn) openMaterialesModal(btn.dataset.materialesEdit);
+    });
+  }
+}
+
+// ---------- Panel: Dashboard de Costos y Utilidades ----------
+let utilChartInst = null, utilPieInst = null;
+
+function renderCostosUtilidadesView(){
+  const rows = costeoGetProductos().map(p => ({ p, c: costeoCalcularProducto(p) }));
+  const conVenta = rows.filter(r => r.c.precioVenta);
+  const fijosMensuales = costeoFijosMensuales();
+  const costoVarProm = rows.length ? rows.reduce((s,r) => s + r.c.total, 0) / rows.length : 0;
+  const utilProm = conVenta.length ? conVenta.reduce((s,r) => s + r.c.utilidad, 0) / conVenta.length : 0;
+  const margenProm = conVenta.length ? conVenta.reduce((s,r) => s + r.c.margen, 0) / conVenta.length : 0;
+
+  document.getElementById('utilStatFijos').textContent = fmt(fijosMensuales);
+  document.getElementById('utilStatVariable').textContent = rows.length ? fmt(costoVarProm) : '–';
+  document.getElementById('utilStatUtilidad').textContent = conVenta.length ? fmt(utilProm) : '–';
+  document.getElementById('utilStatMargen').textContent = conVenta.length ? margenProm.toFixed(1)+'%' : '–';
+
+  let mejorTxt = '–', peorTxt = '–';
+  if(conVenta.length){
+    const sorted = [...conVenta].sort((a,b) => b.c.margen - a.c.margen);
+    mejorTxt = `${sorted[0].p.nombre} (${sorted[0].c.margen.toFixed(0)}%)`;
+    peorTxt = `${sorted[sorted.length-1].p.nombre} (${sorted[sorted.length-1].c.margen.toFixed(0)}%)`;
+  }
+  document.getElementById('utilStatMejor').textContent = mejorTxt;
+  document.getElementById('utilStatPeor').textContent = peorTxt;
+
+  const body = document.querySelector('#utilProductoTable tbody');
+  if(body){
+    if(!conVenta.length){
+      body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">Agrega el "Precio de venta" en la vista Productos para ver utilidad y margen aquí.</td></tr>`;
+    }else{
+      body.innerHTML = conVenta.map(({p,c}) => `<tr>
+        <td>${escapeHtml(p.nombre)}</td>
+        <td>${fmt(c.total)}</td>
+        <td>${fmt(c.precioVenta)}</td>
+        <td>${fmt(c.utilidad)}</td>
+        <td><span class="prod-pill ${costeoMargenClase(c.margen)}">${c.margen.toFixed(0)}%</span></td>
+      </tr>`).join('');
+    }
+  }
+
+  renderUtilChart(conVenta);
+  renderUtilPieCostosFijos();
+  renderUtilidadRealMes();
+}
+
+// ---------- Utilidad Real del Mes (Producción × Mes × Producto → Facturación − Costos Fijos − Costos Variables) ----------
+// Sigue el flujo del diagrama: Producción x Mes x Producto (Órdenes de Producción)
+// × Costo variable por producto (desglose de insumos + mano de obra) = Costos Variables del mes.
+// Utilidad = Facturación del mes (pedidos) − Costos Fijos mensuales − Costos Variables del mes.
+function currentMonthValue(){
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+}
+
+function renderUtilidadRealMes(){
+  const mesInput = document.getElementById('utilMesSelector');
+  if(!mesInput) return;
+  if(!mesInput.value) mesInput.value = currentMonthValue();
+  const [y, m] = mesInput.value.split('-').map(Number);
+
+  // 1) Producción x Mes x Producto: suma cantidades de Órdenes de Producción cuya fecha de entrega
+  //    (o de inicio, si no tiene entrega) cae en el mes seleccionado.
+  const prodPorProducto = {};
+  (APPDATA.plantaOrdenes || []).forEach(o => {
+    const t = parseFechaToTime(o.fechaEntrega || o.fechaInicio);
+    if(t === null) return;
+    const d = new Date(t);
+    if(d.getFullYear() === y && (d.getMonth()+1) === m){
+      const key = o.producto || '—';
+      prodPorProducto[key] = (prodPorProducto[key] || 0) + (Number(o.cantidad) || 0);
+    }
+  });
+
+  // 2) Costo variable por producto (desglose de insumos + mano de obra) x cantidad producida ese mes
+  const productos = costeoGetProductos();
+  const filas = Object.keys(prodPorProducto).map(nombre => {
+    const prod = productos.find(p => p.nombre === nombre) || { nombre };
+    const c = costeoCalcularProducto(prod);
+    const cantidad = prodPorProducto[nombre];
+    return { nombre, cantidad, costoUnitario: c.total, costoTotal: cantidad * c.total };
+  }).sort((a,b) => b.costoTotal - a.costoTotal);
+  const costosVariablesMes = filas.reduce((s,f) => s + f.costoTotal, 0);
+
+  // 3) Costos Fijos mensuales (Arriendo, Servicios, Nómina...)
+  const costosFijosMes = costeoFijosMensuales();
+
+  // 4) Facturación real del mes: pedidos de distribuidores cuya fecha cae en el mes seleccionado
+  let facturacionMes = 0;
+  getAllDistributors().forEach(d => {
+    const t = parseFechaToTime(d.fecha);
+    if(t === null) return;
+    const dd = new Date(t);
+    if(dd.getFullYear() === y && (dd.getMonth()+1) === m){
+      facturacionMes += distTotals(d.id).totalPedido;
+    }
+  });
+
+  const utilidadNeta = facturacionMes - costosFijosMes - costosVariablesMes;
+
+  const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setTxt('utilMesFacturacion', fmt(facturacionMes));
+  setTxt('utilMesFijos', fmt(costosFijosMes));
+  setTxt('utilMesVariables', fmt(costosVariablesMes));
+  const netaEl = document.getElementById('utilMesNeta');
+  if(netaEl){
+    netaEl.textContent = fmt(utilidadNeta);
+    netaEl.style.color = utilidadNeta >= 0 ? '#4C7A52' : '#B65B2E';
+  }
+
+  const body = document.querySelector('#utilMesTable tbody');
+  if(body){
+    if(!filas.length){
+      body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada este mes. Crea Órdenes de Producción con fecha de entrega en este mes para verlas aquí.</td></tr>`;
+    }else{
+      body.innerHTML = filas.map(f => `<tr>
+        <td>${escapeHtml(f.nombre)}</td>
+        <td>${fmtNum(f.cantidad)}</td>
+        <td>${fmt(f.costoUnitario)}</td>
+        <td><strong>${fmt(f.costoTotal)}</strong></td>
+      </tr>`).join('');
+    }
+  }
+}
+
+let utilMesWired = false;
+function initUtilidadRealMes(){
+  if(utilMesWired) return;
+  utilMesWired = true;
+  const mesInput = document.getElementById('utilMesSelector');
+  if(mesInput){
+    mesInput.value = currentMonthValue();
+    mesInput.addEventListener('change', renderUtilidadRealMes);
+  }
+}
+
+function renderUtilChart(rows){
+  const ctx = document.getElementById('utilChartCostoVsPrecio');
+  if(!ctx || typeof Chart === 'undefined') return;
+  const top = rows.slice(0,10);
+  if(utilChartInst) utilChartInst.destroy();
+  utilChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: top.map(r=>r.p.nombre), datasets: [
+      { label:'Costo total', data: top.map(r=>r.c.total), backgroundColor:'#B65B2E', borderRadius:4 },
+      { label:'Precio venta', data: top.map(r=>r.c.precioVenta), backgroundColor:'#4C7A52', borderRadius:4 }
+    ] },
+    options: { plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+function renderUtilPieCostosFijos(){
+  const ctx = document.getElementById('utilChartFijos');
+  if(!ctx || typeof Chart === 'undefined') return;
+  const agg = {};
+  (APPDATA.plantaCostosFijos || []).forEach(c => {
+    const cat = c.categoria || 'Otro';
+    const v = Number(c.valorMensual) || 0;
+    const vm = c.periodicidad === 'anual' ? v/12 : v;
+    agg[cat] = (agg[cat] || 0) + vm;
+  });
+  const labels = Object.keys(agg);
+  if(utilPieInst) utilPieInst.destroy();
+  if(!labels.length) return;
+  utilPieInst = new Chart(ctx, {
+    type: 'pie',
+    data: { labels, datasets: [{ data: labels.map(l=>agg[l]), backgroundColor:['#9E7B3B','#C9A25B','#7C5F2C','#E3D3AC','#B65B2E','#4C7A52'] }] },
+    options: { plugins:{ legend:{ position:'bottom' } } }
+  });
+}
+
 // Barra superior desplegable: muestra/oculta el resumen y los filtros para mantener el topbar compacto
 document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
   const extra = document.getElementById('topbarExtra');
@@ -3070,9 +4659,6 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 
 (async function init(){
   await firebaseReadyPromise;
-  const btnLogin = document.getElementById('btnLogin');
-  btnLogin.disabled = false;
-  btnLogin.textContent = 'Entrar';
   let sesionActiva = false;
   try{ sesionActiva = localStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
   if(sesionActiva) showApp();
