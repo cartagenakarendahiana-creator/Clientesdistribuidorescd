@@ -896,7 +896,7 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th class="num">Unidades</th><th>Transportadora</th><th class="num">Valor Factura</th><th class="num">Valor Flete</th><th class="num">% Flete</th><th>Guía</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th class="num">Bultos</th><th class="num">Cajas</th><th class="num">Yutes</th><th>Transportadora</th><th class="num">Valor Factura</th><th class="num">Valor Flete</th><th class="num">% Flete</th><th>Guía</th><th></th></tr></thead>
             <tbody id="despachosBody"></tbody>
           </table>
         </div>
@@ -1599,7 +1599,7 @@ const DEFAULT_APPDATA = {
   plantaAsignaciones:[],     // [{id, operario, operacion, producto, fecha, turno, cantidad, estado}]
   plantaOrdenes:[],          // [{id, numero, producto, cantidad, fechaInicio, fechaEntrega, prioridad, estado}]
   plantaProduccionDiaria:[], // [{id, fecha, etapa('Corte'|'Taller'), taller, producto, cantidad, observaciones}] — registro diario por producto, etapa y taller
-  despachos:[], // [{id, fecha, cliente, ciudad, unidadesDespachadas, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64)}] — registro de envíos
+  despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64)}] — registro de envíos
   plantaCostosFijos:[],      // [{id, concepto, categoria, valorMensual, periodicidad}]
   plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
   plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
@@ -4222,9 +4222,11 @@ const PLANTA_MODULES = {
     title:'despacho', titleCap:'Despacho',
     fields:[
       {key:'fecha', label:'Fecha', type:'date', required:true},
-      {key:'cliente', label:'Cliente', type:'text', required:true, placeholder:'Nombre del cliente'},
+      {key:'cliente', label:'Cliente', type:'select', required:true, options:()=>distribuidorSelectOptions()},
       {key:'ciudad', label:'Ciudad', type:'text', required:true, placeholder:'Ej. Medellín'},
-      {key:'unidadesDespachadas', label:'Unidades despachadas', type:'number', required:true, placeholder:'Ej. 24'},
+      {key:'bultos', label:'Bultos', type:'number', placeholder:'0'},
+      {key:'cajas', label:'Cajas', type:'number', placeholder:'0'},
+      {key:'yutes', label:'Yutes', type:'number', placeholder:'0'},
       {key:'transportadora', label:'Transportadora', type:'text', required:true, placeholder:'Ej. Interrapidísimo, Coordinadora, Envía...'},
       {key:'valorFactura', label:'Valor factura', type:'number', required:true, placeholder:'Ej. 450000'},
       {key:'valorFlete', label:'Valor flete', type:'number', required:true, placeholder:'Ej. 25000'},
@@ -4234,7 +4236,9 @@ const PLANTA_MODULES = {
       {key:'fecha', label:'Fecha', format:v=>v||'—'},
       {key:'cliente', label:'Cliente', format:v=>v||'—'},
       {key:'ciudad', label:'Ciudad', format:v=>v||'—'},
-      {key:'unidadesDespachadas', label:'Unidades', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
+      {key:'bultos', label:'Bultos', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
+      {key:'cajas', label:'Cajas', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
+      {key:'yutes', label:'Yutes', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
       {key:'transportadora', label:'Transportadora', format:v=>v||'—'},
       {key:'valorFactura', label:'Valor Factura', format:v=>(v!==undefined&&v!==null&&v!=='')?fmt(v):'—'},
       {key:'valorFlete', label:'Valor Flete', format:v=>(v!==undefined&&v!==null&&v!=='')?fmt(v):'—'},
@@ -4459,6 +4463,12 @@ const PLANTA_MODULES = {
 };
 
 // Devuelve las opciones {value,label} de un módulo de planta para usarlas en un <select> de otro módulo
+// Para el campo "Cliente" de Despachos: jala los distribuidores ya existentes en vez de escribirlos de nuevo.
+function distribuidorSelectOptions(){
+  const dists = getAllDistributors().slice().sort((a,b) => a.nombre.localeCompare(b.nombre));
+  return [{value:'', label:'Selecciona un cliente'}, ...dists.map(d => ({value:d.nombre, label:d.nombre}))];
+}
+
 function plantaSelectOptions(moduleKey, labelField, placeholder){
   const mod = PLANTA_MODULES[moduleKey];
   const list = APPDATA[mod.dataKey] || [];
