@@ -451,6 +451,9 @@
     font-family:'Inter';font-size:14px;background:var(--cream);
   }
   .field input:focus, .field select:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
+  .field-checkbox{display:flex;align-items:center;}
+  .checkbox-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;}
+  .checkbox-label input[type="checkbox"]{width:18px;height:18px;accent-color:var(--gold-dark);cursor:pointer;}
   .img-field input[type="file"]{
     width:100%;padding:8px;border:1px dashed var(--gold);border-radius:8px;background:var(--cream);font-size:12.5px;
   }
@@ -896,7 +899,7 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th class="num">Bultos</th><th class="num">Cajas</th><th class="num">Yutes</th><th>Transportadora</th><th class="num">Valor Factura</th><th class="num">Valor Flete</th><th class="num">% Flete</th><th>Guía</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th class="num">Bultos</th><th class="num">Cajas</th><th class="num">Yutes</th><th>Transportadora</th><th class="num">Valor Factura</th><th class="num">Valor Flete</th><th class="num">% Flete</th><th>Guía</th><th>WhatsApp</th><th>Observaciones</th><th></th></tr></thead>
             <tbody id="despachosBody"></tbody>
           </table>
         </div>
@@ -1599,7 +1602,7 @@ const DEFAULT_APPDATA = {
   plantaAsignaciones:[],     // [{id, operario, operacion, producto, fecha, turno, cantidad, estado}]
   plantaOrdenes:[],          // [{id, numero, producto, cantidad, fechaInicio, fechaEntrega, prioridad, estado}]
   plantaProduccionDiaria:[], // [{id, fecha, etapa('Corte'|'Taller'), taller, producto, cantidad, observaciones}] — registro diario por producto, etapa y taller
-  despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64)}] — registro de envíos
+  despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64), enviadoWhatsapp(bool), observaciones}] — registro de envíos
   plantaCostosFijos:[],      // [{id, concepto, categoria, valorMensual, periodicidad}]
   plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
   plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
@@ -4230,7 +4233,9 @@ const PLANTA_MODULES = {
       {key:'transportadora', label:'Transportadora', type:'text', required:true, placeholder:'Ej. Interrapidísimo, Coordinadora, Envía...'},
       {key:'valorFactura', label:'Valor factura', type:'number', required:true, placeholder:'Ej. 450000'},
       {key:'valorFlete', label:'Valor flete', type:'number', required:true, placeholder:'Ej. 25000'},
-      {key:'guiaFoto', label:'Foto de la guía', type:'image'}
+      {key:'guiaFoto', label:'Foto de la guía', type:'image'},
+      {key:'enviadoWhatsapp', label:'Enviado por WhatsApp', type:'checkbox'},
+      {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Notas del despacho...'}
     ],
     columns:[
       {key:'fecha', label:'Fecha', format:v=>v||'—'},
@@ -4250,7 +4255,9 @@ const PLANTA_MODULES = {
         const color = pct >= 15 ? '#B65B2E' : (pct >= 8 ? 'var(--gold-dark)' : '#4C7A52');
         return `<span style="font-weight:700;color:${color};">${pct.toFixed(1)}%</span>`;
       }},
-      {key:'guiaFoto', label:'Guía', html:true, format:v=>v ? `<img src="${v}" class="guia-thumb" data-guia-view alt="Guía">` : '<span style="color:var(--ink-soft);font-size:12px;">Sin foto</span>'}
+      {key:'guiaFoto', label:'Guía', html:true, format:v=>v ? `<img src="${v}" class="guia-thumb" data-guia-view alt="Guía">` : '<span style="color:var(--ink-soft);font-size:12px;">Sin foto</span>'},
+      {key:'enviadoWhatsapp', label:'WhatsApp', html:true, format:v=> v ? `<span class="badge saldado">✓ Enviado</span>` : `<span class="badge debe">Pendiente</span>`},
+      {key:'observaciones', label:'Observaciones', format:v=>v||'—'}
     ]
   },
   operarios:{
@@ -4637,6 +4644,14 @@ function buildPlantaFieldHtml(f, currentValue){
       <textarea id="pf_${f.key}" rows="3" placeholder="${escapeAttr(f.placeholder||'')}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:vertical;">${escapeHtml(val)}</textarea>
     </div>`;
   }
+  if(f.type === 'checkbox'){
+    return `<div class="field field-checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" id="pf_${f.key}" ${val ? 'checked' : ''}>
+        <span>${escapeHtml(f.label)}${f.required?' *':''}</span>
+      </label>
+    </div>`;
+  }
   if(f.type === 'image'){
     return `<div class="field img-field">
       <label>${escapeHtml(f.label)}${f.required?' *':''}</label>
@@ -4756,7 +4771,7 @@ function openPlantaModal(moduleKey, idx){
     const newRecord = editing ? {...record} : {id: 'p' + Date.now() + Math.random().toString(36).slice(2,7)};
     for(const f of mod.fields){
       const el = overlay.querySelector('#pf_' + f.key);
-      let v = el.value;
+      let v = f.type === 'checkbox' ? el.checked : el.value;
       if(f.type === 'number') v = (v === '' ? '' : Number(v));
       if(f.required && (v === '' || v === null || v === undefined)){
         showToast(`Completa el campo "${f.label}"`);
