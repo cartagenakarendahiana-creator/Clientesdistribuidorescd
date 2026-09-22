@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 <style>
   :root{
     --cream:#F9FAFB;
@@ -454,6 +455,7 @@
   .field-checkbox{display:flex;align-items:center;}
   .checkbox-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;color:var(--ink);font-weight:500;}
   .checkbox-label input[type="checkbox"]{width:18px;height:18px;accent-color:var(--gold-dark);cursor:pointer;}
+  .cell-clamp{display:inline-block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;cursor:help;}
   .img-field input[type="file"]{
     width:100%;padding:8px;border:1px dashed var(--gold);border-radius:8px;background:var(--cream);font-size:12.5px;
   }
@@ -468,6 +470,14 @@
   .guia-thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:pointer;display:block;}
   .lightbox-overlay .modal{background:transparent;box-shadow:none;padding:0;max-width:min(92vw,700px);}
   .lightbox-modal img{width:100%;max-height:85vh;object-fit:contain;border-radius:10px;display:block;}
+  .factura-doc{min-width:0;}
+  .factura-doc-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:2px solid var(--gold);padding-bottom:14px;margin-bottom:14px;}
+  .factura-doc-numero{font-size:20px;font-weight:800;color:var(--gold-dark);}
+  .factura-doc-cliente{font-size:14px;margin-bottom:12px;}
+  .factura-doc-totales{margin-top:14px;margin-left:auto;max-width:320px;}
+  .factura-doc-totales > div{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px;border-bottom:1px solid var(--line);}
+  .factura-doc-total-final{border-bottom:none !important;border-top:2px solid var(--gold) !important;margin-top:4px;padding-top:10px !important;font-size:16px !important;font-weight:800;color:var(--gold-dark);}
+  .factura-doc-obs{margin-top:14px;padding:10px 12px;background:var(--cream);border-radius:8px;font-size:13px;color:var(--ink-soft);}
   .modal-actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;}
   .modal-actions button{
     flex:1;min-width:100px;padding:10px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;
@@ -764,6 +774,7 @@
         <div class="nav-dropdown-menu">
           <button class="nav-dropdown-item active" data-nav="resumen" type="button">Resumen</button>
           <button class="nav-dropdown-item" data-nav="despachos" type="button">Despachos</button>
+          <button class="nav-dropdown-item" data-nav="facturas" type="button">Facturas</button>
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
           <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Distribuidores</button>
@@ -901,6 +912,30 @@
           <table>
             <thead><tr><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th class="num">Bultos</th><th class="num">Cajas</th><th class="num">Yutes</th><th>Transportadora</th><th class="num">Valor Factura</th><th class="num">Valor Flete</th><th class="num">% Flete</th><th>Guía</th><th>WhatsApp</th><th>Observaciones</th><th></th></tr></thead>
             <tbody id="despachosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewFacturas" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Facturas</h2><div class="sub">Historial de facturas generadas desde los pedidos. Para crear una nueva, ve al perfil del cliente y usa "Generar factura".</div></div>
+        </div>
+        <div class="kpi-strip" style="margin-bottom:14px;">
+          <div class="kpi-card"><div class="lab">Facturas generadas</div><b class="v" id="facturasKpiCount">0</b></div>
+          <div class="kpi-card"><div class="lab">Total facturado (histórico)</div><b class="v" id="facturasKpiTotal">$0</b></div>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="facturasSearch" placeholder="Buscar por número o cliente...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>N°</th><th>Fecha</th><th>Cliente</th><th class="num">Subtotal</th><th class="num">Impuesto</th><th class="num">Total</th><th></th></tr></thead>
+            <tbody id="facturasBody"></tbody>
           </table>
         </div>
       </div>
@@ -1467,8 +1502,28 @@
       </div>
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>Producción Diaria</h2><div class="sub">Registro diario por producto, etapa (Corte / Taller) y taller — alimenta la Producción del mes en el Dashboard de Costos y Utilidades.</div></div>
+          <div><h2>Producción Diaria</h2><div class="sub">Un solo registro de producción: cada fila es un producto fabricado en un día, taller/área y cantidad. Alimenta la Producción del mes en el Dashboard de Costos y Utilidades.</div></div>
           <button class="global-add-btn no-print" id="btnNuevaProduccion">+ Nuevo registro</button>
+        </div>
+        <div class="control-panel-row no-print" style="margin-bottom:14px;">
+          <div class="filter-group">
+            <label>Desde</label>
+            <input type="date" id="produccionFechaDesde">
+          </div>
+          <div class="filter-group">
+            <label>Hasta</label>
+            <input type="date" id="produccionFechaHasta">
+          </div>
+          <div class="filter-group" style="min-width:220px;">
+            <label>Producto</label>
+            <select id="produccionProductoFiltro"><option value="">Todos los productos</option></select>
+          </div>
+          <button class="filter-clear-btn" id="btnLimpiarFiltrosProduccion" type="button">Limpiar filtros</button>
+        </div>
+        <div class="kpi-strip" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;padding:0;">
+          <div class="kpi-card"><div class="lab">Registros (según filtros)</div><b class="v" id="produccionKpiRegistros">0</b></div>
+          <div class="kpi-card"><div class="lab">Unidades fabricadas</div><b class="v" id="produccionKpiUnidades">0</b></div>
+          <div class="kpi-card"><div class="lab">Productos distintos</div><b class="v" id="produccionKpiProductos">0</b></div>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1478,6 +1533,32 @@
           <table>
             <thead><tr><th>Fecha</th><th>Etapa</th><th>Taller</th><th>Producto</th><th class="num">Cantidad</th><th>Observaciones</th><th></th></tr></thead>
             <tbody id="produccionBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="page-card" style="margin-top:16px;">
+        <div class="page-card-header">
+          <div><h2>Unidades fabricadas por producto</h2><div class="sub">Suma de unidades producidas por producto, respetando el rango de fechas, la etapa y el producto filtrados arriba.</div></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Producto</th><th class="num">Unidades fabricadas</th><th class="num">Registros</th></tr></thead>
+            <tbody id="produccionTotalesPorProductoBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="page-card" style="margin-top:16px;">
+        <div class="page-card-header">
+          <div><h2>Disponibilidad: Producido vs. Vendido vs. Disponible</h2><div class="sub">Cruza toda la Producción Diaria con lo ya facturado. "Vendido" = unidades incluidas en facturas generadas; "Disponible" = lo producido menos lo vendido, listo para seguir facturando.</div></div>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="produccionDisponibilidadSearch" placeholder="Buscar producto...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Producto</th><th class="num">Producido (total)</th><th class="num">Vendido (facturado)</th><th class="num">Disponible</th></tr></thead>
+            <tbody id="produccionDisponibilidadBody"></tbody>
           </table>
         </div>
       </div>
@@ -1603,6 +1684,7 @@ const DEFAULT_APPDATA = {
   plantaOrdenes:[],          // [{id, numero, producto, cantidad, fechaInicio, fechaEntrega, prioridad, estado}]
   plantaProduccionDiaria:[], // [{id, fecha, etapa('Corte'|'Taller'), taller, producto, cantidad, observaciones}] — registro diario por producto, etapa y taller
   despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64), enviadoWhatsapp(bool), observaciones}] — registro de envíos
+  facturas:[], // [{id, numero, distId, cliente, fecha, lineas:[{producto,categoria,medida,cantidad,precioUnitario,subtotal}], subtotalGeneral, impuestoPct, impuestoValor, total, observaciones}] — historial de facturas generadas desde un pedido
   plantaCostosFijos:[],      // [{id, concepto, categoria, valorMensual, periodicidad}]
   plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
   plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
@@ -1920,6 +2002,35 @@ function setEntregado(distId, lineKey, val){
   APPDATA.entregas[distId][lineKey] = val;
 }
 
+// ---------- Descuento automático al distribuidor cuando se registra un Despacho ----------
+// Cada despacho guarda en su campo oculto "despachoLineas" un JSON: {distId, modo, cantidades:{lineKey:cantidad}}
+// con las cantidades exactas que aplicó a "Entregado". Así, si el despacho se edita o se borra,
+// se puede revertir con precisión antes de volver a aplicar (o no aplicar nada).
+function parseDespachoLineas(raw){
+  if(!raw) return null;
+  try{
+    const o = JSON.parse(raw);
+    if(o && o.distId && o.cantidades) return o;
+  }catch(e){}
+  return null;
+}
+function aplicarDespachoLineas(info){
+  if(!info) return;
+  Object.keys(info.cantidades).forEach(lineKey=>{
+    const cant = Number(info.cantidades[lineKey]) || 0;
+    if(!cant) return;
+    setEntregado(info.distId, lineKey, getEntregado(info.distId, lineKey) + cant);
+  });
+}
+function revertirDespachoLineas(info){
+  if(!info) return;
+  Object.keys(info.cantidades).forEach(lineKey=>{
+    const cant = Number(info.cantidades[lineKey]) || 0;
+    if(!cant) return;
+    setEntregado(info.distId, lineKey, Math.max(0, getEntregado(info.distId, lineKey) - cant));
+  });
+}
+
 function distTotals(distId){
   const lines = getOrderLines(distId);
   let totalPedido=0, totalEntregadoVal=0, totalPendienteVal=0;
@@ -2169,6 +2280,7 @@ function renderMain(){
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="print-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir pedido</button>
+        <button class="btn-nuevo-pedido no-print" id="btnGenerarFactura" title="Generar una factura de venta a partir de este pedido">🧾 Generar factura</button>
         <button class="btn-nuevo-pedido" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido para este cliente</button>
         <button class="btn-nuevo-pedido" id="btnDuplicarPedido" title="Copiar todas las líneas de este pedido a un distribuidor NUEVO y distinto">⧉ Duplicar pedido para otro distribuidor</button>
         <button class="add-btn" id="btnAgregarLinea">+ Agregar producto al pedido</button>
@@ -2293,6 +2405,7 @@ function renderMain(){
   });
   document.getElementById('btnNuevoPedidoCliente').addEventListener('click', ()=> openNewOrderForClientModal(dist));
   document.getElementById('btnDuplicarPedido').addEventListener('click', ()=> openDuplicatePedidoModal(dist));
+  document.getElementById('btnGenerarFactura').addEventListener('click', ()=> abrirGenerarFacturaModal(dist));
 
   const searchInp = document.getElementById('searchProductoPedido');
   if(searchInp){
@@ -2323,6 +2436,8 @@ function renderAll(){
   if(costViewWired && viewCostProdEl && viewCostProdEl.style.display !== 'none') renderCostosProductosView();
   const viewUtilEl = document.getElementById('viewCostosutilidades');
   if(viewUtilEl && viewUtilEl.style.display !== 'none') renderCostosUtilidadesView();
+  const viewFacturasEl = document.getElementById('viewFacturas');
+  if(viewFacturasEl && viewFacturasEl.style.display !== 'none') renderFacturasView();
 }
 
 // ---------- vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario / Producción) ----------
@@ -2382,7 +2497,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','despachos','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','despachos','facturas','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','novedades','jornadalaboral'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -2401,7 +2516,8 @@ function switchView(viewName){
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
-  if(viewName === 'produccion'){ initProduccionEtapaDashboard(); }
+  if(viewName === 'produccion'){ initProduccionEtapaDashboard(); initProduccionFiltros(); }
+  if(viewName === 'facturas'){ renderFacturasView(); }
   if(typeof PLANTA_MODULES !== 'undefined' && PLANTA_MODULES[viewName]) renderPlantaModule(viewName);
 }
 
@@ -3124,6 +3240,394 @@ function printModal(overlay){
   setTimeout(cleanup, 60000); // respaldo final por si ningún evento se disparó
   window.print();
 }
+
+// ---------- Facturación: generar factura desde un pedido, verla/imprimirla y consultar el historial ----------
+
+/** Siguiente número consecutivo de factura (empieza en 1). */
+function siguienteNumeroFactura(){
+  const facturas = APPDATA.facturas || [];
+  return facturas.reduce((max, f) => Math.max(max, f.numero || 0), 0) + 1;
+}
+
+/** Calcula subtotal, impuesto y total a partir de un arreglo de líneas {cantidad, precioUnitario, subtotal}. */
+function calcularTotalesFactura(lineas, impuestoPct){
+  const subtotalGeneral = lineas.reduce((s, l) => s + l.subtotal, 0);
+  const pct = Number(impuestoPct) || 0;
+  const impuestoValor = subtotalGeneral * (pct / 100);
+  const total = subtotalGeneral + impuestoValor;
+  return { subtotalGeneral, impuestoPct: pct, impuestoValor, total };
+}
+
+/** Crea o actualiza una factura a partir de líneas ya editadas por el usuario. Si se pasa
+ * `facturaExistente`, la actualiza en el mismo lugar del historial (conserva id y número);
+ * si no, crea una nueva con el siguiente número consecutivo. */
+async function guardarFactura({ dist, lineas, fecha, impuestoPct, observaciones, facturaExistente }){
+  const { subtotalGeneral, impuestoPct: pct, impuestoValor, total } = calcularTotalesFactura(lineas, impuestoPct);
+  const factura = {
+    id: facturaExistente ? facturaExistente.id : 'fact_' + Date.now() + Math.random().toString(36).slice(2, 7),
+    numero: facturaExistente ? facturaExistente.numero : siguienteNumeroFactura(),
+    distId: facturaExistente ? facturaExistente.distId : (dist ? dist.id : null),
+    cliente: facturaExistente ? facturaExistente.cliente : (dist ? dist.nombre : ''),
+    fecha: fecha || new Date().toISOString().slice(0, 10),
+    lineas,
+    subtotalGeneral,
+    impuestoPct: pct,
+    impuestoValor,
+    total,
+    observaciones: observaciones || '',
+  };
+  if(!APPDATA.facturas) APPDATA.facturas = [];
+  if(facturaExistente){
+    const idx = APPDATA.facturas.findIndex(f => f.id === facturaExistente.id);
+    if(idx >= 0) APPDATA.facturas[idx] = factura; else APPDATA.facturas.push(factura);
+  } else {
+    APPDATA.facturas.push(factura);
+  }
+  await saveAppData(APPDATA);
+  return factura;
+}
+
+/** Fila editable de la tabla de líneas dentro del modal de generar/editar factura. Si se pasa
+ * `invMap` (Producido/Vendido/Disponible por producto·medida), muestra debajo de la cantidad
+ * cuánto queda disponible según Producción Diaria, y lo resalta si la cantidad pedida lo supera. */
+function facturaLineaRowHtml(l, i, invMap){
+  const precio = l.precio !== undefined ? l.precio : (l.precioUnitario || 0);
+  const cantidad = l.cantidad || 0;
+  let hintHtml = '';
+  if(invMap){
+    const info = invMap.get(claveProductoMedida(l.producto, l.medida));
+    if(info){
+      const excede = cantidad > info.disponible;
+      hintHtml = `${excede ? '⚠ ' : ''}Disponible: ${fmtNum(info.disponible)}`;
+      var hintStyle = `font-size:10.5px;margin-top:3px;white-space:nowrap;color:${excede ? '#B65B2E' : 'var(--ink-soft)'};font-weight:${excede ? '700' : '400'};`;
+    }
+  }
+  return `<tr data-idx="${i}">
+    <td><input type="text" class="inv-text-input flin-producto" value="${escapeAttr(l.producto || '')}" placeholder="Producto"></td>
+    <td><input type="text" class="inv-text-input flin-medida" style="width:90px;" value="${escapeAttr(l.medida || '')}" placeholder="—"></td>
+    <td><input type="number" class="inv-precio-input flin-cant" style="width:70px;" value="${cantidad}" min="0" step="0.01"><div class="flin-disponible-hint" style="${hintStyle || 'font-size:10.5px;margin-top:3px;'}">${hintHtml}</div></td>
+    <td><input type="number" class="inv-precio-input flin-precio" value="${precio}" min="0" step="1"></td>
+    <td class="num flin-subtotal">${fmt(cantidad * precio)}</td>
+    <td class="no-print"><button type="button" class="icon-btn icon-delete flin-remove" title="Quitar línea">🗑</button></td>
+  </tr>`;
+}
+
+/** Conecta la tabla de líneas editable: recalcula subtotal/total en vivo, permite quitar líneas
+ * y (si hay `invMap`) refresca el aviso de disponible por producción de cada línea. */
+function wireFacturaLineasTable(overlay, impuestoInputSel, invMap){
+  const tbody = overlay.querySelector('#facturaLineasBody');
+  const subtotalEl = overlay.querySelector('#facturaModalSubtotal');
+  const totalEl = overlay.querySelector('#facturaModalTotalConImp');
+  const impuestoInput = overlay.querySelector(impuestoInputSel);
+
+  function recalc(){
+    let subtotal = 0;
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const cant = Number(tr.querySelector('.flin-cant').value) || 0;
+      const precio = Number(tr.querySelector('.flin-precio').value) || 0;
+      const sub = cant * precio;
+      tr.querySelector('.flin-subtotal').textContent = fmt(sub);
+      subtotal += sub;
+      if(invMap){
+        const hintEl = tr.querySelector('.flin-disponible-hint');
+        if(hintEl){
+          const producto = tr.querySelector('.flin-producto').value.trim();
+          const medida = tr.querySelector('.flin-medida').value.trim();
+          const info = invMap.get(claveProductoMedida(producto, medida));
+          if(info){
+            const excede = cant > info.disponible;
+            hintEl.textContent = (excede ? '⚠ ' : '') + 'Disponible: ' + fmtNum(info.disponible);
+            hintEl.style.color = excede ? '#B65B2E' : 'var(--ink-soft)';
+            hintEl.style.fontWeight = excede ? '700' : '400';
+          } else {
+            hintEl.textContent = '';
+          }
+        }
+      }
+    });
+    if(subtotalEl) subtotalEl.textContent = fmt(subtotal);
+    if(totalEl){
+      const pct = Number(impuestoInput && impuestoInput.value) || 0;
+      totalEl.textContent = fmt(subtotal + subtotal * (pct / 100));
+    }
+  }
+  tbody.addEventListener('input', recalc);
+  tbody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.flin-remove');
+    if(!btn) return;
+    if(tbody.querySelectorAll('tr').length <= 1){
+      showToast('La factura debe tener al menos una línea.');
+      return;
+    }
+    btn.closest('tr').remove();
+    recalc();
+  });
+  if(impuestoInput) impuestoInput.addEventListener('input', recalc);
+  recalc();
+  return { recalc };
+}
+
+/** Lee las líneas actuales de la tabla editable del modal (ignora filas vacías o sin cantidad). */
+function leerLineasFacturaDesdeTabla(overlay){
+  const tbody = overlay.querySelector('#facturaLineasBody');
+  const lineas = [];
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const producto = tr.querySelector('.flin-producto').value.trim();
+    const medida = tr.querySelector('.flin-medida').value.trim();
+    const cantidad = Number(tr.querySelector('.flin-cant').value) || 0;
+    const precioUnitario = Number(tr.querySelector('.flin-precio').value) || 0;
+    if(!producto || cantidad <= 0) return;
+    lineas.push({ producto, medida, cantidad, precioUnitario, subtotal: cantidad * precioUnitario });
+  });
+  return lineas;
+}
+
+/** Cuerpo común del modal de generar/editar factura (tabla editable + fecha/impuesto/observaciones + totales). */
+function facturaModalBodyHtml(lineas, { fecha, impuestoPct, observaciones }, invMap){
+  return `
+    <div class="table-scroll" style="max-height:280px;">
+      <table>
+        <thead><tr><th>Producto</th><th>Medida</th><th class="num">Cant.</th><th class="num">Precio Unit.</th><th class="num">Subtotal</th><th class="no-print"></th></tr></thead>
+        <tbody id="facturaLineasBody">${lineas.map((l, i) => facturaLineaRowHtml(l, i, invMap)).join('')}</tbody>
+      </table>
+    </div>
+    <button type="button" class="filter-clear-btn" id="btnAgregarLineaFactura" style="margin-top:10px;">+ Agregar línea manual</button>
+    <div class="field" style="margin-top:14px;"><label>Fecha de la factura</label><input type="date" id="inpFacturaFecha" value="${escapeAttr(fecha || '')}"></div>
+    <div class="field"><label>% Impuesto (IVA) — deja 0 si no aplica</label><input type="number" id="inpFacturaImpuesto" value="${impuestoPct || 0}" min="0" step="0.1"></div>
+    <div class="field"><label>Observaciones (opcional)</label>
+      <textarea id="inpFacturaObs" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;resize:none;">${escapeHtml(observaciones || '')}</textarea>
+    </div>
+    <div style="text-align:right;font-size:13.5px;color:var(--ink-soft);">Subtotal: <b id="facturaModalSubtotal" style="color:var(--ink);">$0</b></div>
+    <div style="text-align:right;font-size:15px;font-weight:800;color:var(--gold-dark);margin-top:2px;">Total: <span id="facturaModalTotalConImp">$0</span></div>
+  `;
+}
+
+/** Conecta los botones comunes ("+ Agregar línea") del modal de generar/editar factura. */
+function wireFacturaModalComun(overlay, invMap){
+  const facturaWire = wireFacturaLineasTable(overlay, '#inpFacturaImpuesto', invMap);
+  overlay.querySelector('#btnAgregarLineaFactura').addEventListener('click', () => {
+    const tbody = overlay.querySelector('#facturaLineasBody');
+    const i = tbody.querySelectorAll('tr').length;
+    tbody.insertAdjacentHTML('beforeend', facturaLineaRowHtml({ producto: '', medida: '', cantidad: 1, precio: 0 }, i, invMap));
+    facturaWire.recalc();
+  });
+}
+
+/** Modal para configurar (líneas, fecha, % impuesto, observaciones) y generar la factura de un pedido. */
+function abrirGenerarFacturaModal(dist){
+  const lineasPedido = getOrderLines(dist.id);
+  if(!lineasPedido.length){
+    showToast('Este pedido no tiene productos todavía — agrega al menos uno antes de facturar.');
+    return;
+  }
+  const hoy = new Date().toISOString().slice(0, 10);
+  const invMap = new Map(calcularInventarioProduccion().map(x => [x.producto, x]));
+  const overlay = openModal(`
+    <h3>Generar factura para ${escapeHtml(dist.nombre)}</h3>
+    <div class="hint">Ajusta cantidades, precios o quita líneas antes de generar. También puedes agregar líneas manuales (ej. flete, descuento, un producto fuera de catálogo). "Disponible" se calcula con lo registrado en Producción Diaria menos lo ya facturado.</div>
+    ${facturaModalBodyHtml(lineasPedido, { fecha: hoy, impuestoPct: 0, observaciones: '' }, invMap)}
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Generar factura</button>
+    </div>
+  `);
+  const modalEl = overlay.querySelector('.modal');
+  if(modalEl) modalEl.classList.add('wide');
+  wireFacturaModalComun(overlay, invMap);
+
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const lineas = leerLineasFacturaDesdeTabla(overlay);
+    if(!lineas.length){
+      showToast('Agrega al menos una línea con producto, cantidad y precio.');
+      return;
+    }
+    const fecha = overlay.querySelector('#inpFacturaFecha').value || hoy;
+    const impuestoPct = Number(overlay.querySelector('#inpFacturaImpuesto').value) || 0;
+    const observaciones = overlay.querySelector('#inpFacturaObs').value.trim();
+    overlay.remove();
+    const factura = await guardarFactura({ dist, lineas, fecha, impuestoPct, observaciones });
+    renderAll(); // refresca el historial de Facturas y los totales, por si están a la vista
+    showToast('Factura N° ' + factura.numero + ' generada');
+    abrirFacturaModal(factura);
+  });
+}
+
+/** Modal para editar una factura ya generada: líneas, fecha, impuesto y observaciones. Guarda
+ * los cambios sobre la misma factura (conserva id y número). */
+function abrirEditarFacturaModal(factura){
+  // "Disponible" excluye las líneas de ESTA misma factura del cálculo de vendido: si no, su
+  // propia cantidad ya facturada se restaría dos veces del disponible al editarla.
+  const invMap = new Map(calcularInventarioProduccion().map(x => [x.producto, x]));
+  (factura.lineas || []).forEach(l => {
+    const info = invMap.get(claveProductoMedida(l.producto, l.medida));
+    if(info){
+      const cant = Number(l.cantidad) || 0;
+      info.vendido -= cant;
+      info.disponible += cant;
+    }
+  });
+  const overlay = openModal(`
+    <h3>Editar factura N° ${factura.numero} — ${escapeHtml(factura.cliente || '')}</h3>
+    <div class="hint">Los cambios se guardan sobre esta misma factura del historial. "Disponible" ya excluye lo que esta factura tenía facturado antes de editarla.</div>
+    ${facturaModalBodyHtml(factura.lineas, { fecha: factura.fecha, impuestoPct: factura.impuestoPct, observaciones: factura.observaciones }, invMap)}
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Guardar cambios</button>
+    </div>
+  `);
+  const modalEl = overlay.querySelector('.modal');
+  if(modalEl) modalEl.classList.add('wide');
+  wireFacturaModalComun(overlay, invMap);
+
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const lineas = leerLineasFacturaDesdeTabla(overlay);
+    if(!lineas.length){
+      showToast('Agrega al menos una línea con producto, cantidad y precio.');
+      return;
+    }
+    const fecha = overlay.querySelector('#inpFacturaFecha').value || factura.fecha;
+    const impuestoPct = Number(overlay.querySelector('#inpFacturaImpuesto').value) || 0;
+    const observaciones = overlay.querySelector('#inpFacturaObs').value.trim();
+    overlay.remove();
+    const actualizada = await guardarFactura({ lineas, fecha, impuestoPct, observaciones, facturaExistente: factura });
+    renderAll();
+    showToast('Factura N° ' + actualizada.numero + ' actualizada');
+    abrirFacturaModal(actualizada);
+  });
+}
+
+/** Genera y descarga la factura como archivo PDF, usando el documento ya renderizado en el modal
+ * (sin los botones de acción) para que el PDF coincida exactamente con lo que se ve/imprime. */
+function exportarFacturaPDF(overlay, factura){
+  if(typeof html2pdf === 'undefined'){
+    showToast('No se pudo cargar el generador de PDF. Usa "Imprimir" y elige "Guardar como PDF".');
+    return;
+  }
+  const original = overlay.querySelector('.factura-doc');
+  if(!original) return;
+  const clone = original.cloneNode(true);
+  clone.querySelectorAll('.no-print').forEach(el => el.remove());
+  clone.style.background = '#fff';
+  clone.style.padding = '18px';
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:780px;background:#fff;';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  const nombreArchivo = `Factura_N${factura.numero}_${(factura.cliente || 'cliente').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+  html2pdf().set({
+    margin: 10,
+    filename: nombreArchivo,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(clone).save().then(() => {
+    wrapper.remove();
+  }).catch(() => {
+    wrapper.remove();
+    showToast('No se pudo generar el PDF. Intenta con "Imprimir".');
+  });
+}
+
+/** Muestra una factura ya generada como documento, con botón para imprimirla. */
+function abrirFacturaModal(factura){
+  const overlay = openModal(`
+    <div class="factura-doc">
+      <div class="factura-doc-header">
+        <div>
+          <h2 style="margin:0;">Casa Dorada</h2>
+          <div class="sub" style="margin-top:2px;">Factura de venta</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="factura-doc-numero">N° ${factura.numero}</div>
+          <div class="sub">${escapeHtml(factura.fecha || '—')}</div>
+        </div>
+      </div>
+      <div class="factura-doc-cliente"><strong>Cliente:</strong> ${escapeHtml(factura.cliente)}</div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Producto</th><th>Medida</th><th class="num">Cantidad</th><th class="num">Precio Unit.</th><th class="num">Subtotal</th></tr></thead>
+          <tbody>
+            ${factura.lineas.map(l => `<tr><td>${escapeHtml(l.producto)}</td><td>${escapeHtml(l.medida || '—')}</td><td class="num">${fmtNum(l.cantidad)}</td><td class="num">${fmt(l.precioUnitario)}</td><td class="num">${fmt(l.subtotal)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="factura-doc-totales">
+        <div><span>Subtotal general</span><b>${fmt(factura.subtotalGeneral)}</b></div>
+        ${factura.impuestoPct > 0 ? `<div><span>Impuesto (${factura.impuestoPct}%)</span><b>${fmt(factura.impuestoValor)}</b></div>` : ''}
+        <div class="factura-doc-total-final"><span>TOTAL</span><b>${fmt(factura.total)}</b></div>
+      </div>
+      ${factura.observaciones ? `<div class="factura-doc-obs"><strong>Observaciones:</strong> ${escapeHtml(factura.observaciones)}</div>` : ''}
+      <div class="modal-actions no-print">
+        <button class="btn-cancel" id="btnCancel">Cerrar</button>
+        <button class="filter-clear-btn" id="btnEditarFactura">✏️ Editar</button>
+        <button class="print-btn-modal" id="btnDescargarFacturaPDF">⬇️ Descargar PDF</button>
+        <button class="print-btn-modal" id="btnImprimirFactura">🖨 Imprimir</button>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#btnImprimirFactura').addEventListener('click', ()=> printModal(overlay));
+  overlay.querySelector('#btnDescargarFacturaPDF').addEventListener('click', ()=> exportarFacturaPDF(overlay, factura));
+  overlay.querySelector('#btnEditarFactura').addEventListener('click', ()=>{ overlay.remove(); abrirEditarFacturaModal(factura); });
+  const modalEl = overlay.querySelector('.modal');
+  if(modalEl) modalEl.classList.add('wide');
+}
+
+/** Historial de facturas: listado con búsqueda por número/cliente, ver/imprimir y eliminar. */
+function renderFacturasView(){
+  const tbody = document.getElementById('facturasBody');
+  if(!tbody) return;
+  const searchEl = document.getElementById('facturasSearch');
+  const term = (searchEl && searchEl.value || '').toLowerCase().trim();
+  let facturas = (APPDATA.facturas || []).slice().sort((a, b) => b.numero - a.numero);
+  if(term) facturas = facturas.filter(f => (`${f.numero} ${f.cliente}`).toLowerCase().includes(term));
+
+  tbody.innerHTML = facturas.length ? facturas.map(f => `
+    <tr>
+      <td>N° ${f.numero}</td>
+      <td>${escapeHtml(f.fecha || '—')}</td>
+      <td>${escapeHtml(f.cliente || '—')}</td>
+      <td class="num">${fmt(f.subtotalGeneral)}</td>
+      <td class="num">${f.impuestoPct > 0 ? fmt(f.impuestoValor) + ' (' + f.impuestoPct + '%)' : '—'}</td>
+      <td class="num" style="font-weight:700;">${fmt(f.total)}</td>
+      <td class="row-actions no-print">
+        <button class="icon-btn" data-ver-factura="${f.id}" title="Ver / Imprimir">🖨</button>
+        <button class="icon-btn" data-editar-factura="${f.id}" title="Editar">✏️</button>
+        <button class="icon-btn icon-delete" data-eliminar-factura="${f.id}" title="Eliminar">🗑</button>
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">Todavía no hay facturas generadas. Ve al perfil de un cliente y usa "Generar factura".</td></tr>`;
+
+  tbody.querySelectorAll('[data-ver-factura]').forEach(btn => {
+    btn.addEventListener('click', ()=>{
+      const f = (APPDATA.facturas || []).find(x => x.id === btn.dataset.verFactura);
+      if(f) abrirFacturaModal(f);
+    });
+  });
+  tbody.querySelectorAll('[data-editar-factura]').forEach(btn => {
+    btn.addEventListener('click', ()=>{
+      const f = (APPDATA.facturas || []).find(x => x.id === btn.dataset.editarFactura);
+      if(f) abrirEditarFacturaModal(f);
+    });
+  });
+  tbody.querySelectorAll('[data-eliminar-factura]').forEach(btn => {
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('¿Eliminar esta factura del historial? Esta acción no se puede deshacer.')) return;
+      APPDATA.facturas = (APPDATA.facturas || []).filter(x => x.id !== btn.dataset.eliminarFactura);
+      await saveAppData(APPDATA);
+      renderFacturasView();
+      showToast('Factura eliminada');
+    });
+  });
+
+  const countEl = document.getElementById('facturasKpiCount');
+  const totalEl = document.getElementById('facturasKpiTotal');
+  if(countEl) countEl.textContent = (APPDATA.facturas || []).length;
+  if(totalEl) totalEl.textContent = fmt((APPDATA.facturas || []).reduce((s, f) => s + f.total, 0));
+}
+
 
 // Construye las <option> de un <select> de productos, opcionalmente filtradas por texto de búsqueda
 function buildProductOptions(products, term, selectedIdx){
@@ -3997,6 +4501,13 @@ document.getElementById('pedidosViewSearch').addEventListener('input', (e)=>{
 });
 document.getElementById('btnImprimirPedidosView').addEventListener('click', ()=> window.print());
 
+// Vista "Facturas": búsqueda
+document.getElementById('facturasSearch').addEventListener('input', ()=> renderFacturasView());
+document.getElementById('produccionDisponibilidadSearch').addEventListener('input', (e)=>{
+  produccionDisponibilidadSearchTerm = e.target.value;
+  renderProduccionDisponibilidad();
+});
+
 // Vista "Vendedores": agregar nuevo
 document.getElementById('btnAgregarVendedorView').addEventListener('click', async ()=>{
   const inp = document.getElementById('inpNuevoVendedorView');
@@ -4235,8 +4746,19 @@ const PLANTA_MODULES = {
       {key:'valorFlete', label:'Valor flete', type:'number', required:true, placeholder:'Ej. 25000'},
       {key:'guiaFoto', label:'Foto de la guía', type:'image'},
       {key:'enviadoWhatsapp', label:'Enviado por WhatsApp', type:'checkbox'},
-      {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Notas del despacho...'}
+      {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Notas del despacho...'},
+      {key:'despachoLineas', label:'', type:'hidden'}
     ],
+    onSave:(newRecord, oldRecord)=>{
+      const oldInfo = oldRecord ? parseDespachoLineas(oldRecord.despachoLineas) : null;
+      if(oldInfo) revertirDespachoLineas(oldInfo);
+      const newInfo = parseDespachoLineas(newRecord.despachoLineas);
+      if(newInfo) aplicarDespachoLineas(newInfo);
+    },
+    onDelete:(record)=>{
+      const info = parseDespachoLineas(record && record.despachoLineas);
+      if(info) revertirDespachoLineas(info);
+    },
     columns:[
       {key:'fecha', label:'Fecha', format:v=>v||'—'},
       {key:'cliente', label:'Cliente', format:v=>v||'—'},
@@ -4256,8 +4778,14 @@ const PLANTA_MODULES = {
         return `<span style="font-weight:700;color:${color};">${pct.toFixed(1)}%</span>`;
       }},
       {key:'guiaFoto', label:'Guía', html:true, format:v=>v ? `<img src="${v}" class="guia-thumb" data-guia-view alt="Guía">` : '<span style="color:var(--ink-soft);font-size:12px;">Sin foto</span>'},
+      {key:'despachoLineas', label:'Descuento pedido', html:true, format:v=>{
+        const info = parseDespachoLineas(v);
+        if(!info) return '<span style="color:var(--ink-soft);font-size:12px;">Sin descuento</span>';
+        const total = Object.values(info.cantidades).reduce((s,n)=>s+(Number(n)||0), 0);
+        return `<span class="badge saldado">${info.modo==='completo'?'Completo':'Parcial'} · ${fmtNum(total)} u.</span>`;
+      }},
       {key:'enviadoWhatsapp', label:'WhatsApp', html:true, format:v=> v ? `<span class="badge saldado">✓ Enviado</span>` : `<span class="badge debe">Pendiente</span>`},
-      {key:'observaciones', label:'Observaciones', format:v=>v||'—'}
+      {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
   },
   operarios:{
@@ -4375,7 +4903,7 @@ const PLANTA_MODULES = {
   produccion:{
     dataKey:'plantaProduccionDiaria', bodyId:'produccionBody', searchId:'produccionSearch', addBtnId:'btnNuevaProduccion',
     title:'registro de producción', titleCap:'Registro de Producción',
-    filterFn: item => produccionEtapaFiltro === 'todos' || (item.etapa || 'Taller') === produccionEtapaFiltro,
+    filterFn: item => produccionPasaFiltros(item),
     fields:[
       {key:'fecha', label:'Fecha', type:'date', required:true},
       {key:'etapa', label:'Etapa', type:'select', required:true, default:'Taller', options:[{value:'Corte',label:'Corte'},{value:'Taller',label:'Taller (Confección)'}]},
@@ -4390,7 +4918,7 @@ const PLANTA_MODULES = {
       {key:'taller', label:'Taller', format:v=>v||'—'},
       {key:'producto', label:'Producto', format:v=>v||'—'},
       {key:'cantidad', label:'Cantidad', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
-      {key:'observaciones', label:'Observaciones', format:v=>v||'—'}
+      {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
   },
   ordenesproduccion:{
@@ -4446,7 +4974,7 @@ const PLANTA_MODULES = {
       {key:'tipo', label:'Tipo', format:v=>({incapacidad:'Incapacidad',permiso:'Permiso',vacaciones:'Vacaciones',licencia:'Licencia'}[v]||'Permiso')},
       {key:'fechaInicio', label:'Desde', format:v=>v||'—'},
       {key:'fechaFin', label:'Hasta', format:v=>v||'—'},
-      {key:'observaciones', label:'Observaciones', format:v=>v||'—'}
+      {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
   },
   jornadalaboral:{
@@ -4464,7 +4992,7 @@ const PLANTA_MODULES = {
       {key:'horaInicio', label:'Hora inicio', format:v=>v||'—'},
       {key:'horaFin', label:'Hora fin', format:v=>v||'—'},
       {key:'dias', label:'Días', format:v=>v||'—'},
-      {key:'observaciones', label:'Observaciones', format:v=>v||'—'}
+      {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
   }
 };
@@ -4518,7 +5046,157 @@ function renderPlantaModule(moduleKey){
       </tr>
     `).join('');
   }
-  if(moduleKey === 'produccion') renderProduccionEtapaDashboard();
+  if(moduleKey === 'produccion'){
+    actualizarProduccionProductoFiltroOptions();
+    renderProduccionEtapaDashboard();
+    renderProduccionTotales();
+    renderProduccionDisponibilidad();
+  }
+}
+
+// ---------- Producción Diaria: filtros combinados (rango de fechas + producto + etapa) y totales ----------
+
+/** Clave de producto usada para cruzar Producción con Facturación: combina producto + medida en
+ * el mismo formato que usa el catálogo de Producción (plantaProductos.nombre = "producto · medida"),
+ * para que lo fabricado y lo facturado se puedan comparar por el mismo nombre. */
+function claveProductoMedida(producto, medida){
+  const p = (producto || '').trim();
+  const m = (medida || '').trim();
+  return m ? `${p} · ${m}` : p;
+}
+
+/** Cruza Producción Diaria (fabricado) con las líneas de las Facturas generadas (vendido) para
+ * saber, por producto, cuánto se produjo en total, cuánto se ha facturado (vendido) y cuánto
+ * queda disponible para seguir vendiendo/facturando. Esta es la conexión entre Producción,
+ * Inventario y Facturación que pide el negocio. */
+function calcularInventarioProduccion(){
+  const producido = {};
+  (APPDATA.plantaProduccionDiaria || []).forEach(r => {
+    const key = (r.producto || '').trim();
+    if(!key) return;
+    producido[key] = (producido[key] || 0) + (Number(r.cantidad) || 0);
+  });
+  const vendido = {};
+  (APPDATA.facturas || []).forEach(f => {
+    (f.lineas || []).forEach(l => {
+      const key = claveProductoMedida(l.producto, l.medida);
+      if(!key) return;
+      vendido[key] = (vendido[key] || 0) + (Number(l.cantidad) || 0);
+    });
+  });
+  const nombres = new Set([...Object.keys(producido), ...Object.keys(vendido)]);
+  return Array.from(nombres).map(nombre => {
+    const prod = producido[nombre] || 0;
+    const vend = vendido[nombre] || 0;
+    return { producto: nombre, producido: prod, vendido: vend, disponible: prod - vend };
+  }).sort((a, b) => a.producto.localeCompare(b.producto));
+}
+
+/** Tabla "Disponibilidad de producción": Producido vs. Vendido (facturado) vs. Disponible, para
+ * todo el histórico (no depende de los filtros de fecha del historial de arriba). */
+let produccionDisponibilidadSearchTerm = '';
+function renderProduccionDisponibilidad(){
+  const tbody = document.getElementById('produccionDisponibilidadBody');
+  if(!tbody) return;
+  let filas = calcularInventarioProduccion();
+  const term = produccionDisponibilidadSearchTerm.trim().toLowerCase();
+  if(term) filas = filas.filter(f => f.producto.toLowerCase().includes(term));
+  const hayDatos = (APPDATA.plantaProduccionDiaria || []).length || (APPDATA.facturas || []).length;
+  tbody.innerHTML = filas.length ? filas.map(f => `
+    <tr>
+      <td>${escapeHtml(f.producto)}</td>
+      <td class="num">${fmtNum(f.producido)}</td>
+      <td class="num">${fmtNum(f.vendido)}</td>
+      <td class="num" style="font-weight:700;${f.disponible < 0 ? 'color:#B65B2E;' : ''}">${fmtNum(f.disponible)}</td>
+    </tr>
+  `).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">${hayDatos ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay producción ni facturas registradas.'}</td></tr>`;
+}
+
+/** true si el registro pasa el filtro de etapa (Corte/Taller/Todos), el rango de fechas
+ * (Desde/Hasta) y el producto seleccionado en la vista de Producción Diaria. */
+function produccionPasaFiltros(item){
+  if(produccionEtapaFiltro !== 'todos' && (item.etapa || 'Taller') !== produccionEtapaFiltro) return false;
+  const desdeEl = document.getElementById('produccionFechaDesde');
+  const hastaEl = document.getElementById('produccionFechaHasta');
+  const productoEl = document.getElementById('produccionProductoFiltro');
+  const desde = desdeEl && desdeEl.value;
+  const hasta = hastaEl && hastaEl.value;
+  const producto = productoEl && productoEl.value;
+  if(desde && item.fecha && item.fecha < desde) return false;
+  if(hasta && item.fecha && item.fecha > hasta) return false;
+  if(producto && item.producto !== producto) return false;
+  return true;
+}
+
+function produccionRegistrosFiltrados(){
+  return (APPDATA.plantaProduccionDiaria || []).filter(produccionPasaFiltros);
+}
+
+/** Refresca las opciones del <select> de filtro por producto a partir del catálogo de
+ * Productos de planta, conservando la selección actual si sigue existiendo. */
+function actualizarProduccionProductoFiltroOptions(){
+  const sel = document.getElementById('produccionProductoFiltro');
+  if(!sel) return;
+  const current = sel.value;
+  const opciones = plantaSelectOptions('plantaproductos', 'nombre', 'Todos los productos');
+  sel.innerHTML = opciones.map(o => `<option value="${escapeAttr(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+  if(opciones.some(o => o.value === current)) sel.value = current;
+}
+
+/** KPIs (registros, unidades, productos distintos) y tabla de "unidades fabricadas por
+ * producto", calculados sobre los registros que pasan los filtros activos. */
+function renderProduccionTotales(){
+  const registros = produccionRegistrosFiltrados();
+  const totalUnidades = registros.reduce((s, r) => s + (Number(r.cantidad) || 0), 0);
+  const porProducto = {};
+  registros.forEach(r => {
+    const nombre = r.producto || 'Sin producto';
+    if(!porProducto[nombre]) porProducto[nombre] = { cantidad: 0, registros: 0 };
+    porProducto[nombre].cantidad += Number(r.cantidad) || 0;
+    porProducto[nombre].registros += 1;
+  });
+
+  const kpiRegistros = document.getElementById('produccionKpiRegistros');
+  const kpiUnidades = document.getElementById('produccionKpiUnidades');
+  const kpiProductos = document.getElementById('produccionKpiProductos');
+  if(kpiRegistros) kpiRegistros.textContent = fmtNum(registros.length);
+  if(kpiUnidades) kpiUnidades.textContent = fmtNum(totalUnidades);
+  if(kpiProductos) kpiProductos.textContent = fmtNum(Object.keys(porProducto).length);
+
+  const tbody = document.getElementById('produccionTotalesPorProductoBody');
+  if(tbody){
+    const filas = Object.entries(porProducto).sort((a, b) => b[1].cantidad - a[1].cantidad);
+    tbody.innerHTML = filas.length ? filas.map(([nombre, datos]) => `
+      <tr>
+        <td>${escapeHtml(nombre)}</td>
+        <td class="num" style="font-weight:700;">${fmtNum(datos.cantidad)}</td>
+        <td class="num">${fmtNum(datos.registros)}</td>
+      </tr>
+    `).join('') : `<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">No hay producción registrada con estos filtros.</td></tr>`;
+  }
+}
+
+let prodFiltrosWired = false;
+function initProduccionFiltros(){
+  if(prodFiltrosWired) return;
+  prodFiltrosWired = true;
+  actualizarProduccionProductoFiltroOptions();
+  ['produccionFechaDesde', 'produccionFechaHasta', 'produccionProductoFiltro'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('change', () => renderPlantaModule('produccion'));
+  });
+  const btnLimpiar = document.getElementById('btnLimpiarFiltrosProduccion');
+  if(btnLimpiar) btnLimpiar.addEventListener('click', () => {
+    const desde = document.getElementById('produccionFechaDesde');
+    const hasta = document.getElementById('produccionFechaHasta');
+    const prod = document.getElementById('produccionProductoFiltro');
+    if(desde) desde.value = '';
+    if(hasta) hasta.value = '';
+    if(prod) prod.value = '';
+    produccionEtapaFiltro = 'todos';
+    document.querySelectorAll('#prodEtapaFiltroBtns [data-etapa-filtro]').forEach(b => b.classList.toggle('active', b.dataset.etapaFiltro === 'todos'));
+    renderPlantaModule('produccion');
+  });
 }
 
 // ---------- Producción por Etapa: Corte vs. Taller (dashboard con gráficos dentro de Producción Diaria) ----------
@@ -4641,7 +5319,7 @@ function buildPlantaFieldHtml(f, currentValue){
   }
   if(f.type === 'textarea'){
     return `<div class="field"><label>${escapeHtml(f.label)}${f.required?' *':''}</label>
-      <textarea id="pf_${f.key}" rows="3" placeholder="${escapeAttr(f.placeholder||'')}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:vertical;">${escapeHtml(val)}</textarea>
+      <textarea id="pf_${f.key}" rows="3" placeholder="${escapeAttr(f.placeholder||'')}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:none;max-height:110px;overflow-y:auto;">${escapeHtml(val)}</textarea>
     </div>`;
   }
   if(f.type === 'checkbox'){
@@ -4666,6 +5344,98 @@ function buildPlantaFieldHtml(f, currentValue){
     <input type="${f.type||'text'}" id="pf_${f.key}" value="${escapeAttr(val)}" placeholder="${escapeAttr(f.placeholder||'')}">
     ${f.key === 'valorFlete' ? `<div id="pf_valorFlete_pct" style="margin-top:6px;font-size:12.5px;color:var(--ink-soft);"></div>` : ''}
   </div>`;
+}
+
+// Sección especial del modal de Despachos: al elegir el "Cliente" (distribuidor), muestra su
+// pedido pendiente y deja elegir si el despacho descuenta TODO lo pendiente o cantidades puntuales
+// por producto. El resultado se guarda como JSON en el campo oculto #pf_despachoLineas, que
+// mod.onSave (despachos) usa para aplicar el descuento real a "Entregado" del distribuidor.
+function wireDespachoLineasUI(overlay, record){
+  const clienteSel = overlay.querySelector('#pf_cliente');
+  const hidden = overlay.querySelector('#pf_despachoLineas');
+  if(!clienteSel || !hidden) return;
+  const clienteField = clienteSel.closest('.field');
+  const box = document.createElement('div');
+  box.className = 'field';
+  clienteField.insertAdjacentElement('afterend', box);
+
+  const prevInfo = parseDespachoLineas(record && record.despachoLineas);
+
+  // Cuánto había pendiente de esta línea ANTES de este despacho (si se está editando, se le
+  // "devuelve" lo que este mismo despacho ya había descontado, para no perderlo de vista).
+  function pendienteReferencia(distId, lineKey, cantidad){
+    const entregadoActual = getEntregado(distId, lineKey);
+    const previaAplicada = (prevInfo && prevInfo.distId === distId) ? (Number(prevInfo.cantidades[lineKey]) || 0) : 0;
+    return Math.max(0, cantidad - entregadoActual + previaAplicada);
+  }
+
+  function draw(){
+    const nombre = clienteSel.value;
+    const dist = getAllDistributors().find(d => d.nombre === nombre);
+    if(!dist){
+      box.innerHTML = `<label>Descontar del pedido pendiente</label><div class="hint">Selecciona un cliente para ver su pedido pendiente.</div>`;
+      hidden.value = '';
+      return;
+    }
+    const lines = getOrderLines(dist.id)
+      .map(l => ({...l, pendRef: pendienteReferencia(dist.id, l.key, l.cantidad)}))
+      .filter(l => l.pendRef > 0);
+    if(!lines.length){
+      box.innerHTML = `<label>Descontar del pedido pendiente</label><div class="hint">${escapeHtml(dist.nombre)} no tiene nada pendiente por entregar en este momento.</div>`;
+      hidden.value = '';
+      return;
+    }
+    const modoGuardado = (prevInfo && prevInfo.distId === dist.id) ? prevInfo.modo : 'completo';
+    box.innerHTML = `
+      <label>Descontar del pedido pendiente de ${escapeHtml(dist.nombre)}</label>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 10px;">
+        <label style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="radio" name="despModo" value="completo" ${modoGuardado==='completo'?'checked':''}> Despacho completo (todo lo pendiente)
+        </label>
+        <label style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="radio" name="despModo" value="parcial" ${modoGuardado==='parcial'?'checked':''}> Cantidades específicas
+        </label>
+      </div>
+      <div id="despLineasTabla"></div>
+    `;
+    const tabla = box.querySelector('#despLineasTabla');
+
+    function actualizarHidden(){
+      const modo = box.querySelector('input[name="despModo"]:checked').value;
+      const cantidades = {};
+      if(modo === 'completo'){
+        lines.forEach(l => { cantidades[l.key] = l.pendRef; });
+      } else {
+        tabla.querySelectorAll('.desp-cant').forEach(inp => {
+          const max = Number(inp.max) || 0;
+          const v = Math.max(0, Math.min(Number(inp.value) || 0, max));
+          if(v > 0) cantidades[inp.dataset.key] = v;
+        });
+      }
+      hidden.value = JSON.stringify({distId: dist.id, modo, cantidades});
+    }
+
+    function drawTabla(){
+      const modo = box.querySelector('input[name="despModo"]:checked').value;
+      if(modo === 'completo'){
+        const totalUnid = lines.reduce((s,l)=> s + l.pendRef, 0);
+        tabla.innerHTML = `<div class="hint">Se marcarán como entregadas ${fmtNum(totalUnid)} unidades en ${lines.length} producto(s).</div>`;
+      } else {
+        tabla.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Producto</th><th>Medida</th><th class="num">Pendiente</th><th class="num">Descontar ahora</th></tr></thead><tbody>
+          ${lines.map(l => {
+            const defVal = (prevInfo && prevInfo.distId === dist.id && prevInfo.modo === 'parcial' && prevInfo.cantidades[l.key] !== undefined) ? prevInfo.cantidades[l.key] : 0;
+            return `<tr><td>${escapeHtml(l.producto)}</td><td>${escapeHtml(l.medida||'—')}</td><td class="num">${fmtNum(l.pendRef)}</td><td class="num"><input type="number" min="0" max="${l.pendRef}" class="entregado-input desp-cant" data-key="${escapeAttr(l.key)}" value="${defVal}" style="width:80px;"></td></tr>`;
+          }).join('')}
+        </tbody></table></div>`;
+        tabla.querySelectorAll('.desp-cant').forEach(inp => inp.addEventListener('input', actualizarHidden));
+      }
+      actualizarHidden();
+    }
+    box.querySelectorAll('input[name="despModo"]').forEach(r => r.addEventListener('change', drawTabla));
+    drawTabla();
+  }
+  clienteSel.addEventListener('change', draw);
+  draw();
 }
 
 // Convierte una foto elegida/tomada por la persona en un JPEG comprimido (máx. ~1280px de lado)
@@ -4740,6 +5510,7 @@ function openPlantaModal(moduleKey, idx){
   `);
   overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
   mod.fields.filter(f => f.type === 'image').forEach(f => wirePlantaImageField(overlay, f));
+  if(moduleKey === 'despachos') wireDespachoLineasUI(overlay, editing ? record : null);
   // Si el módulo tiene "valor factura" y "valor flete" (como Despachos), calcula el % del flete en vivo
   const facturaInput = overlay.querySelector('#pf_valorFactura');
   const fleteInput = overlay.querySelector('#pf_valorFlete');
@@ -4759,6 +5530,7 @@ function openPlantaModal(moduleKey, idx){
   if(editing){
     overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
       if(!confirm(`¿Eliminar este ${mod.title}?`)) return;
+      if(typeof mod.onDelete === 'function') mod.onDelete(record);
       const freshList = getPlantaList(moduleKey);
       const i = freshList.indexOf(record);
       if(i > -1) freshList.splice(i, 1); else freshList.splice(idx, 1);
@@ -4812,7 +5584,9 @@ function initPlantaModule(moduleKey){
       if(delBtn){
         const idx = parseInt(delBtn.dataset.idx, 10);
         if(!confirm(`¿Eliminar este ${mod.title}?`)) return;
-        getPlantaList(moduleKey).splice(idx, 1);
+        const list = getPlantaList(moduleKey);
+        if(typeof mod.onDelete === 'function') mod.onDelete(list[idx]);
+        list.splice(idx, 1);
         saveAppData(APPDATA).then(()=> renderPlantaModule(moduleKey));
       }
     });
