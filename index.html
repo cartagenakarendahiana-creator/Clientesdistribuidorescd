@@ -101,7 +101,7 @@
     .kpi-strip{grid-template-columns:repeat(2, 1fr);}
   }
 
-  /* ---- Vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario) ---- */
+  /* ---- Vistas separadas (Resumen / Pedidos / Vendedores / Clientes / Inventario) ---- */
   .page-section{max-width:1180px;margin:16px auto 24px;padding:0 24px;}
   .page-card{
     background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
@@ -356,7 +356,7 @@
   }
   .btn-nuevo-pedido:hover{background:var(--gold-pale);}
 
-  /* ---- Gestión de vendedores / distribuidores (jalarlos) ---- */
+  /* ---- Gestión de vendedores / clientes (jalarlos) ---- */
   .registry-add-row{display:flex;gap:8px;margin-bottom:14px;}
   .registry-add-row input{flex:1;}
   .registry-list{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;}
@@ -679,7 +679,7 @@
   .prod-view .prod-table-wrap{overflow-x:auto;}
   .prod-view .prod-chart-box{position:relative; height:260px;}
 
-  /* ---------- Menús desplegables de navegación (Distribuidores / Producción) ---------- */
+  /* ---------- Menús desplegables de navegación (Clientes / Producción) ---------- */
   .nav-tabs{position:relative;}
   .nav-dropdown{position:relative;}
   .nav-dropdown-btn{
@@ -707,6 +707,18 @@
   }
   .nav-dropdown-item:hover{background:var(--cream-2);}
   .nav-dropdown-item.active{background:var(--gold-pale);color:var(--gold-dark);font-weight:600;}
+  /* Submenú "Dashboard": una sola entrada que despliega cada dashboard */
+  .nav-dropdown-sub-toggle{
+    display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);padding:9px 12px;border-radius:8px;
+  }
+  .nav-dropdown-sub-toggle:hover{background:var(--cream-2);}
+  .nav-dropdown-sub-toggle .chev{flex-shrink:0;color:var(--ink-soft);transition:transform .15s;}
+  .nav-dropdown-sub-group.open .nav-dropdown-sub-toggle .chev{transform:rotate(180deg);}
+  .nav-dropdown-sub-group.has-active .nav-dropdown-sub-toggle{color:var(--gold-dark);font-weight:600;}
+  .nav-dropdown-sub{display:none;margin:2px 0 4px 10px;padding-left:8px;border-left:2px solid var(--line-gold);}
+  .nav-dropdown-sub-group.open .nav-dropdown-sub{display:block;}
+  .nav-dropdown-sub .nav-dropdown-item{font-size:13px;padding:7px 10px;}
   @media print{ .nav-tabs{display:none;} }
 </style>
 </head>
@@ -737,7 +749,7 @@
         <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Logo Casa Dorada" style="height:32px; width:auto; object-fit:contain; border-radius:4px; vertical-align:middle;">
         <div>
           <h1>Casa Dorada</h1>
-          <span class="tag">Control de pedidos · Distribuidores 2026</span>
+          <span class="tag">Control de pedidos · Clientes 2026</span>
         </div>
       </div>
       <div class="topbar-session">
@@ -755,7 +767,7 @@
       <div class="topbar-divider"></div>
       <div class="topbar-group">
         <button class="filter-btn" id="btnGestionarVendedores" title="Crear y administrar vendedores">Vendedores</button>
-        <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar distribuidores">Distribuidores</button>
+        <button class="filter-btn" id="btnGestionarDistribuidores" title="Crear y administrar clientes">Clientes</button>
       </div>
     </div>
     <div class="topbar-toggle-wrap">
@@ -768,7 +780,7 @@
       <div class="nav-dropdown" id="navDropdownDistribuidores">
         <button class="nav-dropdown-btn" id="navBtnDistribuidores" type="button">
           <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
-          Distribuidores
+          Clientes
           <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
         </button>
         <div class="nav-dropdown-menu">
@@ -777,8 +789,9 @@
           <button class="nav-dropdown-item" data-nav="facturas" type="button">Facturas</button>
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
-          <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Distribuidores</button>
-          <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario</button>
+          <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Clientes</button>
+          <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario · Precios de venta</button>
+          <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button">Precios de servicio</button>
         </div>
       </div>
       <div class="nav-dropdown" id="navDropdownProduccion">
@@ -791,7 +804,19 @@
           <button class="nav-dropdown-item" data-nav="productividad" type="button">Productividad</button>
           <button class="nav-dropdown-item" data-nav="produccion" type="button">Producción Diaria</button>
           <button class="nav-dropdown-item" data-nav="produccioncostos" type="button">Producción</button>
-          <button class="nav-dropdown-item" data-nav="costosutilidades" type="button">Dashboard de Costos y Utilidades</button>
+          <div class="nav-dropdown-sub-group">
+            <button class="nav-dropdown-sub-toggle" type="button" aria-expanded="false">
+              Dashboard
+              <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+            </button>
+            <div class="nav-dropdown-sub">
+              <button class="nav-dropdown-item" data-nav="dashcorte" type="button">Corte</button>
+              <button class="nav-dropdown-item" data-nav="dashtaller" type="button">Producción (Taller)</button>
+              <button class="nav-dropdown-item" data-nav="dashultrasonido" type="button">Ultrasonido</button>
+              <button class="nav-dropdown-item" data-nav="dashconfortadora" type="button">Confortadora</button>
+              <button class="nav-dropdown-item" data-nav="costosutilidades" type="button">General (todas las etapas)</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="nav-dropdown" id="navDropdownPlanta">
@@ -817,7 +842,7 @@
 
   <div id="viewResumen" class="view-section">
   <div class="kpi-strip">
-    <div class="kpi-card"><div class="lab">Distribuidores</div><b class="v" id="kpiDistribuidores">0</b></div>
+    <div class="kpi-card"><div class="lab">Clientes</div><b class="v" id="kpiDistribuidores">0</b></div>
     <div class="kpi-card"><div class="lab">Total Facturado</div><b class="v" id="kpiFacturado">$0</b></div>
     <div class="kpi-card debt"><div class="lab">Total Pendiente</div><b class="v" id="kpiPendiente">$0</b></div>
     <div class="kpi-card"><div class="lab">Pedidos</div><b class="v" id="kpiPedidos">0</b></div>
@@ -829,7 +854,7 @@
     <div class="control-panel-row">
       <div class="control-search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="searchTop" placeholder="Buscar distribuidor, vendedor...">
+        <input type="text" id="searchTop" placeholder="Buscar cliente, vendedor...">
       </div>
       <div class="control-filters">
         <select id="filtroOrdenTop" title="Ordenar por">
@@ -870,8 +895,8 @@
 <div class="layout">
   <div class="sidebar">
     <div class="search-box">
-      <input type="text" id="searchDist" placeholder="Buscar distribuidor...">
-      <button class="new-dist-btn" id="btnNuevoDist">+ Nuevo distribuidor</button>
+      <input type="text" id="searchDist" placeholder="Buscar cliente...">
+      <button class="new-dist-btn" id="btnNuevoDist">+ Nuevo cliente</button>
     </div>
     <div class="sidebar-tabs">
       <button class="sidebar-tab-btn" id="tabTodos" data-tab="todos">Todos <span class="count" id="countTodos">0</span></button>
@@ -884,12 +909,12 @@
   </div>
 
   <div class="main-card">
-    <div class="main-card-header"><h3>Estado de Distribuidor</h3></div>
+    <div class="main-card-header"><h3>Estado de Cliente</h3></div>
     <div class="main" id="mainPanel">
       <div class="empty-state">
         <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="14" x2="14" y2="14"/><line x1="8" y1="17" x2="11" y2="17"/></svg>
-        <h2>Selecciona un distribuidor</h2>
-        <p>Selecciona un distribuidor de la lista para ver su perfil, pedidos y estado de deuda.</p>
+        <h2>Selecciona un cliente</h2>
+        <p>Selecciona un cliente de la lista para ver su perfil, pedidos y estado de deuda.</p>
       </div>
     </div>
     <div class="main-footer">Powered by Netlify</div>
@@ -948,7 +973,7 @@
         <div class="page-card-header">
           <div>
             <h2>Pedidos · Deuda total por producto</h2>
-            <div class="sub">Todo lo pendiente por entregar, agrupado por producto y medida, en todos los distribuidores. Toca una categoría (ej. Sábanas) o un producto para ver a quién se le debe.</div>
+            <div class="sub">Todo lo pendiente por entregar, agrupado por producto y medida, en todos los clientes. Toca una categoría (ej. Sábanas) o un producto para ver a quién se le debe.</div>
           </div>
           <button class="print-btn-modal no-print" id="btnImprimirPedidosView">🖨 Imprimir</button>
         </div>
@@ -970,7 +995,7 @@
               <col style="width:14%"><col style="width:38%"><col style="width:16%">
               <col style="width:12%"><col style="width:10%"><col style="width:10%">
             </colgroup>
-            <thead><tr><th>Categoría</th><th>Producto</th><th>Medida / Estilo</th><th class="num">Distribuidores</th><th class="num">Pendiente</th><th class="num">Debe</th></tr></thead>
+            <thead><tr><th>Categoría</th><th>Producto</th><th>Medida / Estilo</th><th class="num">Clientes</th><th class="num">Pendiente</th><th class="num">Debe</th></tr></thead>
             <tbody id="pvBody"></tbody>
           </table>
         </div>
@@ -1001,12 +1026,12 @@
       <div class="page-card">
         <div class="page-card-header">
           <div>
-            <h2>Distribuidores</h2>
-            <div class="sub">Crea aquí los nombres de tus clientes distribuidores para poder elegirlos rápido al crear un pedido nuevo.</div>
+            <h2>Clientes</h2>
+            <div class="sub">Crea aquí los nombres de tus clientes para poder elegirlos rápido al crear un pedido nuevo.</div>
           </div>
         </div>
         <div class="registry-add-row no-print">
-          <input type="text" id="inpNuevoDistribuidorView" placeholder="Nombre del distribuidor / tienda">
+          <input type="text" id="inpNuevoDistribuidorView" placeholder="Nombre del cliente / tienda">
           <button class="btn-confirm" id="btnAgregarDistribuidorView" style="flex:0 0 auto;">Agregar</button>
         </div>
         <div class="registry-list" id="distribuidoresListView"></div>
@@ -1020,17 +1045,18 @@
         <div class="page-card-header">
           <div>
             <h2>Inventario · Lista de precios</h2>
-            <div class="sub">Consulta y edita los productos y precios del catálogo (incluye la lista de precios original).</div>
+            <div class="sub">Consulta y edita los productos y precios de venta del catálogo (incluye la lista de precios original).</div>
           </div>
           <button class="global-add-btn no-print" id="btnNuevoProductoView">+ Nuevo producto</button>
         </div>
+
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="inventarioSearch" placeholder="Buscar producto, categoría o medida...">
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Producto</th><th>Medida</th><th class="num">Precio</th><th></th></tr></thead>
+            <thead><tr><th>Producto</th><th>Medida</th><th class="num">Precio de venta</th><th></th></tr></thead>
             <tbody id="inventarioBody"></tbody>
           </table>
         </div>
@@ -1039,7 +1065,7 @@
         <div class="page-card-header">
           <div>
             <h3 style="margin:0;font-size:15px;">Deuda por producto</h3>
-            <div class="sub">Busca un producto o una categoría (ej. "sábanas", "tendidos") para ver a qué distribuidores se les debe.</div>
+            <div class="sub">Busca un producto o una categoría (ej. "sábanas", "tendidos") para ver a qué clientes se les debe.</div>
           </div>
         </div>
         <div class="field product-search-wrap no-print">
@@ -1371,6 +1397,27 @@
 
   <!-- ================= GESTIÓN DE PLANTA (9 módulos, guardado real en Firebase) ================= -->
 
+  <div id="viewServiciosmaquila" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Precios de servicio</h2><div class="sub">Lo que cobra cada etapa (Corte, Taller, Ultrasonido, Confortadora) por cada unidad producida. Un precio por producto o familia, por ejemplo: Taller · Sábanas · $3.000. Producción Diaria lo usa para calcular cuánto te cobra el servicio por lo producido. Es una lista aparte de los precios de venta.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="serviciosmaquilaSearch" placeholder="Buscar etapa o producto...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Etapa</th><th>Producto / familia</th><th class="num">Precio por unidad</th><th></th></tr></thead>
+            <tbody id="serviciosmaquilaBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="viewOperarios" class="view-section" style="display:none;">
     <div class="page-section">
       <div class="page-card">
@@ -1557,8 +1604,19 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Fecha</th><th>Etapa</th><th>Producto</th><th class="num">Cantidad</th><th>Observaciones</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Etapa</th><th>Registro</th><th class="num">Total unidades</th><th class="num">Valor del servicio</th><th>Observaciones</th><th></th></tr></thead>
             <tbody id="produccionBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="page-card" style="margin-top:16px;">
+        <div class="page-card-header">
+          <div><h2>Cobro del servicio por día</h2><div class="sub">Cuánto te cobra el servicio de cada etapa por lo producido cada día (unidades × precio de servicio de cada producto). Los precios se definen en "Precios de servicio"; respeta los filtros de arriba.</div></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Fecha</th><th>Etapa</th><th class="num">Unidades</th><th class="num">Valor del servicio</th></tr></thead>
+            <tbody id="produccionServicioDiaBody"></tbody>
           </table>
         </div>
       </div>
@@ -1686,21 +1744,21 @@ const CATALOG = {"distribuidores": [{"col": 5, "id": "Imperio", "nombre": "Imper
 const DEFAULT_APPDATA = {
   entregas:{},            // {distId: {lineKey: cantidadEntregada}}
   extras:[],              // [{distId, productoIdx, cantidad, precio}] — líneas agregadas a un pedido
-  nuevosDistribuidores:[],// [{id, nombre, fecha}] — distribuidores creados desde cero
+  nuevosDistribuidores:[],// [{id, nombre, fecha}] — clientes creados desde cero
   customProducts:[],      // [{categoria, producto, medida, precio}] — productos nuevos del catálogo (ej. toallas)
   productOverrides:{},    // {idx: {categoria, producto, medida, precio}} — ediciones a productos ORIGINALES de la lista de precios
   catalogOverrides:{},    // {distId: {lineKey: {productoIdx, cantidad, precio, eliminado}}} — ediciones a líneas originales
-  distNameOverrides:{},   // {distId: nuevoNombre} — renombres de distribuidores/proveedores
-  distVendedorOverrides:{},  // {distId: nombreVendedor} — vendedor asignado a cada distribuidor
-  distDespachoOverrides:{},  // {distId: 'YYYY-MM-DD'} — fecha máxima de despacho de cada distribuidor
+  distNameOverrides:{},   // {distId: nuevoNombre} — renombres de clientes/proveedores
+  distVendedorOverrides:{},  // {distId: nombreVendedor} — vendedor asignado a cada cliente
+  distDespachoOverrides:{},  // {distId: 'YYYY-MM-DD'} — fecha máxima de despacho de cada cliente
   distFechaOverrides:{},     // {distId: 'YYYY-MM-DD'} — corrección de la fecha de pedido
-  distObservaciones:{},      // {distId: [{texto, fecha}, ...]} — varias observaciones/notas guardadas por cliente distribuidor
+  distObservaciones:{},      // {distId: [{texto, fecha}, ...]} — varias observaciones/notas guardadas por cliente
   distUrgenteOverrides:{},   // {distId: true/false} — marca este pedido como urgente
   vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
-  distribuidoresRegistry:[], // [nombre, ...] — distribuidores/clientes creados manualmente (aunque no tengan pedidos aún)
-  distribuidoresEliminados:[], // [distId, ...] — pedidos/distribuidores borrados (ej. digitados dos veces por error)
+  distribuidoresRegistry:[], // [nombre, ...] — clientes creados manualmente (aunque no tengan pedidos aún)
+  distribuidoresEliminados:[], // [distId, ...] — pedidos/clientes borrados (ej. digitados dos veces por error)
   auth:{usuario:'admin', password:'CasaDorada2026'}, // usuario y contraseña para entrar a la app
-  // ---- Gestión de Planta (guardado real en Firebase, igual que Vendedores/Distribuidores) ----
+  // ---- Gestión de Planta (guardado real en Firebase, igual que Vendedores/Clientes) ----
   plantaOperarios:[],        // [{id, nombre, cedula, cargo, turno, telefono, fechaIngreso, activo}]
   plantaProductos:[],        // [{id, nombre, categoria, unidad, tiempoEstandar, costoMaterial, materiales:[{insumo,cantidad,costoUnitario}], precioVenta, activo}]
   costeoConfig:{ metodoManoObra:'tiempo', tarifaPorMinuto:0 }, // config del panel Producción · Costos de Productos
@@ -1708,6 +1766,7 @@ const DEFAULT_APPDATA = {
   plantaOperaciones:[],      // [{id, nombre, area, tiempoEstandar, pagoPorUnidad, descripcion}]
   plantaAsignaciones:[],     // [{id, operario, operacion, producto, fecha, turno, cantidad, estado}]
   plantaOrdenes:[],          // [{id, numero, producto, cantidad, fechaInicio, fechaEntrega, prioridad, estado}]
+  plantaServiciosMaquila:[], // [{id, etapa, servicio (producto o familia), precio}] — lo que cobra cada etapa por unidad producida; lista APARTE de los precios de venta
   plantaProduccionDiaria:[], // [{id, registroId, fecha, etapa('Corte'|'Taller'|'Ultrasonido'|'Confortadora'), producto, cantidad, observaciones}] — una fila por producto; las filas cargadas juntas comparten registroId
   despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64), enviadoWhatsapp(bool), observaciones}] — registro de envíos
   facturas:[], // [{id, numero, distId, cliente, fecha, lineas:[{producto,categoria,medida,cantidad,precioUnitario,subtotal}], subtotalGeneral, impuestoPct, impuestoValor, total, observaciones}] — historial de facturas generadas desde un pedido
@@ -1772,7 +1831,7 @@ initFirebaseSync();
 // Firebase Realtime Database rechaza CUALQUIER escritura si en cualquier parte del objeto hay
 // un valor "undefined", NaN o Infinity — y como esta app siempre guarda el objeto APPDATA completo,
 // un solo valor inválido en cualquier módulo hace fallar el guardado de TODO (incluso partes que
-// no tienen nada que ver, como "Entregado" en Distribuidores). Esta función limpia esos valores
+// no tienen nada que ver, como "Entregado" en Clientes). Esta función limpia esos valores
 // antes de enviarlos, para que un dato suelto no bloquee el resto de la app.
 function sanitizeForFirebase(val){
   if(val === undefined || val === null) return null;
@@ -1835,7 +1894,7 @@ function getAllDistributors(){
   }));
 }
 
-// Borra por completo un pedido/distribuidor (ej. cuando quedó digitado dos veces por error).
+// Borra por completo un pedido/cliente (ej. cuando quedó digitado dos veces por error).
 // No borra físicamente los datos viejos (por seguridad), solo lo marca como eliminado
 // para que desaparezca de todas las listas (Todos, Pendientes, Saldados, etc.).
 async function eliminarDistribuidor(distId){
@@ -1845,7 +1904,7 @@ async function eliminarDistribuidor(distId){
   await saveAppData(APPDATA);
 }
 
-// ---------- observaciones (varias notas por distribuidor/pedido) ----------
+// ---------- observaciones (varias notas por cliente/pedido) ----------
 // Guardamos un ARREGLO de observaciones por distId: [{texto, fecha}, ...]
 // Se mantiene compatibilidad con datos antiguos donde se guardaba un solo texto.
 function getObservaciones(distId){
@@ -1971,7 +2030,7 @@ function registerVendedor(nombre){
   if(!APPDATA.vendedoresRegistry.includes(nombre)) APPDATA.vendedoresRegistry.push(nombre);
 }
 
-// Lista combinada de nombres de distribuidores: los creados manualmente (registro) + los que ya tienen algún pedido
+// Lista combinada de nombres de clientes: los creados manualmente (registro) + los que ya tienen algún pedido
 function getAllDistribuidorNombres(){
   const existentes = getAllDistributors().map(d=>d.nombre).filter(Boolean);
   const registro = APPDATA.distribuidoresRegistry || [];
@@ -2028,7 +2087,7 @@ function setEntregado(distId, lineKey, val){
   APPDATA.entregas[distId][lineKey] = val;
 }
 
-// ---------- Descuento automático al distribuidor cuando se registra un Despacho ----------
+// ---------- Descuento automático al cliente cuando se registra un Despacho ----------
 // Cada despacho guarda en su campo oculto "despachoLineas" un JSON: {distId, modo, cantidades:{lineKey:cantidad}}
 // con las cantidades exactas que aplicó a "Entregado". Así, si el despacho se edita o se borra,
 // se puede revertir con precisión antes de volver a aplicar (o no aplicar nada).
@@ -2069,7 +2128,7 @@ function distTotals(distId){
   return {totalPedido, totalEntregadoVal, totalPendienteVal, numLines: lines.length};
 }
 
-// Totales globales de UNIDADES (piezas) en todos los distribuidores
+// Totales globales de UNIDADES (piezas) en todos los clientes
 function computeGlobalUnitTotals(){
   const dists = getAllDistributors();
   let totalUnidadesPedidas = 0;
@@ -2101,7 +2160,7 @@ function renderDistItemHtml(d){
         <div class="dist-name">${escapeHtml(d.nombre)}</div>
         ${d.urgente ? `<span class="urgente-badge">🔥 Urgente</span>` : ''}
         ${vencido ? `<span class="vencido-badge">⏰ Vencido</span>` : ''}
-        <button class="icon-btn icon-edit rename-dist-btn" data-id="${escapeAttr(d.id)}" title="Editar distribuidor">✎</button>
+        <button class="icon-btn icon-edit rename-dist-btn" data-id="${escapeAttr(d.id)}" title="Editar cliente">✎</button>
       </div>
       <div class="dist-meta">
         <span class="meta-chip">${d.t.numLines} producto(s)</span>
@@ -2237,8 +2296,8 @@ function renderMain(){
   if(!selectedDistId){
     main.innerHTML = `<div class="empty-state">
       <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="14" x2="14" y2="14"/><line x1="8" y1="17" x2="11" y2="17"/></svg>
-      <h2>Selecciona un distribuidor</h2>
-      <p>Selecciona un distribuidor de la lista para ver su perfil, pedidos y estado de deuda.</p>
+      <h2>Selecciona un cliente</h2>
+      <p>Selecciona un cliente de la lista para ver su perfil, pedidos y estado de deuda.</p>
     </div>`;
     return;
   }
@@ -2285,7 +2344,7 @@ function renderMain(){
       <div>
         <div class="dist-header-title">
           <h2>${escapeHtml(dist.nombre)}</h2>
-          <button class="icon-btn icon-edit" id="btnRenameDist" title="Editar nombre del distribuidor">✎</button>
+          <button class="icon-btn icon-edit" id="btnRenameDist" title="Editar nombre del cliente">✎</button>
         </div>
         <div class="sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'} · ${allLines.length} línea(s) de producto</div>
         <div class="dist-info-chips">
@@ -2308,13 +2367,13 @@ function renderMain(){
         <button class="print-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir pedido</button>
         <button class="btn-nuevo-pedido no-print" id="btnGenerarFactura" title="Generar una factura de venta a partir de este pedido">🧾 Generar factura</button>
         <button class="btn-nuevo-pedido" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido para este cliente</button>
-        <button class="btn-nuevo-pedido" id="btnDuplicarPedido" title="Copiar todas las líneas de este pedido a un distribuidor NUEVO y distinto">⧉ Duplicar pedido para otro distribuidor</button>
+        <button class="btn-nuevo-pedido" id="btnDuplicarPedido" title="Copiar todas las líneas de este pedido a un cliente NUEVO y distinto">⧉ Duplicar pedido para otro cliente</button>
         <button class="add-btn" id="btnAgregarLinea">+ Agregar producto al pedido</button>
         <button class="icon-btn icon-delete" id="btnEliminarPedido" title="Eliminar este pedido por completo" style="border:1px solid #B3261E;color:#B3261E;padding:8px 14px;border-radius:8px;background:#fff;">🗑 Eliminar pedido</button>
       </div>
     </div>
     <div class="observaciones-block">
-      <label>Observaciones del cliente distribuidor</label>
+      <label>Observaciones del cliente</label>
       <div class="obs-list" id="obsList">
         ${dist.observaciones.length ? dist.observaciones.map((o,i)=>`
         <div class="obs-item">
@@ -2348,7 +2407,7 @@ function renderMain(){
     </table>
     </div>
     ${!lines.length ? `<div class="no-match">Ningún producto de este pedido coincide con "${escapeHtml(orderSearchTerm)}"</div>` : ''}
-    ` : `<p style="color:var(--ink-soft);">Este distribuidor aún no tiene productos en su pedido. Usa "Agregar producto al pedido".</p>`}
+    ` : `<p style="color:var(--ink-soft);">Este cliente aún no tiene productos en su pedido. Usa "Agregar producto al pedido".</p>`}
   `;
 
   main.querySelectorAll('.entregado-input').forEach(inp=>{
@@ -2462,11 +2521,12 @@ function renderAll(){
   if(costViewWired && viewCostProdEl && viewCostProdEl.style.display !== 'none') renderCostosProductosView();
   const viewUtilEl = document.getElementById('viewCostosutilidades');
   if(viewUtilEl && viewUtilEl.style.display !== 'none') renderCostosUtilidadesView();
+  ETAPAS_PRODUCCION.forEach(e => { const el = document.getElementById('viewDash' + e.key.toLowerCase()); if(el && el.style.display !== 'none') renderDashEtapa(e.key); });
   const viewFacturasEl = document.getElementById('viewFacturas');
   if(viewFacturasEl && viewFacturasEl.style.display !== 'none') renderFacturasView();
 }
 
-// ---------- vistas separadas (Resumen / Pedidos / Vendedores / Distribuidores / Inventario / Producción) ----------
+// ---------- vistas separadas (Resumen / Pedidos / Vendedores / Clientes / Inventario / Producción) ----------
 // Mantiene sincronizado el catálogo de Producción (plantaProductos) con el catálogo de Inventario:
 // cualquier producto que exista en Inventario (o se edite ahí: categoría, precio) queda disponible
 // automáticamente en Producción Diaria, Órdenes de Producción y Costeo de Productos — sin crearlo dos veces.
@@ -2520,11 +2580,11 @@ function syncPlantaProductosFromInventario(){
 let currentView = 'resumen';
 function switchView(viewName){
   currentView = viewName;
-  if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades'].includes(viewName)){
+  if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
   ['resumen','despachos','facturas','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
-   'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','novedades','jornadalaboral'
+   'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
     if(el) el.style.display = (name === viewName) ? '' : 'none';
@@ -2535,6 +2595,9 @@ function switchView(viewName){
   document.querySelectorAll('.nav-dropdown').forEach(dd=>{
     dd.classList.toggle('has-active', !!dd.querySelector('.nav-dropdown-item.active'));
   });
+  document.querySelectorAll('.nav-dropdown-sub-group').forEach(g=>{
+    g.classList.toggle('has-active', !!g.querySelector('.nav-dropdown-item.active'));
+  });
   if(viewName === 'pedidos') renderPedidosView();
   if(viewName === 'vendedores') renderVendedoresView();
   if(viewName === 'distribuidores') renderDistribuidoresView();
@@ -2544,13 +2607,25 @@ function switchView(viewName){
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
   if(viewName === 'produccion'){ initProduccionEtapaDashboard(); initProduccionFiltros(); }
   if(viewName === 'facturas'){ renderFacturasView(); }
+  if(viewName === 'serviciosmaquila') asegurarServiciosUltrasonido();
+  if(viewName.startsWith('dash')){ const et = ETAPAS_PRODUCCION.find(e => 'dash' + e.key.toLowerCase() === viewName); if(et) renderDashEtapa(et.key); }
   if(typeof PLANTA_MODULES !== 'undefined' && PLANTA_MODULES[viewName]) renderPlantaModule(viewName);
 }
 
-// ---------- Menús desplegables de navegación (Distribuidores / Producción) ----------
+// ---------- Menús desplegables de navegación (Clientes / Producción) ----------
 function closeAllNavDropdowns(){
   document.querySelectorAll('.nav-dropdown').forEach(dd => dd.classList.remove('open'));
+  document.querySelectorAll('.nav-dropdown-sub-group').forEach(g => { g.classList.remove('open'); const t = g.querySelector('.nav-dropdown-sub-toggle'); if(t) t.setAttribute('aria-expanded', 'false'); });
 }
+document.querySelectorAll('.nav-dropdown-sub-toggle').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const g = btn.closest('.nav-dropdown-sub-group');
+    const abrir = !g.classList.contains('open');
+    g.classList.toggle('open', abrir);
+    btn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+  });
+});
 document.querySelectorAll('.nav-dropdown-btn').forEach(btn=>{
   btn.addEventListener('click', (e)=>{
     e.stopPropagation();
@@ -2908,12 +2983,12 @@ function renderPedidosView(){
   let fVal=0, fUnid=0, lastCat=null, bodyHtml='';
   filtered.forEach(r=>{
     if(r.categoria !== lastCat){
-      bodyHtml += `<tr class="cat-row cat-row-link" data-categoria="${escapeAttr(r.categoria)}" title="Ver a qué distribuidores se les debe toda la categoría ${escapeAttr(r.categoria)}"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
+      bodyHtml += `<tr class="cat-row cat-row-link" data-categoria="${escapeAttr(r.categoria)}" title="Ver a qué clientes se les debe toda la categoría ${escapeAttr(r.categoria)}"><td colspan="6">${escapeHtml(r.categoria)}</td></tr>`;
       lastCat = r.categoria;
     }
     fVal += r.pendVal; fUnid += r.pend;
     const clickable = r.productoIdx !== undefined && r.productoIdx !== null;
-    bodyHtml += `<tr class="${clickable ? 'debt-row-link' : ''}" ${clickable ? `data-producto-idx="${r.productoIdx}" title="Ver a qué distribuidores se les debe este producto"` : ''}><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
+    bodyHtml += `<tr class="${clickable ? 'debt-row-link' : ''}" ${clickable ? `data-producto-idx="${r.productoIdx}" title="Ver a qué clientes se les debe este producto"` : ''}><td></td><td>${escapeHtml(r.producto)}</td><td>${escapeHtml(r.medida)}</td>
       <td class="num">${r.nDist}</td><td class="num">${fmtNum(r.pend)}</td><td class="num pend-val pos">${fmt(r.pendVal)}</td></tr>`;
   });
   tbody.innerHTML = bodyHtml || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
@@ -2934,7 +3009,7 @@ function renderPedidosView(){
 }
 
 // Desde "Pedidos · Deuda total por producto", al seleccionar un producto te lleva a Inventario →
-// "Deuda por producto" ya con ese producto cargado, mostrando a qué distribuidores se les debe.
+// "Deuda por producto" ya con ese producto cargado, mostrando a qué clientes se les debe.
 function goToProductDebt(productoIdx){
   const products = getAllProducts();
   const prod = products[productoIdx];
@@ -2948,7 +3023,7 @@ function goToProductDebt(productoIdx){
 }
 
 // Al hacer clic en el encabezado de una categoría (ej. "Sábanas") te lleva a Inventario → "Deuda por
-// producto" mostrando de una vez a qué distribuidores se les debe CUALQUIER producto de esa categoría.
+// producto" mostrando de una vez a qué clientes se les debe CUALQUIER producto de esa categoría.
 function goToProductDebtCategory(categoria){
   const products = getAllProducts();
   const idxs = products.map((p, idx) => ({p, idx})).filter(({p}) => (p.categoria||'') === categoria).map(({idx}) => idx);
@@ -2987,7 +3062,7 @@ function renderVendedoresView(){
   });
 }
 
-// ---- Distribuidores: vista completa (antes era un modal) ----
+// ---- Clientes: vista completa (antes era un modal) ----
 function renderDistribuidoresView(){
   const listEl = document.getElementById('distribuidoresListView');
   if(!listEl) return;
@@ -3000,7 +3075,7 @@ function renderDistribuidoresView(){
         ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
         <button class="icon-btn icon-delete no-print" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
       </span>
-    </div>`).join('') : `<div class="registry-empty">Aún no has creado distribuidores.</div>`;
+    </div>`).join('') : `<div class="registry-empty">Aún no has creado clientes.</div>`;
   listEl.querySelectorAll('button[data-n]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
@@ -3040,6 +3115,7 @@ function renderInventarioView(){
       <td class="row-actions">
         <button class="icon-btn icon-edit inv-edit-btn" data-idx="${idx}" title="Editar producto">✎</button>
         ${isOverridden ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
+        ${isCustom ? `<button class="icon-btn inv-tosvc-btn" data-idx="${idx}" title="Mover a Precios de servicio">⇢</button>` : ''}
         ${isCustom ? `<button class="icon-btn icon-delete inv-delete-btn" data-idx="${idx}" title="Eliminar producto">🗑</button>` : ''}
       </td>
     </tr>`;
@@ -3067,6 +3143,20 @@ function renderInventarioView(){
       await saveAppData(APPDATA);
       renderAll();
       showToast('Producto restaurado a su versión original');
+    });
+  });
+  body.querySelectorAll('.inv-tosvc-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = parseInt(btn.dataset.idx, 10);
+      const p = getAllProducts()[idx];
+      if(!p) return;
+      if(!confirm('¿Mover "' + p.producto + '" a Precios de servicio? Saldrá del Inventario y de los pedidos de clientes donde se haya usado.')) return;
+      if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
+      APPDATA.plantaServiciosMaquila.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2,6), categoria: p.categoria || '', servicio: p.producto, medida: p.medida || '', precio: Number(p.precio) || 0 });
+      deleteCustomProduct(idx - baseLen);
+      await saveAppData(APPDATA);
+      renderAll();
+      showToast('Movido a Precios de servicio');
     });
   });
   body.querySelectorAll('.inv-delete-btn').forEach(btn=>{
@@ -3146,7 +3236,7 @@ function renderInvProductDebt(productoIdx){
 }
 
 // Igual que renderInvProductDebt pero agrupa VARIOS productos a la vez (ej. todos los que coinciden
-// con "sábanas"), sumando por distribuidor — para saber a quién se le debe de toda una categoría/búsqueda,
+// con "sábanas"), sumando por cliente — para saber a quién se le debe de toda una categoría/búsqueda,
 // no solo de una referencia exacta.
 function renderInvProductDebtGroup(zone, label, productoIdxs){
   renderInvProductDebtIdxs(zone, label, productoIdxs, true);
@@ -3201,7 +3291,7 @@ function renderInvProductDebtIdxs(zone, titulo, productoIdxs, esGrupo){
       ${porDistribuidor.length ? `
       <div class="table-scroll">
       <table>
-        <thead><tr><th>Distribuidor</th>${esGrupo ? '<th>Productos pendientes</th>' : ''}<th class="num">Unid. pendientes</th><th class="num">Debe</th></tr></thead>
+        <thead><tr><th>Cliente</th>${esGrupo ? '<th>Productos pendientes</th>' : ''}<th class="num">Unid. pendientes</th><th class="num">Debe</th></tr></thead>
         <tbody>
           ${porDistribuidor.map(r=>`<tr><td>${escapeHtml(r.nombre)}</td>${esGrupo ? `<td style="font-size:12.5px;color:var(--ink-soft);">${escapeHtml(r.detalle)}</td>` : ''}<td class="num">${fmtNum(r.dPendiente)}</td><td class="num pend-val pos">${fmt(r.dPendienteVal)}</td></tr>`).join('')}
         </tbody>
@@ -3676,7 +3766,7 @@ function wireSearchableSelect(overlay, searchInputEl, selectEl, products, onPick
   });
 }
 
-// Agrega una línea de producto al pedido de un distribuidor concreto
+// Agrega una línea de producto al pedido de un cliente concreto
 function openAddProductModal(distId){
   const products = getAllProducts();
   const opciones = buildProductOptions(products, '', 0);
@@ -3811,7 +3901,7 @@ function openNewProductModal(){
       <label>Precio unitario</label>
       <input type="number" min="0" id="inpPrecio" placeholder="0">
     </div>
-    <div class="hint">Quedará disponible para agregarlo al pedido de cualquier distribuidor. Si te equivocas al escribirlo, puedes editarlo abajo.</div>
+    <div class="hint">Quedará disponible para agregarlo al pedido de cualquier cliente. Si te equivocas al escribirlo, puedes editarlo abajo.</div>
     <div class="modal-actions" style="margin-bottom:2px;">
       <button class="btn-cancel" id="btnCancel">Cerrar</button>
       <button class="btn-confirm" id="btnConfirm">Crear producto</button>
@@ -3853,7 +3943,7 @@ function openNewProductModal(){
   }
   paint();
 
-  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=>{ overlay.remove(); renderAll(); });
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
     const categoria = overlay.querySelector('#inpCategoria').value.trim() || 'OTROS';
     const producto = overlay.querySelector('#inpProducto').value.trim();
@@ -3953,13 +4043,13 @@ function fechaToInputValue(fecha){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 
-// Edita un distribuidor/proveedor: nombre, vendedor asignado, fecha de pedido y fecha máxima de despacho
+// Edita un cliente/proveedor: nombre, vendedor asignado, fecha de pedido y fecha máxima de despacho
 // (aplica tanto a los del catálogo como a los creados manualmente)
 function openEditDistModal(dist){
   const distId = dist.id;
   const vendedoresExistentes = getAllVendedores();
   const overlay = openModal(`
-    <h3>Editar distribuidor</h3>
+    <h3>Editar cliente</h3>
     <div class="field">
       <label>Nombre</label>
       <input type="text" id="inpRename" value="${escapeAttr(dist.nombre)}">
@@ -4008,11 +4098,11 @@ function openEditDistModal(dist){
   });
 }
 
-// Muestra, para un producto elegido, cuánto se debe en TODOS los distribuidores en general
+// Muestra, para un producto elegido, cuánto se debe en TODOS los clientes en general
 function openProductDebtFilter(){
   const products = getAllProducts();
   const overlay = openModal(`
-    <h3 class="no-print">Deuda por producto (todos los distribuidores)</h3>
+    <h3 class="no-print">Deuda por producto (todos los clientes)</h3>
     <div class="field product-search-wrap no-print">
       <label>Busca un producto</label>
       <input type="text" id="pdSearchInput" placeholder="Ej. Sábana Silver, toalla, cobija..." autocomplete="off">
@@ -4101,7 +4191,7 @@ function openProductDebtFilter(){
         </div>
         ${porDistribuidor.length ? `
         <table>
-          <thead><tr><th>Distribuidor</th><th class="num">Unid. pendientes</th><th class="num">Debe</th></tr></thead>
+          <thead><tr><th>Cliente</th><th class="num">Unid. pendientes</th><th class="num">Debe</th></tr></thead>
           <tbody>
             ${porDistribuidor.map(r=>`<tr><td>${escapeHtml(r.nombre)}</td><td class="num">${fmtNum(r.dPendiente)}</td><td class="num pend-val pos">${fmt(r.dPendienteVal)}</td></tr>`).join('')}
           </tbody>
@@ -4124,12 +4214,12 @@ function openProductDebtFilter(){
 function openNewDistModal(){
   const vendedoresExistentes = getAllVendedores();
   const overlay = openModal(`
-    <h3>Nuevo distribuidor</h3>
+    <h3>Nuevo cliente</h3>
     <div class="field">
-      <label>Nombre del distribuidor / tienda</label>
+      <label>Nombre del cliente / tienda</label>
       <input type="text" id="inpNombre" list="dlDistribuidoresRegistro" placeholder="Ej. Almacén El Progreso" autocomplete="off">
       <datalist id="dlDistribuidoresRegistro">${getAllDistribuidorNombres().map(n=>`<option value="${escapeAttr(n)}">`).join('')}</datalist>
-      <div class="hint" style="margin-top:5px;margin-bottom:0;">Escribe uno nuevo o elige uno ya creado en "🏬 Distribuidores".</div>
+      <div class="hint" style="margin-top:5px;margin-bottom:0;">Escribe uno nuevo o elige uno ya creado en "🏬 Clientes".</div>
     </div>
     <div class="field">
       <label>Vendedor asignado (opcional)</label>
@@ -4184,7 +4274,7 @@ function openNewDistModal(){
   });
 }
 
-// Crea un pedido NUEVO para un cliente distribuidor que ya existe: el cliente queda
+// Crea un pedido NUEVO para un cliente que ya existe: el cliente queda
 // guardado (mismo nombre) y este nuevo pedido arranca vacío de productos, con su propia
 // fecha, fecha de despacho y marca de urgente, editable por separado del pedido anterior.
 function openNewOrderForClientModal(dist){
@@ -4243,15 +4333,15 @@ function openNewOrderForClientModal(dist){
 }
 
 // Duplica un pedido completo (todas sus líneas de producto, cantidades y precios) hacia un
-// distribuidor NUEVO y distinto — útil cuando llega un pedido igual o parecido para otro cliente.
-// El pedido original NO se toca; se crean copias como líneas "extra" del nuevo distribuidor.
+// cliente NUEVO y distinto — útil cuando llega un pedido igual o parecido para otro cliente.
+// El pedido original NO se toca; se crean copias como líneas "extra" del nuevo cliente.
 function openDuplicatePedidoModal(dist){
   const sourceLines = getOrderLines(dist.id);
   const overlay = openModal(`
     <h3>Duplicar pedido de ${escapeHtml(dist.nombre)}</h3>
-    <div class="hint">Se copiarán las ${sourceLines.length} línea(s) de producto de este pedido (con sus cantidades y precios) a un pedido nuevo, para un distribuidor DISTINTO. El pedido original no se modifica.</div>
+    <div class="hint">Se copiarán las ${sourceLines.length} línea(s) de producto de este pedido (con sus cantidades y precios) a un pedido nuevo, para un cliente DISTINTO. El pedido original no se modifica.</div>
     <div class="field">
-      <label>Nombre del nuevo distribuidor</label>
+      <label>Nombre del nuevo cliente</label>
       <input type="text" id="inpNombreDup" placeholder="Ej. Almacén La Rebaja">
     </div>
     <div class="field">
@@ -4275,9 +4365,9 @@ function openDuplicatePedidoModal(dist){
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
     const nombre = overlay.querySelector('#inpNombreDup').value.trim();
-    if(!nombre){ showToast('Escribe el nombre del nuevo distribuidor'); return; }
+    if(!nombre){ showToast('Escribe el nombre del nuevo cliente'); return; }
     if(normalizeText(nombre) === normalizeText(dist.nombre)){
-      showToast('Escribe el nombre de un distribuidor distinto al original');
+      showToast('Escribe el nombre de un cliente distinto al original');
       return;
     }
     const vendedor = overlay.querySelector('#inpVendedorDup').value.trim();
@@ -4297,10 +4387,10 @@ function openDuplicatePedidoModal(dist){
   });
 }
 
-// Reporte detallado de TODO lo que se debe: cada línea pendiente, de todos los distribuidores, en un solo listado
+// Reporte detallado de TODO lo que se debe: cada línea pendiente, de todos los clientes, en un solo listado
 function openTotalDebtReport(){
   const dists = getAllDistributors();
-  // Se agrupa por Categoría + Producto + Medida (sumando todos los distribuidores) para que sea un total simple, no un detalle línea por línea
+  // Se agrupa por Categoría + Producto + Medida (sumando todos los clientes) para que sea un total simple, no un detalle línea por línea
   const grupos = {};
   dists.forEach(d=>{
     getOrderLines(d.id).forEach(l=>{
@@ -4343,7 +4433,7 @@ function openTotalDebtReport(){
           <col style="width:14%"><col style="width:38%"><col style="width:16%">
           <col style="width:12%"><col style="width:10%"><col style="width:10%">
         </colgroup>
-        <thead><tr><th>Categoría</th><th>Producto</th><th>Medida / Estilo</th><th class="num">Distribuidores</th><th class="num">Pendiente</th><th class="num">Debe</th></tr></thead>
+        <thead><tr><th>Categoría</th><th>Producto</th><th>Medida / Estilo</th><th class="num">Clientes</th><th class="num">Pendiente</th><th class="num">Debe</th></tr></thead>
         <tbody id="tdrBody"></tbody>
       </table>
     </div>
@@ -4433,13 +4523,13 @@ function openManageVendedoresModal(){
   });
 }
 
-// Gestión de distribuidores: crearlos de antemano para poder "jalarlos" (seleccionarlos) al crear un nuevo pedido
+// Gestión de clientes: crearlos de antemano para poder "jalarlos" (seleccionarlos) al crear un nuevo pedido
 function openManageDistribuidoresModal(){
   const overlay = openModal(`
-    <h3>Distribuidores</h3>
-    <div class="hint">Crea aquí los nombres de tus clientes distribuidores para poder elegirlos rápido al crear un pedido nuevo.</div>
+    <h3>Clientes</h3>
+    <div class="hint">Crea aquí los nombres de tus clientes para poder elegirlos rápido al crear un pedido nuevo.</div>
     <div class="registry-add-row">
-      <input type="text" id="inpNuevoDistribuidor" placeholder="Nombre del distribuidor / tienda">
+      <input type="text" id="inpNuevoDistribuidor" placeholder="Nombre del cliente / tienda">
       <button class="btn-confirm" id="btnAgregarDistribuidor" style="flex:0 0 auto;">Agregar</button>
     </div>
     <div class="registry-list" id="distribuidoresList"></div>
@@ -4458,7 +4548,7 @@ function openManageDistribuidoresModal(){
           ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
           <button class="icon-btn icon-delete" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
         </span>
-      </div>`).join('') : `<div class="registry-empty">Aún no has creado distribuidores.</div>`;
+      </div>`).join('') : `<div class="registry-empty">Aún no has creado clientes.</div>`;
     listEl.querySelectorAll('button[data-n]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
         APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
@@ -4478,7 +4568,7 @@ function openManageDistribuidoresModal(){
     await saveAppData(APPDATA);
     inp.value = '';
     paint();
-    showToast('Distribuidor creado. Ya puedes elegirlo al crear un pedido.');
+    showToast('Cliente creado. Ya puedes elegirlo al crear un pedido.');
   });
 }
 
@@ -4516,7 +4606,7 @@ document.getElementById('btnLimpiarFiltrosTop').addEventListener('click', ()=>{
 });
 
 // ---------- navegación superior ----------
-// Ahora cada opción vive dentro de uno de los dos desplegables (Distribuidores / Producción).
+// Ahora cada opción vive dentro de uno de los dos desplegables (Clientes / Producción).
 // Cada una es una vista completa: cambian de pantalla dentro de la misma app, sin abrir modales.
 // Ver switchView() y el wiring de .nav-dropdown-* más arriba.
 
@@ -4549,7 +4639,7 @@ document.getElementById('inpNuevoVendedorView').addEventListener('keydown', (e)=
   if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnAgregarVendedorView').click(); }
 });
 
-// Vista "Distribuidores": agregar nuevo
+// Vista "Clientes": agregar nuevo
 document.getElementById('btnAgregarDistribuidorView').addEventListener('click', async ()=>{
   const inp = document.getElementById('inpNuevoDistribuidorView');
   const val = inp.value.trim();
@@ -4559,7 +4649,7 @@ document.getElementById('btnAgregarDistribuidorView').addEventListener('click', 
   await saveAppData(APPDATA);
   inp.value = '';
   renderAll();
-  showToast('Distribuidor creado. Ya puedes elegirlo al crear un pedido.');
+  showToast('Cliente creado. Ya puedes elegirlo al crear un pedido.');
 });
 document.getElementById('inpNuevoDistribuidorView').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnAgregarDistribuidorView').click(); }
@@ -4754,7 +4844,7 @@ document.getElementById('btnCambiarAcceso').addEventListener('click', openChange
 // ================= GESTIÓN DE PLANTA: motor genérico de módulos (CRUD con guardado real en Firebase) =================
 // Cada módulo se define una sola vez (campos + columnas) y comparte el mismo motor de
 // listar / buscar / crear / editar / eliminar, guardando siempre con saveAppData(APPDATA),
-// exactamente igual que Vendedores/Distribuidores.
+// exactamente igual que Vendedores/Clientes.
 
 // Etapas de producción disponibles en Producción Diaria y en los dashboards.
 const ETAPAS_PRODUCCION = [
@@ -4954,6 +5044,20 @@ const PLANTA_MODULES = {
       {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
   },
+  serviciosmaquila:{
+    dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
+    title:'precio de servicio', titleCap:'Precio de Servicio',
+    fields:[
+      {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:'Taller', options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
+      {key:'servicio', label:'Producto o familia (ej. Sábanas, Tendidos)', type:'text', required:true, placeholder:'Ej. Sábanas'},
+      {key:'precio', label:'Precio del servicio por unidad', type:'number', required:true, placeholder:'Ej. 3000'}
+    ],
+    columns:[
+      {key:'etapa', label:'Etapa', html:true, format:v=> v ? `<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>` : 'Todas'},
+      {key:'servicio', label:'Producto / familia'},
+      {key:'precio', label:'Precio por unidad', format:v=>(v!==undefined&&v!==null&&v!=='')?fmt(v):'—'}
+    ]
+  },
   ordenesproduccion:{
     dataKey:'plantaOrdenes', bodyId:'ordenesproduccionBody', searchId:'ordenesproduccionSearch', addBtnId:'btnNuevaOrden',
     title:'orden de producción', titleCap:'Orden de Producción',
@@ -5031,7 +5135,7 @@ const PLANTA_MODULES = {
 };
 
 // Devuelve las opciones {value,label} de un módulo de planta para usarlas en un <select> de otro módulo
-// Para el campo "Cliente" de Despachos: jala los distribuidores ya existentes en vez de escribirlos de nuevo.
+// Para el campo "Cliente" de Despachos: jala los clientes ya existentes en vez de escribirlos de nuevo.
 function distribuidorSelectOptions(){
   const dists = getAllDistributors().slice().sort((a,b) => a.nombre.localeCompare(b.nombre));
   return [{value:'', label:'Selecciona un cliente'}, ...dists.map(d => ({value:d.nombre, label:d.nombre}))];
@@ -5062,7 +5166,9 @@ function renderPlantaModule(moduleKey){
     rows = rows.filter(({item}) => mod.columns.some(c => String(item[c.key] ?? '').toLowerCase().includes(term)));
   }
   const colCount = mod.columns.length + 1;
-  if(!rows.length){
+  if(moduleKey === 'produccion'){
+    renderProduccionRegistros(body, term);
+  }else if(!rows.length){
     body.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">${raw.length ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay registros. Usa el botón "+ Nuevo" para crear el primero.'}</td></tr>`;
   }else{
     body.innerHTML = rows.map(({item, idx}) => `
@@ -5081,10 +5187,169 @@ function renderPlantaModule(moduleKey){
   }
   if(moduleKey === 'produccion'){
     actualizarProduccionProductoFiltroOptions();
+    renderProduccionServicioDia();
     renderProduccionEtapaDashboard();
     renderProduccionTotales();
     renderProduccionDisponibilidad();
   }
+}
+
+// ---------- Producción Diaria: registros unificados (tipo factura) con desglose ----------
+// En el almacenamiento cada producto sigue siendo una fila (así los dashboards, la disponibilidad y la utilidad
+// no cambian), pero las filas cargadas juntas comparten registroId y aquí se muestran como UN solo registro:
+// fecha + etapa + total de unidades, que se abre para ver el desglose por producto.
+const produccionAbiertos = new Set();
+// En las etapas Ultrasonido y Confortadora solo se registran estos servicios (no productos de venta).
+const SERVICIOS_ULTRASONIDO = [
+  'SERVICIO DE ACOLCHADO ULTRASONIDO UNIFAZ GUATA 70',
+  'SERVICIO DE ACOLCHADO ULTRASONIDO UNIFAZ GUATA 90',
+  'SERVICIO DE ACOLCHADO ULTRASONIDO DOBLE FAZ GUATA 70',
+  'SERVICIO DE ACOLCHADO ULTRASONIDO DOBLE FAZ GUATA 90'
+];
+const SERVICIOS_CONFORTEADO = ['SERVICIO DE CONFORTEADO'];
+const SERVICIOS_POR_ETAPA = { Ultrasonido: SERVICIOS_ULTRASONIDO, Confortadora: SERVICIOS_CONFORTEADO };
+const TODOS_SERVICIOS_PRODUCCION = [...SERVICIOS_ULTRASONIDO, ...SERVICIOS_CONFORTEADO];
+// Los deja también en "Precios de servicio" (precio en 0 para que lo llenes). Cada servicio se agrega una sola vez.
+function asegurarServiciosUltrasonido(){
+  if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
+  const lista = APPDATA.plantaServiciosMaquila;
+  const sembrados = new Set(APPDATA.serviciosSembrados || []);
+  if(APPDATA.serviciosUltrasonidoSembrados) SERVICIOS_ULTRASONIDO.forEach(n => sembrados.add(n)); // versión anterior
+  let cambio = false;
+  Object.entries(SERVICIOS_POR_ETAPA).forEach(([etapa, nombres]) => {
+    nombres.forEach((nombre, n) => {
+      const existente = lista.find(x => normalizeText(x.servicio) === normalizeText(nombre));
+      if(existente && !existente.etapa){ existente.etapa = etapa; cambio = true; } // completa la etapa de los ya sembrados
+      if(sembrados.has(nombre)) return;
+      if(!existente){
+        lista.push({ id: 's' + Date.now() + n + Math.random().toString(36).slice(2,5), etapa, servicio: nombre, precio: 0 });
+      }
+      sembrados.add(nombre);
+      cambio = true;
+    });
+  });
+  if(!cambio) return;
+  APPDATA.serviciosSembrados = [...sembrados];
+  saveAppData(APPDATA);
+}
+
+// Devuelve una función (etapa, nombreProducto) → precio del servicio por unidad. Busca, en "Precios de servicio",
+// primero el nombre exacto del producto, luego su categoría y luego una familia por palabras (ej. "Sábanas"
+// aplica a todo producto que diga sábana). Un precio de una etapa específica gana sobre uno de "Todas".
+function crearResolvedorPrecioServicio(){
+  const stem = w => (w.length > 3 && w.endsWith('s')) ? w.slice(0, -1) : w;
+  const entradas = (APPDATA.plantaServiciosMaquila || []).map(x => {
+    const clave = normalizeText(x.servicio);
+    return { x, clave, palabras: clave.split(/\s+/).map(stem).filter(w => w.length >= 3) };
+  }).filter(e => e.clave);
+  const catPorNombre = {};
+  (APPDATA.plantaProductos || []).forEach(pp => { catPorNombre[normalizeText(pp.nombre)] = normalizeText(pp.categoria); });
+  const memo = new Map();
+  return function(etapa, nombreProducto){
+    const mk = etapa + '|' + nombreProducto;
+    if(memo.has(mk)) return memo.get(mk);
+    const nom = normalizeText(nombreProducto), cat = catPorNombre[nom] || '';
+    let mejor = null, mejorScore = -1;
+    entradas.forEach(en => {
+      if(en.x.etapa && en.x.etapa !== etapa) return;
+      let score = -1;
+      if(en.clave === nom) score = 1000;
+      else if(cat && en.clave === cat) score = 500;
+      else if(en.palabras.length && en.palabras.every(w => nom.includes(w) || (cat && cat.includes(w)))) score = 100 + en.palabras.join('').length;
+      if(score < 0) return;
+      if(en.x.etapa) score += 1;
+      if(score > mejorScore){ mejorScore = score; mejor = en.x; }
+    });
+    const r = mejor ? (Number(mejor.precio) || 0) : 0;
+    memo.set(mk, r);
+    return r;
+  };
+}
+function produccionGrupoKey(item, idx){ return item.registroId || item.id || ('idx' + idx); }
+
+function renderProduccionRegistros(body, term){
+  const raw = getPlantaList('produccion');
+  const grupos = new Map();
+  raw.forEach((item, idx) => {
+    if(!produccionPasaFiltros(item)) return;
+    const key = produccionGrupoKey(item, idx);
+    if(!grupos.has(key)) grupos.set(key, { key, fecha: item.fecha, etapa: normEtapa(item.etapa), obs: item.observaciones || '', lineas: [] });
+    grupos.get(key).lineas.push(item);
+  });
+  let lista = [...grupos.values()];
+  if(term){
+    lista = lista.filter(g => [g.fecha, g.etapa, g.obs, ...g.lineas.map(l => l.producto)].some(v => String(v ?? '').toLowerCase().includes(term)));
+  }
+  if(!lista.length){
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">${raw.length ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay registros. Usa el botón "+ Nuevo" para crear el primero.'}</td></tr>`;
+    return;
+  }
+  const precioDe = crearResolvedorPrecioServicio();
+  body.innerHTML = lista.map(g => {
+    const detalle = g.lineas.map(l => {
+      const cant = Number(l.cantidad) || 0, precio = precioDe(g.etapa, l.producto);
+      return { producto: l.producto, cant, precio, sub: cant * precio };
+    });
+    const total = detalle.reduce((a, l) => a + l.cant, 0);
+    const valor = detalle.reduce((a, l) => a + l.sub, 0);
+    const faltan = detalle.some(l => !l.precio);
+    const abierto = produccionAbiertos.has(g.key);
+    const k = escapeAttr(g.key);
+    return `
+      <tr class="prod-reg-row">
+        <td>${escapeHtml(g.fecha || '—')}</td>
+        <td><span class="badge ${g.etapa==='Corte'?'debe':'saldado'}">${escapeHtml(g.etapa)}</span></td>
+        <td><button type="button" class="icon-btn" data-prod-toggle="${k}" title="Ver desglose" style="margin-right:6px;">${abierto ? '▾' : '▸'}</button>${g.lineas.length} producto${g.lineas.length>1?'s':''}</td>
+        <td class="num">${fmtNum(total)}</td>
+        <td class="num"><strong>${valor ? fmt(valor) : '—'}</strong>${faltan ? ' <span title="Hay productos sin precio de servicio (defínelos en Precios de servicio)" style="color:#B65B2E;">⚠</span>' : ''}</td>
+        <td>${g.obs ? `<span class="cell-clamp" title="${escapeAttr(g.obs)}">${escapeHtml(g.obs)}</span>` : '—'}</td>
+        <td class="row-actions no-print">
+          <button class="icon-btn icon-edit" data-prod-edit="${k}" title="Editar registro">✎</button>
+          <button class="icon-btn icon-delete" data-prod-del="${k}" title="Eliminar registro completo">🗑</button>
+        </td>
+      </tr>
+      <tr class="prod-reg-detalle" style="${abierto ? '' : 'display:none;'}background:var(--cream-2);">
+        <td colspan="7" style="padding:8px 14px 12px 40px;">
+          <table style="width:100%;">
+            <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio del servicio</th><th class="num">Subtotal</th></tr></thead>
+            <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num">${l.precio ? fmt(l.precio) : '—'}</td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
+              <tr><td style="font-weight:700;">Total</td><td class="num" style="font-weight:700;">${fmtNum(total)}</td><td></td><td class="num" style="font-weight:700;">${fmt(valor)}</td></tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// "Cobro del servicio por día": por fecha y etapa, cuánto te cobra el servicio por lo producido (unidades × precio
+// de servicio de cada producto). Respeta los mismos filtros de Producción Diaria.
+function renderProduccionServicioDia(){
+  const body = document.getElementById('produccionServicioDiaBody');
+  if(!body) return;
+  const precioDe = crearResolvedorPrecioServicio();
+  const dias = new Map();
+  (APPDATA.plantaProduccionDiaria || []).forEach(r => {
+    if(!produccionPasaFiltros(r)) return;
+    const etapa = normEtapa(r.etapa);
+    const k = (r.fecha || '') + '|' + etapa;
+    if(!dias.has(k)) dias.set(k, { fecha: r.fecha || '', etapa, unidades: 0, valor: 0, faltan: false });
+    const g = dias.get(k);
+    const cant = Number(r.cantidad) || 0, precio = precioDe(etapa, r.producto);
+    g.unidades += cant; g.valor += cant * precio;
+    if(!precio) g.faltan = true;
+  });
+  const lista = [...dias.values()].sort((a, b) => (parseFechaToTime(b.fecha) || 0) - (parseFechaToTime(a.fecha) || 0) || a.etapa.localeCompare(b.etapa));
+  if(!lista.length){
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción con estos filtros.</td></tr>`;
+    return;
+  }
+  const totU = lista.reduce((a, g) => a + g.unidades, 0), totV = lista.reduce((a, g) => a + g.valor, 0);
+  body.innerHTML = lista.map(g => `<tr>
+      <td>${escapeHtml(g.fecha || '—')}</td>
+      <td><span class="badge ${g.etapa==='Corte'?'debe':'saldado'}">${escapeHtml(g.etapa)}</span></td>
+      <td class="num">${fmtNum(g.unidades)}</td>
+      <td class="num"><strong>${g.valor ? fmt(g.valor) : '—'}</strong>${g.faltan ? ' <span title="Hay productos sin precio de servicio" style="color:#B65B2E;">⚠</span>' : ''}</td>
+    </tr>`).join('') + `<tr style="background:var(--cream-2);"><td colspan="2" style="font-weight:700;">Total del periodo filtrado</td><td class="num" style="font-weight:700;">${fmtNum(totU)}</td><td class="num" style="font-weight:700;">${fmt(totV)}</td></tr>`;
 }
 
 // ---------- Producción Diaria: filtros combinados (rango de fechas + producto + etapa) y totales ----------
@@ -5106,7 +5371,7 @@ function calcularInventarioProduccion(){
   const producido = {};
   (APPDATA.plantaProduccionDiaria || []).forEach(r => {
     const key = (r.producto || '').trim();
-    if(!key) return;
+    if(!key || TODOS_SERVICIOS_PRODUCCION.includes(key)) return; // servicios de maquila: no son inventario de productos
     producido[key] = (producido[key] || 0) + (Number(r.cantidad) || 0);
   });
   const vendido = {};
@@ -5346,10 +5611,10 @@ function buildPlantaFieldHtml(f, currentValue){
   </div>`;
 }
 
-// Sección especial del modal de Despachos: al elegir el "Cliente" (distribuidor), muestra su
+// Sección especial del modal de Despachos: al elegir el "Cliente" (cliente), muestra su
 // pedido pendiente y deja elegir si el despacho descuenta TODO lo pendiente o cantidades puntuales
 // por producto. El resultado se guarda como JSON en el campo oculto #pf_despachoLineas, que
-// mod.onSave (despachos) usa para aplicar el descuento real a "Entregado" del distribuidor.
+// mod.onSave (despachos) usa para aplicar el descuento real a "Entregado" del cliente.
 function wireDespachoLineasUI(overlay, record){
   const clienteSel = overlay.querySelector('#pf_cliente');
   const hidden = overlay.querySelector('#pf_despachoLineas');
@@ -5573,19 +5838,32 @@ function openPlantaModal(moduleKey, idx){
 // Modal de Producción Diaria: UNA fecha + UNA etapa (Corte, Taller, Ultrasonido o Confortadora) para todo el registro, y varias
 // filas de producto + cantidad. Al guardar se crea una fila de producción por producto (todas comparten
 // registroId), así los dashboards, la disponibilidad y la utilidad del mes siguen leyendo el mismo formato.
-function openProduccionModal(idx){
+function openProduccionModal(groupKey){
   const list = getPlantaList('produccion');
-  const editing = (idx !== undefined && idx !== null && list[idx]);
-  const record = editing ? list[idx] : {};
+  const lineasGrupo = (typeof groupKey === 'string')
+    ? list.map((it, i) => ({it, i})).filter(o => produccionGrupoKey(o.it, o.i) === groupKey)
+    : [];
+  const editing = lineasGrupo.length > 0;
+  const record = editing ? lineasGrupo[0].it : {};
   const hoy = new Date();
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+  asegurarServiciosUltrasonido();
   const productos = plantaSelectOptions('plantaproductos','nombre','Selecciona un producto');
-  const optsHtml = (sel) => productos.map(o => `<option value="${escapeAttr(o.value)}" ${String(o.value)===String(sel||'')?'selected':''}>${escapeHtml(o.label)}</option>`).join('');
+  const opcionesPara = (etapa) => SERVICIOS_POR_ETAPA[etapa]
+    ? [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))]
+    : productos;
+  let etapaActual = normEtapa(record.etapa); // igual que el select: sin registro previo arranca en Taller
+  const optsHtml = (sel) => {
+    let ops = opcionesPara(etapaActual);
+    // al editar un registro antiguo se conserva su valor aunque ya no esté en la lista
+    if(sel && !ops.some(o => String(o.value) === String(sel))) ops = [...ops, {value:sel, label:sel}];
+    return ops.map(o => `<option value="${escapeAttr(o.value)}" ${String(o.value)===String(sel||'')?'selected':''}>${escapeHtml(o.label)}</option>`).join('');
+  };
   const filaHtml = (prod, cant) => `
     <div class="prod-linea" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
       <select class="pl-producto" style="flex:1;min-width:0;">${optsHtml(prod)}</select>
       <input type="number" class="pl-cantidad" min="0" placeholder="Cant." value="${escapeAttr(cant ?? '')}" style="width:90px;">
-      ${editing ? '' : `<button type="button" class="icon-btn icon-delete pl-quitar" title="Quitar">✕</button>`}
+      <button type="button" class="icon-btn icon-delete pl-quitar" title="Quitar">✕</button>
     </div>`;
   const overlay = openModal(`
     <h3>${editing ? 'Editar' : 'Nuevo'} Registro de Producción</h3>
@@ -5596,8 +5874,8 @@ function openProduccionModal(idx){
       </select>
     </div>
     <div class="field"><label>Productos y cantidades *</label>
-      <div id="pp_lineas">${filaHtml(record.producto, record.cantidad)}</div>
-      ${editing ? '' : `<button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>`}
+      <div id="pp_lineas">${editing ? lineasGrupo.map(o => filaHtml(o.it.producto, o.it.cantidad)).join('') : filaHtml('', '')}</div>
+      <button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>
     </div>
     <div class="field"><label>Observaciones</label>
       <textarea id="pp_obs" rows="3" placeholder="Detalles del corte o novedades del día" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:none;max-height:110px;overflow-y:auto;">${escapeHtml(record.observaciones || '')}</textarea>
@@ -5609,8 +5887,18 @@ function openProduccionModal(idx){
     </div>
   `);
   const lineasBox = overlay.querySelector('#pp_lineas');
+  overlay.querySelector('#pp_etapa').addEventListener('change', (e)=>{
+    etapaActual = normEtapa(e.target.value);
+    const validas = opcionesPara(etapaActual);
+    lineasBox.querySelectorAll('.pl-producto').forEach(sel => {
+      const actual = sel.value;
+      const ok = validas.some(o => o.value === actual);
+      sel.innerHTML = optsHtml(ok ? actual : '');
+      if(!ok) sel.value = '';
+    });
+  });
   overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
-  if(!editing){
+  {
     overlay.querySelector('#pp_agregar').addEventListener('click', ()=>{
       lineasBox.insertAdjacentHTML('beforeend', filaHtml('', ''));
     });
@@ -5627,10 +5915,9 @@ function openProduccionModal(idx){
   }
   if(editing){
     overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
-      if(!confirm('¿Eliminar este registro de producción?')) return;
+      if(!confirm('¿Eliminar este registro de producción completo?')) return;
       const freshList = getPlantaList('produccion');
-      const i = freshList.indexOf(record);
-      if(i > -1) freshList.splice(i, 1); else freshList.splice(idx, 1);
+      lineasGrupo.map(o => freshList.indexOf(o.it)).filter(i => i > -1).sort((a,b) => b-a).forEach(i => freshList.splice(i, 1));
       await saveAppData(APPDATA);
       overlay.remove();
       renderPlantaModule('produccion');
@@ -5656,11 +5943,20 @@ function openProduccionModal(idx){
     if(!porProducto.size){ showToast('Agrega al menos un producto con su cantidad'); return; }
     const freshList = getPlantaList('produccion');
     if(editing){
-      const [prod, cant] = [...porProducto.entries()][0];
-      const nuevo = {...record, fecha, etapa, producto: prod, cantidad: cant, observaciones: obs};
-      delete nuevo.taller;
-      const i = freshList.indexOf(record);
-      if(i > -1) freshList[i] = nuevo; else freshList.push(nuevo);
+      // Reemplaza todas las filas del registro por las nuevas (conserva id/registroId de las que siguen igual)
+      const registroId = record.registroId || ('r' + Date.now() + Math.random().toString(36).slice(2,6));
+      const previas = new Map();
+      lineasGrupo.forEach(o => { if(!previas.has(o.it.producto)) previas.set(o.it.producto, o.it); });
+      const idxs = lineasGrupo.map(o => freshList.indexOf(o.it)).filter(i => i > -1).sort((a,b) => a-b);
+      const posInsercion = idxs.length ? idxs[0] : freshList.length;
+      idxs.slice().reverse().forEach(i => freshList.splice(i, 1));
+      const filasNuevas = [...porProducto.entries()].map(([prod, cant], n) => {
+        const previa = previas.get(prod) || {};
+        const fila = {...previa, id: previa.id || ('p' + Date.now() + n + Math.random().toString(36).slice(2,7)), registroId, fecha, etapa, producto: prod, cantidad: cant, observaciones: obs};
+        delete fila.taller;
+        return fila;
+      });
+      freshList.splice(posInsercion, 0, ...filasNuevas);
     } else {
       const registroId = 'r' + Date.now() + Math.random().toString(36).slice(2,6);
       [...porProducto.entries()].forEach(([prod, cant], n) => {
@@ -5698,6 +5994,32 @@ function initPlantaModule(moduleKey){
   }
 }
 Object.keys(PLANTA_MODULES).forEach(initPlantaModule);
+(function wireProduccionRegistros(){
+  const body = document.getElementById('produccionBody');
+  if(!body) return;
+  body.addEventListener('click', (e)=>{
+    const tog = e.target.closest('[data-prod-toggle]');
+    if(tog){
+      const key = tog.dataset.prodToggle;
+      const detalle = tog.closest('tr').nextElementSibling;
+      const abrir = !produccionAbiertos.has(key);
+      if(abrir) produccionAbiertos.add(key); else produccionAbiertos.delete(key);
+      if(detalle) detalle.style.display = abrir ? '' : 'none';
+      tog.textContent = abrir ? '▾' : '▸';
+      return;
+    }
+    const ed = e.target.closest('[data-prod-edit]');
+    if(ed){ openProduccionModal(ed.dataset.prodEdit); return; }
+    const del = e.target.closest('[data-prod-del]');
+    if(del){
+      if(!confirm('¿Eliminar este registro de producción completo (todos sus productos)?')) return;
+      const key = del.dataset.prodDel;
+      const list = getPlantaList('produccion');
+      for(let i = list.length - 1; i >= 0; i--){ if(produccionGrupoKey(list[i], i) === key) list.splice(i, 1); }
+      saveAppData(APPDATA).then(()=> renderPlantaModule('produccion'));
+    }
+  });
+})();
 
 // ================= Producción · Costos de Productos + Dashboard de Costos y Utilidades =================
 function costeoCfg(){
@@ -6024,7 +6346,7 @@ function currentMonthValue(){
 }
 
 // Ventas (facturación) del mes, desglosadas por nombre de producto — cruza las líneas de pedido de
-// Distribuidores (catálogo comercial) con el nombre del producto de planta. Si los nombres no coinciden
+// Clientes (catálogo comercial) con el nombre del producto de planta. Si los nombres no coinciden
 // exactamente entre los dos catálogos, esa venta no se le atribuye a ningún producto de planta (pero sí
 // queda contada en el total de "Facturación del mes").
 function ventasPorProductoDelMes(y, m){
@@ -6344,6 +6666,197 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
   btn.classList.toggle('open', open);
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 });
+
+// ================= Dashboards de Costos y Utilidades POR ETAPA (Corte / Producción-Taller / Ultrasonido / Confortadora) =================
+// Cada etapa tiene su propio dashboard: valor de producción − costos variables − costos fijos (prorrateados) = utilidad.
+// El "cobro del servicio" (unidades × precio de servicio de la etapa, definido en "Precios de servicio") se resta como costo.
+// El valor de producción y el costo variable salen del precio de venta y el costeo de cada producto.
+const DASH_ETAPA_LABEL = { Corte:'Corte', Taller:'Producción (Taller)', Ultrasonido:'Ultrasonido', Confortadora:'Confortadora' };
+const dashEtapaCharts = {};
+
+function calcularUtilidadEtapa(etapa, desde, hasta, producto){
+  const tD = desde ? parseFechaToTime(desde) : null;
+  const tH = hasta ? parseFechaToTime(hasta) : null;
+  const porProducto = {}, unidadesEtapaMes = {}, totalMes = {};
+  let unidadesEtapa = 0;
+  (APPDATA.plantaProduccionDiaria || []).forEach(r => {
+    const t = parseFechaToTime(r.fecha);
+    if(t === null) return;
+    const dt = new Date(t);
+    const mk = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0');
+    const cant = Number(r.cantidad) || 0;
+    totalMes[mk] = (totalMes[mk] || 0) + cant;
+    if(normEtapa(r.etapa) !== etapa) return;
+    if(tD !== null && t < tD) return;
+    if(tH !== null && t > tH) return;
+    const k = r.producto || '—';
+    if(producto && k !== producto) return;
+    unidadesEtapa += cant;
+    unidadesEtapaMes[mk] = (unidadesEtapaMes[mk] || 0) + cant;
+    porProducto[k] = (porProducto[k] || 0) + cant;
+  });
+  const precioServ = crearResolvedorPrecioServicio();
+  const productos = costeoGetProductos();
+  const filas = Object.keys(porProducto).map(nombre => {
+    const cantidad = porProducto[nombre];
+    let precio = 0, costoUnit = 0;
+    if(!TODOS_SERVICIOS_PRODUCCION.includes(nombre)){ // los servicios fijos no son productos de venta ni tienen costeo
+      const prod = productos.find(pr => pr.nombre === nombre) || { nombre };
+      const c = costeoCalcularProducto(prod);
+      precio = c.precioVenta || 0; costoUnit = c.total || 0;
+    }
+    const precioServicio = precioServ(etapa, nombre);
+    return { nombre, cantidad, precio, costoUnit, valor: cantidad * precio, costoTotal: cantidad * costoUnit, precioServicio, cobro: cantidad * precioServicio };
+  }).sort((a, b) => (b.cobro + b.valor) - (a.cobro + a.valor));
+  const valor = filas.reduce((a, f) => a + f.valor, 0);
+  const costoVar = filas.reduce((a, f) => a + f.costoTotal, 0);
+  const cobro = filas.reduce((a, f) => a + f.cobro, 0);
+  const fijosMensuales = costeoFijosMensuales();
+  const fijos = Object.keys(unidadesEtapaMes).reduce((a, mk) => a + (totalMes[mk] > 0 ? fijosMensuales * unidadesEtapaMes[mk] / totalMes[mk] : 0), 0);
+  return { filas, valor, costoVar, cobro, fijos, utilidad: valor - costoVar - cobro - fijos, unidades: unidadesEtapa };
+}
+
+function calcularUtilidadEtapaMes(y, m, etapa, producto){
+  const mm = String(m).padStart(2,'0');
+  const ultimo = String(new Date(y, m, 0).getDate()).padStart(2,'0');
+  return calcularUtilidadEtapa(etapa, `${y}-${mm}-01`, `${y}-${mm}-${ultimo}`, producto);
+}
+
+function dashEtapaHtml(e){
+  const k = e.key, id = s => 'dashE_' + k + '_' + s;
+  const esServ = !!SERVICIOS_POR_ETAPA[k];
+  return `
+    <div class="page-section"><div class="page-card">
+      <div class="prod-page-head">
+        <div>
+          <h2>Dashboard · ${escapeHtml(DASH_ETAPA_LABEL[k])}</h2>
+          <div class="sub">Costos y utilidades de la etapa: valor de producción − costos variables − costos fijos (prorrateados).</div>
+          <div class="sub" id="${id('periodo')}" style="margin-top:2px;font-weight:600;color:var(--ink);"></div>
+        </div>
+        <div class="prod-filters no-print">
+          <div class="prod-field"><label for="${id('mes')}">Mes</label><input type="month" id="${id('mes')}"></div>
+          <div class="prod-field"><label for="${id('desde')}">Desde</label><input type="date" id="${id('desde')}"></div>
+          <div class="prod-field"><label for="${id('hasta')}">Hasta</label><input type="date" id="${id('hasta')}"></div>
+          <div class="prod-field"><label for="${id('producto')}">${esServ ? 'Servicio' : 'Producto'}</label><select id="${id('producto')}"></select></div>
+          <button type="button" class="prod-btn prod-btn-outline" id="${id('limpiar')}">Limpiar filtros</button>
+        </div>
+      </div>
+      <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+        <div class="prod-stat"><div class="num" id="${id('unidades')}">–</div><div class="lbl">Unidades</div></div>
+        <div class="prod-stat"><div class="num" id="${id('valor')}">–</div><div class="lbl">Valor de producción</div></div>
+        <div class="prod-stat"><div class="num" id="${id('cobro')}">–</div><div class="lbl">Cobro del servicio</div></div>
+        <div class="prod-stat"><div class="num" id="${id('fijos')}">–</div><div class="lbl">Costos fijos (prorrateo)</div></div>
+        <div class="prod-stat"><div class="num" id="${id('var')}">–</div><div class="lbl">Costos variables</div></div>
+        <div class="prod-stat"><div class="num" id="${id('neta')}">–</div><div class="lbl">Utilidad</div></div>
+      </div>
+      <div class="prod-grid" style="margin-top:14px;">
+        <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Valor, Costos, Cobro del servicio y Utilidad del Periodo</h3><div class="prod-chart-box"><canvas id="${id('chartResumen')}"></canvas></div></div>
+        <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Tendencia de Utilidad (6 meses hasta el periodo)</h3><div class="prod-chart-box"><canvas id="${id('chartTendencia')}"></canvas></div></div>
+      </div>
+      <div class="prod-table-wrap" style="margin-top:14px;">
+        <table class="prod-table" id="${id('tabla')}">
+          <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th><th>Precio de venta</th><th>Valor</th><th>Costo variable unit.</th><th>Costo variable total</th><th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y se descuenta como costo; si está en $0, defínelo allí. El precio de venta y el costo variable salen de Producción → Productos (costeo). Los costos fijos se prorratean según las unidades de la etapa.
+        Usa "Mes" para un mes completo o "Desde / Hasta" para un rango de fechas (si llenas fechas, se ignora el mes).</div>
+    </div></div>`;
+}
+
+function renderDashEtapa(key){
+  const q = s => document.getElementById('dashE_' + key + '_' + s);
+  if(!q('mes')) return;
+  const esServ = !!SERVICIOS_POR_ETAPA[key];
+
+  // Opciones del filtro de producto/servicio: lo que se ha registrado en esta etapa (+ los servicios fijos de la etapa)
+  const selProd = q('producto');
+  const previo = selProd.value;
+  const nombres = new Set(SERVICIOS_POR_ETAPA[key] || []);
+  (APPDATA.plantaProduccionDiaria || []).forEach(r => { if(normEtapa(r.etapa) === key && r.producto) nombres.add(r.producto); });
+  const lista = [...nombres].sort((a, b) => a.localeCompare(b));
+  selProd.innerHTML = `<option value="">${esServ ? 'Todos los servicios' : 'Todos los productos'}</option>` + lista.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join('');
+  selProd.value = lista.includes(previo) ? previo : '';
+  const producto = selProd.value;
+
+  const desdeIn = q('desde').value, hastaIn = q('hasta').value;
+  const rango = !!(desdeIn || hastaIn);
+  if(!rango && !q('mes').value) q('mes').value = currentMonthValue();
+  let d, ancla, periodoTxt;
+  if(rango){
+    d = calcularUtilidadEtapa(key, desdeIn, hastaIn, producto);
+    const ref = (hastaIn || desdeIn).slice(0, 7).split('-').map(Number);
+    ancla = { y: ref[0], m: ref[1] };
+    periodoTxt = 'Periodo: ' + (desdeIn ? 'desde ' + desdeIn : 'desde el inicio') + (hastaIn ? ' hasta ' + hastaIn : ' hasta hoy');
+  }else{
+    const [y, m] = q('mes').value.split('-').map(Number);
+    d = calcularUtilidadEtapaMes(y, m, key, producto);
+    ancla = { y, m };
+    periodoTxt = 'Periodo: ' + new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month:'long', year:'numeric' });
+  }
+  q('periodo').textContent = periodoTxt + (producto ? ' · ' + producto : '');
+
+  q('unidades').textContent = fmtNum(d.unidades);
+  q('valor').textContent = fmt(d.valor);
+  q('cobro').textContent = fmt(d.cobro);
+  q('fijos').textContent = fmt(d.fijos);
+  q('var').textContent = fmt(d.costoVar);
+  const neta = q('neta');
+  neta.textContent = fmt(d.utilidad);
+  neta.style.color = d.utilidad >= 0 ? '#4C7A52' : '#B65B2E';
+  const tbody = q('tabla').querySelector('tbody');
+  tbody.innerHTML = d.filas.length ? d.filas.map(f => `<tr>
+      <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td><td>${f.precio ? fmt(f.precio) : '—'}</td>
+      <td>${f.valor ? fmt(f.valor) : '—'}</td><td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>
+      <td>${f.precioServicio ? fmt(f.precioServicio) : '—'}</td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
+      <td>${fmt(f.valor - f.costoTotal - f.cobro)}</td></tr>`).join('')
+    : `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
+  if(typeof Chart === 'undefined') return;
+  const ch = dashEtapaCharts[key] = dashEtapaCharts[key] || {};
+  if(ch.resumen) ch.resumen.destroy();
+  ch.resumen = new Chart(q('chartResumen'), {
+    type: 'bar',
+    data: { labels: ['Valor', 'Cobro servicio', 'Costos Fijos', 'Costos Variables', 'Utilidad'],
+      datasets: [{ data: [d.valor, d.cobro, d.fijos, d.costoVar, d.utilidad], backgroundColor: ['#4C7A52', '#6B8CAE', '#B65B2E', '#9E7B3B', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'], borderRadius: 4 }] },
+    options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+  });
+  const meses = [];
+  for(let i = 5; i >= 0; i--){
+    const dt = new Date(ancla.y, ancla.m - 1 - i, 1);
+    meses.push({ y: dt.getFullYear(), m: dt.getMonth() + 1, label: dt.toLocaleDateString('es-CO', { month:'short', year:'2-digit' }) });
+  }
+  const datos = meses.map(x => calcularUtilidadEtapaMes(x.y, x.m, key, producto));
+  if(ch.tendencia) ch.tendencia.destroy();
+  ch.tendencia = new Chart(q('chartTendencia'), {
+    type: 'line',
+    data: { labels: meses.map(x => x.label), datasets: [
+      { label:'Valor', data: datos.map(x => x.valor), borderColor:'#4C7A52', backgroundColor:'#4C7A52', tension:0.25 },
+      { label:'Costos (Fijos + Variables + Servicio)', data: datos.map(x => x.fijos + x.costoVar + x.cobro), borderColor:'#B65B2E', backgroundColor:'#B65B2E', tension:0.25 },
+      { label:'Utilidad', data: datos.map(x => x.utilidad), borderColor:'#9E7B3B', backgroundColor:'#9E7B3B', tension:0.25 }
+    ] },
+    options: { plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:false } } }
+  });
+}
+
+(function crearDashboardsEtapa(){
+  const ref = document.getElementById('viewOperarios');
+  if(!ref) return;
+  ETAPAS_PRODUCCION.forEach(e => {
+    const div = document.createElement('div');
+    div.id = 'viewDash' + e.key.toLowerCase();
+    div.className = 'view-section prod-view';
+    div.style.display = 'none';
+    div.innerHTML = dashEtapaHtml(e);
+    ref.parentNode.insertBefore(div, ref);
+    const el = sfx => document.getElementById('dashE_' + e.key + '_' + sfx);
+    const rr = () => renderDashEtapa(e.key);
+    // Mes y Desde/Hasta son excluyentes: elegir uno limpia el otro.
+    el('mes').addEventListener('change', () => { if(el('mes').value){ el('desde').value = ''; el('hasta').value = ''; } rr(); });
+    ['desde', 'hasta'].forEach(f => el(f).addEventListener('change', () => { if(el('desde').value || el('hasta').value) el('mes').value = ''; rr(); }));
+    el('producto').addEventListener('change', rr);
+    el('limpiar').addEventListener('click', () => { el('mes').value = ''; el('desde').value = ''; el('hasta').value = ''; el('producto').value = ''; rr(); });
+  });
+})();
 
 (async function init(){
   await firebaseReadyPromise;
