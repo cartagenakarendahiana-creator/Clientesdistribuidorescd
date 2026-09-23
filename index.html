@@ -1271,7 +1271,6 @@
               <div class="prod-stat"><div class="num" id="utilMesNeta">–</div><div class="lbl">Utilidad Neta</div></div>
             </div>
             <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
-              <div class="prod-stat"><div class="num" id="utilMesProdTotal">–</div><div class="lbl">Producción total del mes (unidades)</div></div>
               <div class="prod-stat"><div class="num" id="utilMesProdCorte">–</div><div class="lbl">Producción de Corte</div></div>
               <div class="prod-stat"><div class="num" id="utilMesProdTaller">–</div><div class="lbl">Producción de Taller (Confección)</div></div>
               <div class="prod-stat"><div class="num" id="utilMesProdUltrasonido">–</div><div class="lbl">Producción de Ultrasonido</div></div>
@@ -6141,7 +6140,6 @@ function renderUtilidadRealMes(){
   setTxt('utilMesFacturacion', fmt(facturacionMes));
   setTxt('utilMesFijos', fmt(costosFijosMes));
   setTxt('utilMesVariables', fmt(costosVariablesMes));
-  setTxt('utilMesProdTotal', fmtNum(produccionTotal));
   ETAPAS_PRODUCCION.forEach(e => {
     const d = porEtapa[e.key];
     setTxt('utilMesProd' + e.key, fmtNum(d.produccion));
