@@ -3531,7 +3531,12 @@ function wireFacturaModalComun(overlay, invMap){
 
 /** Modal para configurar (líneas, fecha, % impuesto, observaciones) y generar la factura de un pedido. */
 function abrirGenerarFacturaModal(dist){
-  const lineasPedido = getOrderLines(dist.id);
+  // Se parte con cantidad 0 en cada línea a propósito: el pedido de un cliente es un catálogo
+  // acumulado de todo lo que alguna vez pidió, no lo que se va a facturar/entregar HOY. Si se
+  // precargara la cantidad total pedida, cada factura (incluso una entrega parcial) saldría con
+  // TODO el pedido completo por defecto. Dejando 0, el usuario escribe solo lo que factura ahora,
+  // guiado por el aviso "Disponible" de cada línea.
+  const lineasPedido = getOrderLines(dist.id).map(l => ({...l, cantidad: 0}));
   if(!lineasPedido.length){
     showToast('Este pedido no tiene productos todavía — agrega al menos uno antes de facturar.');
     return;
@@ -3540,7 +3545,7 @@ function abrirGenerarFacturaModal(dist){
   const invMap = new Map(calcularInventarioProduccion().map(x => [x.producto, x]));
   const overlay = openModal(`
     <h3>Generar factura para ${escapeHtml(dist.nombre)}</h3>
-    <div class="hint">Ajusta cantidades, precios o quita líneas antes de generar. También puedes agregar líneas manuales (ej. flete, descuento, un producto fuera de catálogo). "Disponible" se calcula con lo registrado en Producción Diaria menos lo ya facturado.</div>
+    <div class="hint">Escribe la cantidad que estás facturando/entregando de cada producto (quedan en 0 hasta que las completes) — no se precarga el pedido completo. Ajusta precios o quita líneas si hace falta. También puedes agregar líneas manuales (ej. flete, descuento, un producto fuera de catálogo). "Disponible" se calcula con lo registrado en Producción Diaria menos lo ya facturado.</div>
     ${facturaModalBodyHtml(lineasPedido, { fecha: hoy, impuestoPct: 0, observaciones: '' }, invMap)}
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
@@ -5650,7 +5655,10 @@ function wireDespachoLineasUI(overlay, record){
       hidden.value = '';
       return;
     }
-    const modoGuardado = (prevInfo && prevInfo.distId === dist.id) ? prevInfo.modo : 'completo';
+    // Por defecto "parcial" (no completo): una guía/despacho nuevo no debe descontar todo el
+    // pedido pendiente automáticamente, porque muchas veces la entrega es parcial. Si se está
+    // editando un despacho ya guardado, se respeta el modo que tenía.
+    const modoGuardado = (prevInfo && prevInfo.distId === dist.id) ? prevInfo.modo : 'parcial';
     box.innerHTML = `
       <label>Descontar del pedido pendiente de ${escapeHtml(dist.nombre)}</label>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 10px;">
