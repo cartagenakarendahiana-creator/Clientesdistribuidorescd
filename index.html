@@ -1257,11 +1257,7 @@
             <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
               <div>
                 <h3 style="margin:0;">Utilidad Real del Mes</h3>
-                <div class="sub" style="margin-top:2px;">Facturación − Costos Fijos − Costos Variables (Producción × Mes × Producto)</div>
-              </div>
-              <div class="prod-field">
-                <label for="utilMesTaller">Taller</label>
-                <select id="utilMesTaller"><option value="">Todos</option></select>
+                <div class="sub" style="margin-top:2px;">Facturación de Producción − Costos Fijos − Costos Variables (Producción × Mes × Producto)</div>
               </div>
               <div class="prod-field">
                 <label for="utilMesSelector">Mes</label>
@@ -1269,21 +1265,29 @@
               </div>
             </div>
             <div class="prod-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-top:10px;">
-              <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes (Venta)</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes (Producción)</div></div>
               <div class="prod-stat"><div class="num" id="utilMesFijos">–</div><div class="lbl">Costos Fijos</div></div>
               <div class="prod-stat"><div class="num" id="utilMesVariables">–</div><div class="lbl">Costos Variables (producción real)</div></div>
               <div class="prod-stat"><div class="num" id="utilMesNeta">–</div><div class="lbl">Utilidad Neta</div></div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(3,1fr);margin-top:10px;">
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
               <div class="prod-stat"><div class="num" id="utilMesProdTotal">–</div><div class="lbl">Producción total del mes (unidades)</div></div>
               <div class="prod-stat"><div class="num" id="utilMesProdCorte">–</div><div class="lbl">Producción de Corte</div></div>
               <div class="prod-stat"><div class="num" id="utilMesProdTaller">–</div><div class="lbl">Producción de Taller (Confección)</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesProdUltrasonido">–</div><div class="lbl">Producción de Ultrasonido</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesProdConfortadora">–</div><div class="lbl">Producción de Confortadora</div></div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-top:10px;">
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
               <div class="prod-stat"><div class="num" id="utilMesCostoCorte">–</div><div class="lbl">Costo variable · Corte</div></div>
               <div class="prod-stat"><div class="num" id="utilMesCostoTaller">–</div><div class="lbl">Costo variable · Taller</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesCostoUltrasonido">–</div><div class="lbl">Costo variable · Ultrasonido</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesCostoConfortadora">–</div><div class="lbl">Costo variable · Confortadora</div></div>
+            </div>
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
               <div class="prod-stat"><div class="num" id="utilMesUtilCorte">–</div><div class="lbl">Utilidad estimada · Corte</div></div>
               <div class="prod-stat"><div class="num" id="utilMesUtilTaller">–</div><div class="lbl">Utilidad estimada · Taller</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesUtilUltrasonido">–</div><div class="lbl">Utilidad estimada · Ultrasonido</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesUtilConfortadora">–</div><div class="lbl">Utilidad estimada · Confortadora</div></div>
             </div>
             <div class="sub" style="margin-top:6px;">La utilidad por etapa es un estimado: prorratea los costos fijos del mes según qué parte de la producción (en unidades) hizo cada etapa.</div>
             <div class="prod-grid" style="margin-top:14px;">
@@ -1296,15 +1300,15 @@
                 <div class="prod-chart-box"><canvas id="utilMesProductoChart"></canvas></div>
               </div>
               <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Producción por Etapa (Corte vs. Taller)</h3>
+                <h3>Producción por Etapa</h3>
                 <div class="prod-chart-box"><canvas id="utilMesEtapaChart"></canvas></div>
               </div>
               <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Costo Variable por Etapa (Corte vs. Taller)</h3>
+                <h3>Costo Variable por Etapa</h3>
                 <div class="prod-chart-box"><canvas id="utilMesCostoEtapaChart"></canvas></div>
               </div>
               <div class="prod-card col-12" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Comparativo Corte vs. Taller: Valor de Producción, Costo y Utilidad Estimada</h3>
+                <h3>Comparativo por Etapa: Valor de Producción, Costo y Utilidad Estimada</h3>
                 <div class="prod-chart-box"><canvas id="utilMesComparativoEtapaChart"></canvas></div>
               </div>
               <div class="prod-card col-12" style="box-shadow:none;border:1px solid var(--line);">
@@ -1315,12 +1319,12 @@
             <div class="prod-table-wrap" style="margin-top:14px;">
               <table class="prod-table" id="utilMesTable">
                 <thead>
-                  <tr><th>Producto</th><th>Producción del mes</th><th>Ventas del mes</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
+                  <tr><th>Producto</th><th>Producción del mes</th><th>Facturación de producción</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
-            <div class="hint" style="margin-top:8px;">La producción del mes sale de "Producción Diaria" (registro por día y taller); si un producto no tiene registros diarios ese mes, se usa como respaldo "Órdenes de Producción". El costo variable unitario es el desglose de insumos + mano de obra de cada producto.</div>
+            <div class="hint" style="margin-top:8px;">La producción del mes sale de "Producción Diaria" (registro por día, etapa y producto); si un producto no tiene registros diarios ese mes, se usa como respaldo "Órdenes de Producción". La facturación de producción es unidades producidas × precio de venta del producto (los productos sin precio de venta suman $0). El costo variable unitario es el desglose de insumos + mano de obra de cada producto.</div>
           </div>
 
           <div class="prod-card col-12">
@@ -1477,32 +1481,45 @@
     <div class="page-section">
       <div class="page-card" style="margin-bottom:16px;">
         <div class="page-card-header">
-          <div><h3 style="margin:0;font-size:15px;">Producción por Etapa: Corte vs. Taller</h3><div class="sub">Las dos áreas encargadas de la producción, comparadas mes a mes.</div></div>
-          <div class="prod-field no-print">
-            <label style="display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;">Mes</label>
-            <input type="month" id="prodEtapaMesSelector">
+          <div><h3 style="margin:0;font-size:15px;">Producción por Etapa: Corte, Taller, Ultrasonido y Confortadora</h3><div class="sub">Unidades de producto fabricadas en cada etapa, por separado, en el rango de fechas elegido.</div></div>
+          <div class="prod-field no-print" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div>
+              <label style="display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;">Desde</label>
+              <input type="date" id="prodEtapaFechaDesde">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;">Hasta</label>
+              <input type="date" id="prodEtapaFechaHasta">
+            </div>
           </div>
         </div>
-        <div class="prod-card-filters no-print" id="prodEtapaFiltroBtns">
-          <button class="filter-btn active" data-etapa-filtro="todos">Todos</button>
-          <button class="filter-btn" data-etapa-filtro="Corte">Solo Corte</button>
-          <button class="filter-btn" data-etapa-filtro="Taller">Solo Taller</button>
-        </div>
-        <div class="prod-stat-grid" style="grid-template-columns:repeat(3,1fr);margin:16px 0;">
-          <div class="prod-stat"><div class="num" id="prodEtapaStatCorte">–</div><div class="lbl">Producción de Corte (mes)</div></div>
-          <div class="prod-stat"><div class="num" id="prodEtapaStatTaller">–</div><div class="lbl">Producción de Taller (mes)</div></div>
-          <div class="prod-stat"><div class="num" id="prodEtapaStatTotal">–</div><div class="lbl">Total del mes</div></div>
-        </div>
+        <div class="prod-stat" style="margin-bottom:16px;"><div class="num" id="prodEtapaStatTotal">–</div><div class="lbl">Total fabricado en el rango (todas las etapas)</div></div>
         <div class="prod-grid">
-          <div class="prod-card col-6"><h3>Corte vs. Taller (participación)</h3><div class="prod-chart-box"><canvas id="prodEtapaPieChart"></canvas></div></div>
-          <div class="prod-card col-6"><h3>Producción diaria por etapa</h3><div class="prod-chart-box"><canvas id="prodEtapaBarChart"></canvas></div></div>
-          <div class="prod-card col-6"><h3>Top productos · Corte</h3><div class="prod-chart-box"><canvas id="prodEtapaCortePieChart"></canvas></div></div>
-          <div class="prod-card col-6"><h3>Top productos · Taller</h3><div class="prod-chart-box"><canvas id="prodEtapaTallerPieChart"></canvas></div></div>
+          <div class="prod-card col-6" style="border:1px solid var(--line);border-radius:10px;">
+            <h3 style="margin:0 0 4px;">Corte</h3>
+            <div class="prod-stat" style="margin:10px 0 4px;"><div class="num" id="prodEtapaStatCorte">–</div><div class="lbl">Unidades fabricadas en Corte</div></div>
+            <div class="prod-chart-box"><canvas id="prodEtapaCortePieChart"></canvas></div>
+          </div>
+          <div class="prod-card col-6" style="border:1px solid var(--line);border-radius:10px;">
+            <h3 style="margin:0 0 4px;">Taller (Confección)</h3>
+            <div class="prod-stat" style="margin:10px 0 4px;"><div class="num" id="prodEtapaStatTaller">–</div><div class="lbl">Unidades fabricadas en Taller</div></div>
+            <div class="prod-chart-box"><canvas id="prodEtapaTallerPieChart"></canvas></div>
+          </div>
+          <div class="prod-card col-6" style="border:1px solid var(--line);border-radius:10px;">
+            <h3 style="margin:0 0 4px;">Ultrasonido</h3>
+            <div class="prod-stat" style="margin:10px 0 4px;"><div class="num" id="prodEtapaStatUltrasonido">–</div><div class="lbl">Unidades fabricadas en Ultrasonido</div></div>
+            <div class="prod-chart-box"><canvas id="prodEtapaUltrasonidoPieChart"></canvas></div>
+          </div>
+          <div class="prod-card col-6" style="border:1px solid var(--line);border-radius:10px;">
+            <h3 style="margin:0 0 4px;">Confortadora</h3>
+            <div class="prod-stat" style="margin:10px 0 4px;"><div class="num" id="prodEtapaStatConfortadora">–</div><div class="lbl">Unidades fabricadas en Confortadora</div></div>
+            <div class="prod-chart-box"><canvas id="prodEtapaConfortadoraPieChart"></canvas></div>
+          </div>
         </div>
       </div>
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>Producción Diaria</h2><div class="sub">Un solo registro de producción: cada fila es un producto fabricado en un día, taller/área y cantidad. Alimenta la Producción del mes en el Dashboard de Costos y Utilidades.</div></div>
+          <div><h2>Producción Diaria</h2><div class="sub">Un registro del día puede incluir varios productos: eliges la fecha y la etapa (Corte, Taller, Ultrasonido o Confortadora) una sola vez y cargas cada producto con su cantidad. Alimenta la Producción del mes en el Dashboard de Costos y Utilidades.</div></div>
           <button class="global-add-btn no-print" id="btnNuevaProduccion">+ Nuevo registro</button>
         </div>
         <div class="control-panel-row no-print" style="margin-bottom:14px;">
@@ -1518,6 +1535,16 @@
             <label>Producto</label>
             <select id="produccionProductoFiltro"><option value="">Todos los productos</option></select>
           </div>
+          <div class="filter-group">
+            <label>Etapa</label>
+            <div class="prod-card-filters" id="prodEtapaFiltroBtns" style="display:flex;gap:6px;">
+              <button class="filter-btn active" data-etapa-filtro="todos">Todos</button>
+              <button class="filter-btn" data-etapa-filtro="Corte">Solo Corte</button>
+              <button class="filter-btn" data-etapa-filtro="Taller">Solo Taller</button>
+              <button class="filter-btn" data-etapa-filtro="Ultrasonido">Solo Ultrasonido</button>
+              <button class="filter-btn" data-etapa-filtro="Confortadora">Solo Confortadora</button>
+            </div>
+          </div>
           <button class="filter-clear-btn" id="btnLimpiarFiltrosProduccion" type="button">Limpiar filtros</button>
         </div>
         <div class="kpi-strip" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;padding:0;">
@@ -1527,11 +1554,11 @@
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="produccionSearch" placeholder="Buscar etapa, taller, producto...">
+          <input type="text" id="produccionSearch" placeholder="Buscar etapa, producto...">
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Fecha</th><th>Etapa</th><th>Taller</th><th>Producto</th><th class="num">Cantidad</th><th>Observaciones</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Etapa</th><th>Producto</th><th class="num">Cantidad</th><th>Observaciones</th><th></th></tr></thead>
             <tbody id="produccionBody"></tbody>
           </table>
         </div>
@@ -1682,7 +1709,7 @@ const DEFAULT_APPDATA = {
   plantaOperaciones:[],      // [{id, nombre, area, tiempoEstandar, pagoPorUnidad, descripcion}]
   plantaAsignaciones:[],     // [{id, operario, operacion, producto, fecha, turno, cantidad, estado}]
   plantaOrdenes:[],          // [{id, numero, producto, cantidad, fechaInicio, fechaEntrega, prioridad, estado}]
-  plantaProduccionDiaria:[], // [{id, fecha, etapa('Corte'|'Taller'), taller, producto, cantidad, observaciones}] — registro diario por producto, etapa y taller
+  plantaProduccionDiaria:[], // [{id, registroId, fecha, etapa('Corte'|'Taller'|'Ultrasonido'|'Confortadora'), producto, cantidad, observaciones}] — una fila por producto; las filas cargadas juntas comparten registroId
   despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64), enviadoWhatsapp(bool), observaciones}] — registro de envíos
   facturas:[], // [{id, numero, distId, cliente, fecha, lineas:[{producto,categoria,medida,cantidad,precioUnitario,subtotal}], subtotalGeneral, impuestoPct, impuestoValor, total, observaciones}] — historial de facturas generadas desde un pedido
   plantaCostosFijos:[],      // [{id, concepto, categoria, valorMensual, periodicidad}]
@@ -4730,6 +4757,15 @@ document.getElementById('btnCambiarAcceso').addEventListener('click', openChange
 // listar / buscar / crear / editar / eliminar, guardando siempre con saveAppData(APPDATA),
 // exactamente igual que Vendedores/Distribuidores.
 
+// Etapas de producción disponibles en Producción Diaria y en los dashboards.
+const ETAPAS_PRODUCCION = [
+  {key:'Corte',        label:'Corte',                color:'#B65B2E'},
+  {key:'Taller',       label:'Taller (Confección)',  color:'#9E7B3B'},
+  {key:'Ultrasonido',  label:'Ultrasonido',          color:'#4C7A52'},
+  {key:'Confortadora', label:'Confortadora',         color:'#6B8CAE'}
+];
+function normEtapa(e){ return ETAPAS_PRODUCCION.some(x => x.key === e) ? e : 'Taller'; }
+
 const PLANTA_MODULES = {
   despachos:{
     dataKey:'despachos', bodyId:'despachosBody', searchId:'despachosSearch', addBtnId:'btnNuevoDespacho',
@@ -4906,16 +4942,14 @@ const PLANTA_MODULES = {
     filterFn: item => produccionPasaFiltros(item),
     fields:[
       {key:'fecha', label:'Fecha', type:'date', required:true},
-      {key:'etapa', label:'Etapa', type:'select', required:true, default:'Taller', options:[{value:'Corte',label:'Corte'},{value:'Taller',label:'Taller (Confección)'}]},
-      {key:'taller', label:'Taller / Puesto', type:'text', required:true, placeholder:'Ej. Taller 1, Taller Costura Norte...'},
+      {key:'etapa', label:'Etapa', type:'select', required:true, default:'Taller', options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
       {key:'producto', label:'Producto', type:'select', required:true, options:()=>plantaSelectOptions('plantaproductos','nombre','Selecciona un producto')},
       {key:'cantidad', label:'Cantidad fabricada', type:'number', required:true, placeholder:'Ej. 120'},
       {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Detalles del corte o novedades del día'}
     ],
     columns:[
       {key:'fecha', label:'Fecha', format:v=>v||'—'},
-      {key:'etapa', label:'Etapa', html:true, format:v=>`<span class="badge ${v==='Corte'?'debe':'saldado'}">${v||'Taller'}</span>`},
-      {key:'taller', label:'Taller', format:v=>v||'—'},
+      {key:'etapa', label:'Etapa', html:true, format:v=>`<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>`},
       {key:'producto', label:'Producto', format:v=>v||'—'},
       {key:'cantidad', label:'Cantidad', format:v=>(v!==undefined&&v!==null&&v!=='')?fmtNum(v):'—'},
       {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
@@ -5201,15 +5235,21 @@ function initProduccionFiltros(){
 
 // ---------- Producción por Etapa: Corte vs. Taller (dashboard con gráficos dentro de Producción Diaria) ----------
 let prodEtapaWired = false;
-let prodEtapaPieChartInst = null, prodEtapaBarChartInst = null, prodEtapaCortePieChartInst = null, prodEtapaTallerPieChartInst = null;
+const prodEtapaPieInst = {};
 
 function initProduccionEtapaDashboard(){
   if(prodEtapaWired) return;
   prodEtapaWired = true;
-  const mesInput = document.getElementById('prodEtapaMesSelector');
-  if(mesInput){
-    mesInput.value = currentMonthValue();
-    mesInput.addEventListener('change', renderProduccionEtapaDashboard);
+  const desdeInput = document.getElementById('prodEtapaFechaDesde');
+  const hastaInput = document.getElementById('prodEtapaFechaHasta');
+  if(desdeInput && hastaInput){
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const fmtFecha = d => d.toISOString().slice(0, 10);
+    desdeInput.value = fmtFecha(primerDiaMes);
+    hastaInput.value = fmtFecha(hoy);
+    desdeInput.addEventListener('change', renderProduccionEtapaDashboard);
+    hastaInput.addEventListener('change', renderProduccionEtapaDashboard);
   }
   document.querySelectorAll('#prodEtapaFiltroBtns [data-etapa-filtro]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -5239,73 +5279,34 @@ function renderTopProductosPie(canvasId, dataMap){
 }
 
 function renderProduccionEtapaDashboard(){
-  const mesInput = document.getElementById('prodEtapaMesSelector');
-  if(!mesInput) return;
-  const partes = (mesInput.value || currentMonthValue()).split('-').map(Number);
-  const y = partes[0], m = partes[1];
-  const porDiaCorte = {}, porDiaTaller = {};
-  const porProductoCorte = {}, porProductoTaller = {};
-  let totalCorte = 0, totalTaller = 0;
+  const desdeInput = document.getElementById('prodEtapaFechaDesde');
+  const hastaInput = document.getElementById('prodEtapaFechaHasta');
+  if(!desdeInput || !hastaInput) return;
+  const desde = desdeInput.value || '';
+  const hasta = hastaInput.value || '';
+  const porProductoEtapa = {}, totalEtapa = {};
+  ETAPAS_PRODUCCION.forEach(e => { porProductoEtapa[e.key] = {}; totalEtapa[e.key] = 0; });
   (APPDATA.plantaProduccionDiaria || []).forEach(r=>{
-    const t = parseFechaToTime(r.fecha);
-    if(t === null) return;
-    const d = new Date(t);
-    if(d.getFullYear() !== y || (d.getMonth()+1) !== m) return;
+    if(desde && r.fecha && r.fecha < desde) return;
+    if(hasta && r.fecha && r.fecha > hasta) return;
     const cant = Number(r.cantidad) || 0;
-    const etapa = (r.etapa || 'Taller');
-    const dia = d.getDate();
+    const etapa = normEtapa(r.etapa);
     const k = r.producto || '—';
-    if(etapa === 'Corte'){
-      totalCorte += cant;
-      porDiaCorte[dia] = (porDiaCorte[dia] || 0) + cant;
-      porProductoCorte[k] = (porProductoCorte[k] || 0) + cant;
-    }else{
-      totalTaller += cant;
-      porDiaTaller[dia] = (porDiaTaller[dia] || 0) + cant;
-      porProductoTaller[k] = (porProductoTaller[k] || 0) + cant;
-    }
+    totalEtapa[etapa] += cant;
+    porProductoEtapa[etapa][k] = (porProductoEtapa[etapa][k] || 0) + cant;
   });
-  const total = totalCorte + totalTaller;
+  const total = ETAPAS_PRODUCCION.reduce((sum, e) => sum + totalEtapa[e.key], 0);
 
   const setTxt = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
-  setTxt('prodEtapaStatCorte', fmtNum(totalCorte));
-  setTxt('prodEtapaStatTaller', fmtNum(totalTaller));
+  ETAPAS_PRODUCCION.forEach(e => setTxt('prodEtapaStat' + e.key, fmtNum(totalEtapa[e.key])));
   setTxt('prodEtapaStatTotal', fmtNum(total));
 
-  // Pie: participación Corte vs Taller
-  const ctxPie = document.getElementById('prodEtapaPieChart');
-  if(prodEtapaPieChartInst){ prodEtapaPieChartInst.destroy(); prodEtapaPieChartInst = null; }
-  if(ctxPie && typeof Chart !== 'undefined' && total > 0){
-    prodEtapaPieChartInst = new Chart(ctxPie, {
-      type: 'pie',
-      data: { labels: ['Corte', 'Taller (Confección)'], datasets: [{ data: [totalCorte, totalTaller], backgroundColor: ['#B65B2E', '#9E7B3B'] }] },
-      options: { plugins: { legend: { position: 'bottom' } } }
-    });
-  }
-
-  // Barras apiladas: producción diaria por etapa
-  const ctxBar = document.getElementById('prodEtapaBarChart');
-  if(prodEtapaBarChartInst){ prodEtapaBarChartInst.destroy(); prodEtapaBarChartInst = null; }
-  if(ctxBar && typeof Chart !== 'undefined' && y && m){
-    const diasEnMes = new Date(y, m, 0).getDate();
-    const labels = Array.from({length: diasEnMes}, (_,i) => String(i+1));
-    const dataCorte = labels.map((_,i) => porDiaCorte[i+1] || 0);
-    const dataTaller = labels.map((_,i) => porDiaTaller[i+1] || 0);
-    prodEtapaBarChartInst = new Chart(ctxBar, {
-      type: 'bar',
-      data: { labels, datasets: [
-        { label: 'Corte', data: dataCorte, backgroundColor: '#B65B2E', stack: 's', borderRadius: 3 },
-        { label: 'Taller', data: dataTaller, backgroundColor: '#9E7B3B', stack: 's', borderRadius: 3 }
-      ]},
-      options: { plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
-    });
-  }
-
-  // Pies: top productos por etapa
-  if(prodEtapaCortePieChartInst){ prodEtapaCortePieChartInst.destroy(); prodEtapaCortePieChartInst = null; }
-  prodEtapaCortePieChartInst = renderTopProductosPie('prodEtapaCortePieChart', porProductoCorte);
-  if(prodEtapaTallerPieChartInst){ prodEtapaTallerPieChartInst.destroy(); prodEtapaTallerPieChartInst = null; }
-  prodEtapaTallerPieChartInst = renderTopProductosPie('prodEtapaTallerPieChart', porProductoTaller);
+  // Cada etapa se muestra por separado: unidades totales arriba y, debajo, sus
+  // productos más fabricados en el rango de fechas seleccionado (sin comparar una etapa contra la otra).
+  ETAPAS_PRODUCCION.forEach(e => {
+    if(prodEtapaPieInst[e.key]){ prodEtapaPieInst[e.key].destroy(); prodEtapaPieInst[e.key] = null; }
+    prodEtapaPieInst[e.key] = renderTopProductosPie('prodEtapa' + e.key + 'PieChart', porProductoEtapa[e.key]);
+  });
 }
 
 
@@ -5495,6 +5496,7 @@ function wirePlantaImageField(overlay, f){
 }
 
 function openPlantaModal(moduleKey, idx){
+  if(moduleKey === 'produccion') return openProduccionModal(idx);
   const mod = PLANTA_MODULES[moduleKey];
   const list = getPlantaList(moduleKey);
   const editing = (idx !== undefined && idx !== null && list[idx]);
@@ -5566,6 +5568,110 @@ function openPlantaModal(moduleKey, idx){
     await saveAppData(APPDATA);
     overlay.remove();
     renderPlantaModule(moduleKey);
+  });
+}
+
+// Modal de Producción Diaria: UNA fecha + UNA etapa (Corte, Taller, Ultrasonido o Confortadora) para todo el registro, y varias
+// filas de producto + cantidad. Al guardar se crea una fila de producción por producto (todas comparten
+// registroId), así los dashboards, la disponibilidad y la utilidad del mes siguen leyendo el mismo formato.
+function openProduccionModal(idx){
+  const list = getPlantaList('produccion');
+  const editing = (idx !== undefined && idx !== null && list[idx]);
+  const record = editing ? list[idx] : {};
+  const hoy = new Date();
+  const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+  const productos = plantaSelectOptions('plantaproductos','nombre','Selecciona un producto');
+  const optsHtml = (sel) => productos.map(o => `<option value="${escapeAttr(o.value)}" ${String(o.value)===String(sel||'')?'selected':''}>${escapeHtml(o.label)}</option>`).join('');
+  const filaHtml = (prod, cant) => `
+    <div class="prod-linea" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <select class="pl-producto" style="flex:1;min-width:0;">${optsHtml(prod)}</select>
+      <input type="number" class="pl-cantidad" min="0" placeholder="Cant." value="${escapeAttr(cant ?? '')}" style="width:90px;">
+      ${editing ? '' : `<button type="button" class="icon-btn icon-delete pl-quitar" title="Quitar">✕</button>`}
+    </div>`;
+  const overlay = openModal(`
+    <h3>${editing ? 'Editar' : 'Nuevo'} Registro de Producción</h3>
+    <div class="field"><label>Fecha *</label><input type="date" id="pp_fecha" value="${escapeAttr(record.fecha || hoyStr)}"></div>
+    <div class="field"><label>Etapa *</label>
+      <select id="pp_etapa">
+        ${ETAPAS_PRODUCCION.map(e => `<option value="${e.key}" ${normEtapa(record.etapa)===e.key?'selected':''}>${escapeHtml(e.label)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Productos y cantidades *</label>
+      <div id="pp_lineas">${filaHtml(record.producto, record.cantidad)}</div>
+      ${editing ? '' : `<button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>`}
+    </div>
+    <div class="field"><label>Observaciones</label>
+      <textarea id="pp_obs" rows="3" placeholder="Detalles del corte o novedades del día" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:none;max-height:110px;overflow-y:auto;">${escapeHtml(record.observaciones || '')}</textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      ${editing ? `<button class="btn-danger" id="btnDeleteInModal">Eliminar</button>` : ''}
+      <button class="btn-confirm" id="btnConfirm">Guardar</button>
+    </div>
+  `);
+  const lineasBox = overlay.querySelector('#pp_lineas');
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
+  if(!editing){
+    overlay.querySelector('#pp_agregar').addEventListener('click', ()=>{
+      lineasBox.insertAdjacentHTML('beforeend', filaHtml('', ''));
+    });
+    lineasBox.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.pl-quitar');
+      if(!btn) return;
+      if(lineasBox.querySelectorAll('.prod-linea').length <= 1){
+        lineasBox.querySelector('.pl-producto').value = '';
+        lineasBox.querySelector('.pl-cantidad').value = '';
+        return;
+      }
+      btn.closest('.prod-linea').remove();
+    });
+  }
+  if(editing){
+    overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
+      if(!confirm('¿Eliminar este registro de producción?')) return;
+      const freshList = getPlantaList('produccion');
+      const i = freshList.indexOf(record);
+      if(i > -1) freshList.splice(i, 1); else freshList.splice(idx, 1);
+      await saveAppData(APPDATA);
+      overlay.remove();
+      renderPlantaModule('produccion');
+    });
+  }
+  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
+    const fecha = overlay.querySelector('#pp_fecha').value;
+    const etapa = normEtapa(overlay.querySelector('#pp_etapa').value);
+    const obs = overlay.querySelector('#pp_obs').value;
+    if(!fecha){ showToast('Completa el campo "Fecha"'); overlay.querySelector('#pp_fecha').focus(); return; }
+    // Junta las filas válidas; si un producto se repite, suma sus cantidades.
+    const porProducto = new Map();
+    let hayIncompleta = false;
+    lineasBox.querySelectorAll('.prod-linea').forEach(row => {
+      const prod = row.querySelector('.pl-producto').value;
+      const cantRaw = row.querySelector('.pl-cantidad').value;
+      if(!prod && cantRaw === '') return; // fila vacía: se ignora
+      const cant = Number(cantRaw);
+      if(!prod || cantRaw === '' || !(cant > 0)){ hayIncompleta = true; return; }
+      porProducto.set(prod, (porProducto.get(prod) || 0) + cant);
+    });
+    if(hayIncompleta){ showToast('Cada fila necesita un producto y una cantidad mayor a 0'); return; }
+    if(!porProducto.size){ showToast('Agrega al menos un producto con su cantidad'); return; }
+    const freshList = getPlantaList('produccion');
+    if(editing){
+      const [prod, cant] = [...porProducto.entries()][0];
+      const nuevo = {...record, fecha, etapa, producto: prod, cantidad: cant, observaciones: obs};
+      delete nuevo.taller;
+      const i = freshList.indexOf(record);
+      if(i > -1) freshList[i] = nuevo; else freshList.push(nuevo);
+    } else {
+      const registroId = 'r' + Date.now() + Math.random().toString(36).slice(2,6);
+      [...porProducto.entries()].forEach(([prod, cant], n) => {
+        freshList.push({ id: 'p' + Date.now() + n + Math.random().toString(36).slice(2,7), registroId, fecha, etapa, producto: prod, cantidad: cant, observaciones: obs });
+      });
+    }
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderPlantaModule('produccion');
+    showToast(editing ? 'Registro actualizado' : `Registro guardado: ${porProducto.size} producto${porProducto.size>1?'s':''}`);
   });
 }
 
@@ -5912,7 +6018,7 @@ function renderCostosUtilidadesView(){
 // ---------- Utilidad Real del Mes (Producción × Mes × Producto → Facturación − Costos Fijos − Costos Variables) ----------
 // Sigue el flujo del diagrama: Producción x Mes x Producto (Órdenes de Producción)
 // × Costo variable por producto (desglose de insumos + mano de obra) = Costos Variables del mes.
-// Utilidad = Facturación del mes (pedidos) − Costos Fijos mensuales − Costos Variables del mes.
+// Utilidad = Facturación de producción del mes (unidades × precio de venta) − Costos Fijos mensuales − Costos Variables del mes.
 function currentMonthValue(){
   const now = new Date();
   return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
@@ -5942,8 +6048,8 @@ function ventasPorProductoDelMes(y, m){
 // desglose por producto. Se reutiliza tanto para el mes seleccionado como para la tendencia histórica.
 function calcularUtilidadMes(y, m, tallerFiltro){
   const prodPorProducto = {};
-  const prodPorProductoEtapa = { Corte:{}, Taller:{} };
-  let produccionCorte = 0, produccionTaller = 0;
+  const prodPorProductoEtapa = {}, produccionPorEtapa = {};
+  ETAPAS_PRODUCCION.forEach(e => { prodPorProductoEtapa[e.key] = {}; produccionPorEtapa[e.key] = 0; });
   (APPDATA.plantaProduccionDiaria || []).forEach(r => {
     const t = parseFechaToTime(r.fecha);
     if(t === null) return;
@@ -5952,10 +6058,10 @@ function calcularUtilidadMes(y, m, tallerFiltro){
     if(tallerFiltro && r.taller !== tallerFiltro) return;
     const key = r.producto || '—';
     const cant = Number(r.cantidad) || 0;
-    const etapa = (r.etapa || 'Taller') === 'Corte' ? 'Corte' : 'Taller';
+    const etapa = normEtapa(r.etapa);
     prodPorProducto[key] = (prodPorProducto[key] || 0) + cant;
     prodPorProductoEtapa[etapa][key] = (prodPorProductoEtapa[etapa][key] || 0) + cant;
-    if(etapa === 'Corte') produccionCorte += cant; else produccionTaller += cant;
+    produccionPorEtapa[etapa] += cant;
   });
   if(!tallerFiltro){
     (APPDATA.plantaOrdenes || []).forEach(o => {
@@ -5971,13 +6077,13 @@ function calcularUtilidadMes(y, m, tallerFiltro){
   }
 
   const productos = costeoGetProductos();
-  const ventas = ventasPorProductoDelMes(y, m);
   const filas = Object.keys(prodPorProducto).map(nombre => {
     const prod = productos.find(p => p.nombre === nombre) || { nombre };
     const c = costeoCalcularProducto(prod);
     const cantidad = prodPorProducto[nombre];
-    const ventaMes = ventas[nombre.trim().toLowerCase()] || 0;
-    return { nombre, cantidad, costoUnitario: c.total, costoTotal: cantidad * c.total, ventaMes, precioVenta: c.precioVenta || 0 };
+    const precioVenta = c.precioVenta || 0;
+    // Facturación de producción: unidades producidas × precio de venta del producto.
+    return { nombre, cantidad, costoUnitario: c.total, costoTotal: cantidad * c.total, facturacion: cantidad * precioVenta, precioVenta };
   }).sort((a,b) => b.costoTotal - a.costoTotal);
   const costosVariablesMes = filas.reduce((s,f) => s + f.costoTotal, 0);
   const costosFijosMes = costeoFijosMensuales();
@@ -5996,32 +6102,21 @@ function calcularUtilidadMes(y, m, tallerFiltro){
     });
     return { costo, valor };
   }
-  const corteAgg = sumaEtapa(prodPorProductoEtapa.Corte);
-  const tallerAgg = sumaEtapa(prodPorProductoEtapa.Taller);
-  const produccionTotalUnid = produccionCorte + produccionTaller;
+  const produccionTotal = ETAPAS_PRODUCCION.reduce((sum, e) => sum + produccionPorEtapa[e.key], 0);
   // Los costos fijos no se registran por etapa, así que se prorratean según qué parte de las
   // unidades produjo cada una este mes — es un estimado, no una asignación contable exacta.
-  const fijosCorte = produccionTotalUnid > 0 ? costosFijosMes * (produccionCorte / produccionTotalUnid) : 0;
-  const fijosTaller = produccionTotalUnid > 0 ? costosFijosMes * (produccionTaller / produccionTotalUnid) : 0;
-  const utilidadEstCorte = corteAgg.valor - corteAgg.costo - fijosCorte;
-  const utilidadEstTaller = tallerAgg.valor - tallerAgg.costo - fijosTaller;
-
-  let facturacionMes = 0;
-  getAllDistributors().forEach(d => {
-    const t = parseFechaToTime(d.fecha);
-    if(t === null) return;
-    const dd = new Date(t);
-    if(dd.getFullYear() === y && (dd.getMonth()+1) === m){
-      facturacionMes += distTotals(d.id).totalPedido;
-    }
+  const porEtapa = {};
+  ETAPAS_PRODUCCION.forEach(e => {
+    const agg = sumaEtapa(prodPorProductoEtapa[e.key]);
+    const fijos = produccionTotal > 0 ? costosFijosMes * (produccionPorEtapa[e.key] / produccionTotal) : 0;
+    porEtapa[e.key] = { produccion: produccionPorEtapa[e.key], costo: agg.costo, valor: agg.valor, fijos, utilidad: agg.valor - agg.costo - fijos };
   });
 
+  // Facturación del mes = facturación de PRODUCCIÓN (lo producido × precio de venta), ya no las ventas/pedidos.
+  const facturacionMes = filas.reduce((sum, f) => sum + f.facturacion, 0);
+
   const utilidadNeta = facturacionMes - costosFijosMes - costosVariablesMes;
-  const produccionTotal = produccionCorte + produccionTaller;
-  return { filas, costosVariablesMes, costosFijosMes, facturacionMes, utilidadNeta, produccionTotal, produccionCorte, produccionTaller,
-    costoVariableCorte: corteAgg.costo, costoVariableTaller: tallerAgg.costo,
-    valorProduccionCorte: corteAgg.valor, valorProduccionTaller: tallerAgg.valor,
-    fijosCorte, fijosTaller, utilidadEstCorte, utilidadEstTaller };
+  return { filas, costosVariablesMes, costosFijosMes, facturacionMes, utilidadNeta, produccionTotal, porEtapa };
 }
 
 function renderUtilidadRealMes(){
@@ -6040,23 +6135,20 @@ function renderUtilidadRealMes(){
     tallerSel.value = talleres.includes(valActual) ? valActual : '';
   }
 
-  const { filas, costosVariablesMes, costosFijosMes, facturacionMes, utilidadNeta, produccionTotal, produccionCorte, produccionTaller,
-    costoVariableCorte, costoVariableTaller, valorProduccionCorte, valorProduccionTaller, fijosCorte, fijosTaller, utilidadEstCorte, utilidadEstTaller
-  } = calcularUtilidadMes(y, m, tallerFiltro);
+  const { filas, costosVariablesMes, costosFijosMes, facturacionMes, utilidadNeta, produccionTotal, porEtapa } = calcularUtilidadMes(y, m, tallerFiltro);
 
   const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
   setTxt('utilMesFacturacion', fmt(facturacionMes));
   setTxt('utilMesFijos', fmt(costosFijosMes));
   setTxt('utilMesVariables', fmt(costosVariablesMes));
   setTxt('utilMesProdTotal', fmtNum(produccionTotal));
-  setTxt('utilMesProdCorte', fmtNum(produccionCorte));
-  setTxt('utilMesProdTaller', fmtNum(produccionTaller));
-  setTxt('utilMesCostoCorte', fmt(costoVariableCorte));
-  setTxt('utilMesCostoTaller', fmt(costoVariableTaller));
-  const utilCorteEl = document.getElementById('utilMesUtilCorte');
-  if(utilCorteEl){ utilCorteEl.textContent = fmt(utilidadEstCorte); utilCorteEl.style.color = utilidadEstCorte >= 0 ? '#4C7A52' : '#B65B2E'; }
-  const utilTallerEl = document.getElementById('utilMesUtilTaller');
-  if(utilTallerEl){ utilTallerEl.textContent = fmt(utilidadEstTaller); utilTallerEl.style.color = utilidadEstTaller >= 0 ? '#4C7A52' : '#B65B2E'; }
+  ETAPAS_PRODUCCION.forEach(e => {
+    const d = porEtapa[e.key];
+    setTxt('utilMesProd' + e.key, fmtNum(d.produccion));
+    setTxt('utilMesCosto' + e.key, fmt(d.costo));
+    const uEl = document.getElementById('utilMesUtil' + e.key);
+    if(uEl){ uEl.textContent = fmt(d.utilidad); uEl.style.color = d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'; }
+  });
   const netaEl = document.getElementById('utilMesNeta');
   if(netaEl){
     netaEl.textContent = fmt(utilidadNeta);
@@ -6074,7 +6166,7 @@ function renderUtilidadRealMes(){
       body.innerHTML = filas.map(f => `<tr>
         <td>${escapeHtml(f.nombre)}</td>
         <td>${fmtNum(f.cantidad)}</td>
-        <td>${f.ventaMes ? fmt(f.ventaMes) : '—'}</td>
+        <td>${f.facturacion ? fmt(f.facturacion) : '—'}</td>
         <td>${fmt(f.costoUnitario)}</td>
         <td><strong>${fmt(f.costoTotal)}</strong></td>
       </tr>`).join('');
@@ -6083,58 +6175,58 @@ function renderUtilidadRealMes(){
 
   renderUtilMesResumenChart(facturacionMes, costosFijosMes, costosVariablesMes, utilidadNeta);
   renderUtilMesProductoChart(filas);
-  renderUtilMesEtapaChart(produccionCorte, produccionTaller);
-  renderUtilMesCostoEtapaChart(costoVariableCorte, costoVariableTaller);
-  renderUtilMesComparativoEtapaChart(valorProduccionCorte, valorProduccionTaller, costoVariableCorte, costoVariableTaller, utilidadEstCorte, utilidadEstTaller);
+  renderUtilMesEtapaChart(porEtapa);
+  renderUtilMesCostoEtapaChart(porEtapa);
+  renderUtilMesComparativoEtapaChart(porEtapa);
   renderUtilTendenciaChart(y, m, tallerFiltro);
 }
 
 let utilMesResumenChartInst = null, utilMesProductoChartInst = null, utilTendenciaChartInst = null, utilMesEtapaChartInst = null;
 let utilMesCostoEtapaChartInst = null, utilMesComparativoEtapaChartInst = null;
 
-function renderUtilMesCostoEtapaChart(costoCorte, costoTaller){
+function renderUtilMesCostoEtapaChart(porEtapa){
   const ctx = document.getElementById('utilMesCostoEtapaChart');
   if(!ctx || typeof Chart === 'undefined') return;
   if(utilMesCostoEtapaChartInst) utilMesCostoEtapaChartInst.destroy();
-  if(!costoCorte && !costoTaller) return;
+  if(!ETAPAS_PRODUCCION.some(e => porEtapa[e.key].costo)) return;
   utilMesCostoEtapaChartInst = new Chart(ctx, {
     type: 'pie',
     data: {
-      labels: ['Corte', 'Taller (Confección)'],
-      datasets: [{ data: [costoCorte, costoTaller], backgroundColor: ['#B65B2E', '#9E7B3B'] }]
+      labels: ETAPAS_PRODUCCION.map(e => e.label),
+      datasets: [{ data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].costo), backgroundColor: ETAPAS_PRODUCCION.map(e => e.color) }]
     },
     options: { plugins:{ legend:{ position:'bottom' } } }
   });
 }
 
-function renderUtilMesComparativoEtapaChart(valorCorte, valorTaller, costoCorte, costoTaller, utilCorte, utilTaller){
+function renderUtilMesComparativoEtapaChart(porEtapa){
   const ctx = document.getElementById('utilMesComparativoEtapaChart');
   if(!ctx || typeof Chart === 'undefined') return;
   if(utilMesComparativoEtapaChartInst) utilMesComparativoEtapaChartInst.destroy();
   utilMesComparativoEtapaChartInst = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Corte', 'Taller (Confección)'],
+      labels: ETAPAS_PRODUCCION.map(e => e.label),
       datasets: [
-        { label: 'Valor de producción', data: [valorCorte, valorTaller], backgroundColor: '#6B8CAE', borderRadius: 4 },
-        { label: 'Costo variable', data: [costoCorte, costoTaller], backgroundColor: '#B65B2E', borderRadius: 4 },
-        { label: 'Utilidad estimada', data: [utilCorte, utilTaller], backgroundColor: '#4C7A52', borderRadius: 4 }
+        { label: 'Valor de producción', data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].valor), backgroundColor: '#6B8CAE', borderRadius: 4 },
+        { label: 'Costo variable', data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].costo), backgroundColor: '#B65B2E', borderRadius: 4 },
+        { label: 'Utilidad estimada', data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].utilidad), backgroundColor: '#4C7A52', borderRadius: 4 }
       ]
     },
     options: { plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true } } }
   });
 }
 
-function renderUtilMesEtapaChart(produccionCorte, produccionTaller){
+function renderUtilMesEtapaChart(porEtapa){
   const ctx = document.getElementById('utilMesEtapaChart');
   if(!ctx || typeof Chart === 'undefined') return;
   if(utilMesEtapaChartInst) utilMesEtapaChartInst.destroy();
-  if(!produccionCorte && !produccionTaller) return;
+  if(!ETAPAS_PRODUCCION.some(e => porEtapa[e.key].produccion)) return;
   utilMesEtapaChartInst = new Chart(ctx, {
     type: 'pie',
     data: {
-      labels: ['Corte', 'Taller (Confección)'],
-      datasets: [{ data: [produccionCorte, produccionTaller], backgroundColor: ['#B65B2E', '#9E7B3B'] }]
+      labels: ETAPAS_PRODUCCION.map(e => e.label),
+      datasets: [{ data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].produccion), backgroundColor: ETAPAS_PRODUCCION.map(e => e.color) }]
     },
     options: { plugins:{ legend:{ position:'bottom' } } }
   });
