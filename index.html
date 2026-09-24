@@ -5830,7 +5830,7 @@ const PLANTA_MODULES = {
     columns:[
       {key:'etapa', label:'Etapa', html:true, format:v=> v ? `<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>` : 'Todas'},
       {key:'servicio', label:'Producto / familia'},
-      {key:'precio', label:'Precio por unidad', format:v=>(v!==undefined&&v!==null&&v!=='')?fmt(v):'—'}
+      {key:'precio', label:'Precio por unidad', editable:'precioServicio'}
     ]
   },
   ordenesproduccion:{
@@ -5950,6 +5950,9 @@ function renderPlantaModule(moduleKey){
       <tr>
         ${mod.columns.map(c => {
           const rawVal = item[c.key];
+          if(c.editable === 'precioServicio'){
+            return `<td><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="catalogo" data-idx="${idx}" value="${escapeAttr(rawVal ?? 0)}"></td>`;
+          }
           const out = c.format ? c.format(rawVal, item) : String(rawVal ?? '—');
           return `<td>${c.html ? out : escapeHtml(String(out))}</td>`;
         }).join('')}
@@ -6088,7 +6091,7 @@ function renderProduccionRegistros(body, term){
         <td colspan="7" style="padding:8px 14px 12px 40px;">
           <table style="width:100%;">
             <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio del servicio</th><th class="num">Subtotal</th></tr></thead>
-            <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num">${l.precio ? fmt(l.precio) : '—'}</td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
+            <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num"><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="produccion" data-etapa="${escapeAttr(g.etapa)}" data-producto="${escapeAttr(l.producto || '')}" value="${l.precio || 0}"></td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
               <tr><td style="font-weight:700;">Total</td><td class="num" style="font-weight:700;">${fmtNum(total)}</td><td></td><td class="num" style="font-weight:700;">${fmt(valor)}</td></tr>
             </tbody>
           </table>
@@ -7605,7 +7608,7 @@ function renderDashEtapa(key){
   tbody.innerHTML = d.filas.length ? d.filas.map(f => `<tr>
       <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td><td>${f.precio ? fmt(f.precio) : '—'}</td>
       <td>${f.valor ? fmt(f.valor) : '—'}</td><td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>
-      <td>${f.precioServicio ? fmt(f.precioServicio) : '—'}</td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
+      <td><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="dashboard" data-etapa="${key}" data-producto="${escapeAttr(f.nombre)}" value="${f.precioServicio || 0}"></td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
       <td>${fmt(f.valor - f.costoTotal - f.cobro)}</td></tr>`).join('')
     : `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
   if(typeof Chart === 'undefined') return;
@@ -7704,6 +7707,34 @@ function abrirComprobanteEtapaModal(key){
     el('factura').addEventListener('click', () => abrirComprobanteEtapaModal(e.key));
   });
 })();
+
+// Permite editar el "precio de servicio" directamente en cualquier tabla donde aparezca
+// (catálogo de Precios de servicio, desglose de un registro de Producción Diaria ya guardado,
+// o el Dashboard por etapa), aunque ya esté guardado. El cambio se guarda de inmediato.
+document.addEventListener('change', async (e) => {
+  const inp = e.target.closest('.precio-servicio-edit');
+  if(!inp) return;
+  const nuevoPrecio = Number(inp.value) || 0;
+  const ctx = inp.dataset.context;
+  if(ctx === 'catalogo'){
+    const idx = Number(inp.dataset.idx);
+    const lista = getPlantaList('serviciosmaquila');
+    if(!lista[idx]) return;
+    lista[idx].precio = nuevoPrecio;
+    await saveAppData(APPDATA);
+    renderPlantaModule('serviciosmaquila');
+    showToast('Precio de servicio actualizado.');
+  } else if(ctx === 'produccion' || ctx === 'dashboard'){
+    const etapa = inp.dataset.etapa;
+    const producto = inp.dataset.producto;
+    if(!producto) return;
+    actualizarPrecioServicioParaProducto(etapa, producto, nuevoPrecio);
+    await saveAppData(APPDATA);
+    if(ctx === 'produccion') renderPlantaModule('produccion');
+    else renderDashEtapa(etapa);
+    showToast('Precio de servicio actualizado.');
+  }
+});
 
 (async function init(){
   await firebaseReadyPromise;
