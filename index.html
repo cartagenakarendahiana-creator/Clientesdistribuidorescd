@@ -575,8 +575,7 @@
   @media print{
     @page{ size: portrait; margin: 12mm; }
     html, body{background:#fff;font-size:12px;}
-    .topbar, .nav-tabs, .kpi-strip, .control-panel, .sidebar, .add-btn, .print-btn, .row-actions, thead th:last-child,
-    tbody td:last-child, .order-search-row, .icon-btn,
+    .topbar, .nav-tabs, .kpi-strip, .control-panel, .sidebar, .add-btn, .print-btn, .row-actions, .cd-nop, .order-search-row, .icon-btn,
     .dist-header-title .icon-btn, .toast, .main-card-header, .main-footer{display:none !important;}
     .layout{display:block;max-width:100%;margin:0;min-height:0;padding:0;}
     .main-card{border:none;margin-top:0;}
@@ -631,6 +630,138 @@
     .modal.debt-report-modal tr{page-break-inside:avoid;}
     .modal.debt-report-modal .cat-row td{padding:4px 6px;font-size:9px;background:#f1ece0 !important;}
     .modal.debt-report-modal td, .modal.debt-report-modal th{overflow-wrap:break-word;}
+  }
+
+  /* ---- Estado de Cliente: encabezado que solo se ve al imprimir ---- */
+  .cd-print-head{display:none;}
+
+  @media print{
+    /* Fuerza a que se impriman los colores de fondo (dorado, grises) igual que en pantalla */
+    #mainPanel, #mainPanel *, .cd-print-head, .cd-print-head *{
+      -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;
+    }
+    #mainPanel{display:block !important;padding:0 !important;}
+    #mainPanel .dist-header, #mainPanel .observaciones-block, #mainPanel .order-search-row,
+    #mainPanel .no-match, #mainPanel .edited-tag{display:none !important;}
+
+    /* Encabezado: logo + datos del cliente */
+    .cd-print-head{display:block;margin:0 0 12px;}
+    .cd-ph-top{display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:2px solid #9E7B3B;margin-bottom:10px;}
+    .cd-ph-brand{display:flex;align-items:center;gap:10px;}
+    .cd-ph-brand img{height:40px;width:auto;object-fit:contain;display:block;}
+    .cd-ph-name{font-size:16px;font-weight:700;color:#111827;line-height:1.1;}
+    .cd-ph-tag{font-size:10px;color:#6B7280;margin-top:2px;}
+    .cd-ph-doc{text-align:right;}
+    .cd-ph-doc-title{font-size:12px;font-weight:700;color:#7C5F2C;text-transform:uppercase;letter-spacing:.6px;}
+    .cd-ph-doc-date{font-size:9.5px;color:#6B7280;margin-top:2px;}
+    .cd-ph-client h2{font-size:19px;margin:0 0 2px;color:#111827;}
+    .cd-ph-sub{font-size:10.5px;color:#6B7280;}
+    .cd-ph-info{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+    .cd-ph-info span{border:1px solid #E5E7EB;background:#F9FAFB;border-radius:20px;padding:3px 10px;font-size:9.5px;color:#6B7280;font-weight:600;}
+    .cd-ph-info span b{color:#111827;font-weight:700;}
+    .cd-ph-info span.desp{background:#F6EFE1;border-color:#E3D3AC;color:#7C5F2C;}
+    .cd-ph-info span.desp b{color:#7C5F2C;}
+
+    /* Tarjetas de totales */
+    #mainPanel .totals-row{display:flex;flex-wrap:nowrap;gap:8px;margin:0 0 12px;}
+    #mainPanel .tcard{flex:1;min-width:0;padding:8px 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff !important;box-shadow:none;}
+    #mainPanel .tcard .label{font-size:9px;font-weight:600;color:#6B7280;}
+    #mainPanel .tcard .val{font-size:15px;margin-top:2px;font-weight:700;color:#111827;}
+    #mainPanel .tcard.debe{background:#F6EFE1 !important;border-color:#E3D3AC;}
+    #mainPanel .tcard.debe .val{color:#7C5F2C;}
+
+    /* Tabla de productos (misma apariencia que en pantalla) */
+    #mainPanel .table-scroll{overflow:visible !important;width:100% !important;border-radius:0;}
+    #mainPanel .table-scroll table{width:100% !important;table-layout:fixed;border-collapse:collapse;border:1px solid #E5E7EB;border-radius:0;box-shadow:none;overflow:visible !important;background:#fff;}
+    #mainPanel thead{display:table-header-group;}
+    #mainPanel thead th{background:#F3F4F6 !important;color:#6B7280;font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:8px 8px;border-bottom:1px solid #E5E7EB;white-space:normal;}
+    #mainPanel thead th:nth-child(1){width:40%;}
+    #mainPanel thead th:nth-child(2){width:13%;text-align:right;}
+    #mainPanel thead th:nth-child(3){width:10%;text-align:right;}
+    #mainPanel thead th:nth-child(4){width:12%;text-align:right;}
+    #mainPanel thead th:nth-child(5){width:11%;text-align:right;}
+    #mainPanel thead th:nth-child(6){width:14%;text-align:right;}
+    #mainPanel tbody td{padding:7px 8px;font-size:11px;border-bottom:1px solid #E5E7EB;vertical-align:middle;overflow-wrap:break-word;}
+    #mainPanel tbody tr{break-inside:avoid;page-break-inside:avoid;}
+    #mainPanel tbody tr:last-child td{border-bottom:none;}
+
+    /* Filas de categoría (antes se ocultaban al imprimir) */
+    #mainPanel tr.cat-row{break-after:avoid;page-break-after:avoid;}
+    #mainPanel tr.cat-row td{background:#F3F4F6 !important;color:#7C5F2C;font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:6px 8px;}
+    #mainPanel .cat-row .cat-act{display:none !important;}
+
+    #mainPanel .prod-name{font-weight:700;font-size:11.5px;color:#111827;}
+    #mainPanel .prod-medida{font-size:9.5px;color:#6B7280;}
+    #mainPanel .pend-val{font-weight:800;}
+    #mainPanel .pend-val.pos{color:#7C5F2C;}
+    #mainPanel .pend-val.zero{color:#9CA3AF;}
+
+    /* Entregado: número dentro de una casilla, como en pantalla */
+    #mainPanel .entregado-input{display:none !important;}
+    #mainPanel .entregado-print{display:inline-block !important;min-width:34px;padding:3px 8px;border:1px solid #D1D5DB;border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;background:#fff;}
+  }
+
+  /* ---- Diseño de impresión unificado (todas las vistas y modales) ---- */
+  .cd-doc-logo{height:38px;width:auto;object-fit:contain;display:block;flex-shrink:0;}
+  @media print{
+    /* --- #appRoot: mismo diseño en todas las impresiones --- */
+    #appRoot, #appRoot *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    #appRoot .print-header{display:none !important;}
+    #appRoot .table-scroll{overflow:visible !important;max-height:none !important;width:100% !important;border-radius:0;}
+    #appRoot table{width:100% !important;table-layout:fixed;border-collapse:collapse;border:1px solid #E5E7EB;border-radius:0;box-shadow:none;overflow:visible !important;background:#fff;font-size:10.5px;}
+    #appRoot thead{display:table-header-group;}
+    #appRoot thead th{background:#F3F4F6 !important;color:#6B7280;font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:7px 8px;border-bottom:1px solid #E5E7EB;white-space:normal;}
+    #appRoot thead th.num{text-align:right;}
+    #appRoot tbody td{padding:6px 8px;font-size:10.5px;border-bottom:1px solid #E5E7EB;vertical-align:middle;overflow-wrap:break-word;}
+    #appRoot tbody tr{break-inside:avoid;page-break-inside:avoid;}
+    #appRoot tbody tr:last-child td{border-bottom:none;}
+    #appRoot tr.cat-row{break-after:avoid;page-break-after:avoid;}
+    #appRoot tr.cat-row td{background:#F3F4F6 !important;color:#7C5F2C;font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:6px 8px;}
+    #appRoot .pend-val{font-weight:800;}
+    #appRoot .pend-val.pos{color:#7C5F2C;}
+    #appRoot .pend-val.zero{color:#9CA3AF;}
+    #appRoot .debt-report-totals, #appRoot .product-debt-summary .pd-cards{display:flex;flex-wrap:nowrap;gap:8px;margin:0 0 12px;}
+    #appRoot .pd-card{flex:1;min-width:0;padding:8px 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff !important;}
+    #appRoot .pd-card .lab{font-size:9px;font-weight:700;color:#6B7280;text-transform:uppercase;}
+    #appRoot .pd-card .v{font-size:15px;font-weight:700;margin-top:2px;color:#111827;}
+    #appRoot .pd-card:last-child{background:#F6EFE1 !important;border-color:#E3D3AC;}
+    #appRoot .pd-card:last-child .v{color:#7C5F2C !important;}
+    #appRoot .product-debt-summary .pd-title{font-size:13px;font-weight:700;margin-bottom:8px;}
+    #appRoot .prod-card, #appRoot .tcard{box-shadow:none;border:1px solid #E5E7EB;break-inside:avoid;}
+
+    /* --- .modal-overlay.printing: mismo diseño en todas las impresiones --- */
+    .modal-overlay.printing, .modal-overlay.printing *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    .modal-overlay.printing .print-header{display:none !important;}
+    .modal-overlay.printing .table-scroll{overflow:visible !important;max-height:none !important;width:100% !important;border-radius:0;}
+    .modal-overlay.printing table{width:100% !important;table-layout:fixed;border-collapse:collapse;border:1px solid #E5E7EB;border-radius:0;box-shadow:none;overflow:visible !important;background:#fff;font-size:10.5px;}
+    .modal-overlay.printing thead{display:table-header-group;}
+    .modal-overlay.printing thead th{background:#F3F4F6 !important;color:#6B7280;font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:7px 8px;border-bottom:1px solid #E5E7EB;white-space:normal;}
+    .modal-overlay.printing thead th.num{text-align:right;}
+    .modal-overlay.printing tbody td{padding:6px 8px;font-size:10.5px;border-bottom:1px solid #E5E7EB;vertical-align:middle;overflow-wrap:break-word;}
+    .modal-overlay.printing tbody tr{break-inside:avoid;page-break-inside:avoid;}
+    .modal-overlay.printing tbody tr:last-child td{border-bottom:none;}
+    .modal-overlay.printing tr.cat-row{break-after:avoid;page-break-after:avoid;}
+    .modal-overlay.printing tr.cat-row td{background:#F3F4F6 !important;color:#7C5F2C;font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:6px 8px;}
+    .modal-overlay.printing .pend-val{font-weight:800;}
+    .modal-overlay.printing .pend-val.pos{color:#7C5F2C;}
+    .modal-overlay.printing .pend-val.zero{color:#9CA3AF;}
+    .modal-overlay.printing .debt-report-totals, .modal-overlay.printing .product-debt-summary .pd-cards{display:flex;flex-wrap:nowrap;gap:8px;margin:0 0 12px;}
+    .modal-overlay.printing .pd-card{flex:1;min-width:0;padding:8px 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff !important;}
+    .modal-overlay.printing .pd-card .lab{font-size:9px;font-weight:700;color:#6B7280;text-transform:uppercase;}
+    .modal-overlay.printing .pd-card .v{font-size:15px;font-weight:700;margin-top:2px;color:#111827;}
+    .modal-overlay.printing .pd-card:last-child{background:#F6EFE1 !important;border-color:#E3D3AC;}
+    .modal-overlay.printing .pd-card:last-child .v{color:#7C5F2C !important;}
+    .modal-overlay.printing .product-debt-summary .pd-title{font-size:13px;font-weight:700;margin-bottom:8px;}
+    .modal-overlay.printing .prod-card, .modal-overlay.printing .tcard{box-shadow:none;border:1px solid #E5E7EB;break-inside:avoid;}
+
+    /* Encabezados de páginas: el título y el logo ya salen en el encabezado Casa Dorada */
+    #appRoot .page-card-header{display:none !important;}
+    #appRoot .prod-view .prod-page-head h2{display:none;}
+    .cd-nop{display:none !important;}
+    .cd-print-head:empty{display:none !important;}
+    /* Facturas y comprobantes: cabecera con logo */
+    .factura-doc-header{border-bottom:2px solid #9E7B3B !important;}
+    .factura-doc-numero, .factura-doc-total-final{color:#7C5F2C !important;}
   }
 
   /* ---------- Vistas de Producción (Productividad, Costos de Productos, Costos y Utilidades) ---------- */
@@ -843,6 +974,8 @@
       </div>
     </div>
   </nav>
+
+  <div id="cdGlobalHead" class="cd-print-head"></div>
 
   <div id="viewResumen" class="view-section">
   <div class="kpi-strip">
@@ -2342,7 +2475,7 @@ function renderMain(){
   lines.forEach(l=>{
     const cat = l.categoria || 'Sin categoría';
     if(cat !== lastCat){
-      rowsHtml += `<tr class="cat-row"><td colspan="7">${escapeHtml(cat)}</td></tr>`;
+      rowsHtml += `<tr class="cat-row"><td colspan="6">${escapeHtml(cat)}</td><td class="cat-act"></td></tr>`;
       lastCat = cat;
     }
     const ent = Math.min(getEntregado(selectedDistId, l.key), l.cantidad);
@@ -2364,9 +2497,31 @@ function renderMain(){
   });
 
   main.innerHTML = `
-    <div class="print-header">
-      <h2>${escapeHtml(dist.nombre)}</h2>
-      <div class="sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'} · Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+    <div class="cd-print-head" data-own="1">
+      <div class="cd-ph-top">
+        <div class="cd-ph-brand">
+          <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Casa Dorada" onerror="this.style.display='none'">
+          <div>
+            <div class="cd-ph-name">Casa Dorada</div>
+            <div class="cd-ph-tag">Control de pedidos · Clientes 2026</div>
+          </div>
+        </div>
+        <div class="cd-ph-doc">
+          <div class="cd-ph-doc-title">Estado de cliente</div>
+          <div class="cd-ph-doc-date">Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+        </div>
+      </div>
+      <div class="cd-ph-client">
+        <h2>${escapeHtml(dist.nombre)}</h2>
+        <div class="cd-ph-sub">${dist.fecha ? 'Pedido: '+escapeHtml(String(dist.fecha)) : 'Sin fecha registrada'}${dist.fechaDespacho ? ' · Despacho máximo: '+escapeHtml(String(dist.fechaDespacho)) : ''}</div>
+        <div class="cd-ph-info">
+          ${dist.vendedor ? `<span>Vendedor: <b>${escapeHtml(dist.vendedor)}</b></span>` : ''}
+          ${dist.nit ? `<span>NIT: <b>${escapeHtml(dist.nit)}</b></span>` : ''}
+          ${dist.telefono ? `<span>Teléfono: <b>${escapeHtml(dist.telefono)}</b></span>` : ''}
+          ${dist.ciudad ? `<span>Ciudad: <b>${escapeHtml(dist.ciudad)}</b></span>` : ''}
+          ${dist.direccion ? `<span>Dirección: <b>${escapeHtml(dist.direccion)}</b></span>` : ''}
+        </div>
+      </div>
     </div>
     <div class="dist-header">
       <div>
@@ -2551,7 +2706,7 @@ function imprimirPedidoActual(){
   renderMain();
   renderSidebar();
   renderSummaryStrip();
-  window.print();
+  cdPrintPage();
 }
 
 function renderAll(){
@@ -3451,14 +3606,163 @@ document.addEventListener('click', (e)=>{
 });
 
 
+
+// ---------- Impresión unificada (encabezado con logo + tablas/tarjetas con el mismo diseño) ----------
+const CD_LOGO_SRC = 'f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg';
+
+function cdCleanTitle(t){
+  return String(t||'').replace(/^\s*Casa Dorada\s*[·\-–]\s*/i,'').trim();
+}
+
+/** Contenido del encabezado: logo + Casa Dorada a la izquierda, título del documento y fecha a la derecha. */
+function cdHeadInnerHtml(title){
+  return `
+    <div class="cd-ph-top">
+      <div class="cd-ph-brand">
+        <img src="${CD_LOGO_SRC}" alt="Casa Dorada" onerror="this.style.display='none'">
+        <div>
+          <div class="cd-ph-name">Casa Dorada</div>
+          <div class="cd-ph-tag">Control de pedidos · Clientes 2026</div>
+        </div>
+      </div>
+      <div class="cd-ph-doc">
+        <div class="cd-ph-doc-title">${escapeHtml(title || 'Reporte')}</div>
+        <div class="cd-ph-doc-date">Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+      </div>
+    </div>`;
+}
+
+/** Vista (pestaña) que está visible ahora mismo. */
+function cdVisibleView(){
+  return [...document.querySelectorAll('.view-section')].find(v => getComputedStyle(v).display !== 'none') || null;
+}
+
+function cdPageTitle(view){
+  if(!view) return 'Reporte';
+  const ph = view.querySelector('.print-header h2');
+  let t = ph ? ph.textContent : '';
+  if(!t){
+    const h = view.querySelector('.page-card-header h2, .prod-page-head h2, h2');
+    t = h ? h.textContent : '';
+  }
+  return cdCleanTitle(t) || 'Reporte';
+}
+
+/** Oculta al imprimir las columnas de acciones (las que tienen el encabezado vacío: ✎ 🗑, etc.).
+ *  Devuelve una función que deshace los cambios de colspan que hizo. */
+function cdMarkNoPrintCols(root){
+  const undo = [];
+  if(!root) return () => {};
+  root.querySelectorAll('table').forEach(t => {
+    const head = t.tHead && t.tHead.rows[0];
+    if(!head) return;
+    const hide = [];
+    let idx = 0;
+    [...head.cells].forEach(th => {
+      const span = th.colSpan || 1;
+      if(span === 1 && !th.textContent.trim() && !th.querySelector('input,select,img,canvas')) hide.push(idx);
+      idx += span;
+    });
+    if(!hide.length) return;
+    [...t.rows].forEach(r => {
+      let c = 0;
+      [...r.cells].forEach(cell => {
+        const span = cell.colSpan || 1;
+        if(span === 1){
+          if(hide.includes(c) && !cell.classList.contains('cd-nop')){
+            cell.classList.add('cd-nop');
+            undo.push(() => cell.classList.remove('cd-nop'));
+          }
+        } else {
+          const covers = hide.filter(h => h >= c && h < c + span).length;
+          if(covers){
+            const old = span;
+            cell.colSpan = Math.max(1, old - covers);
+            undo.push(() => { cell.colSpan = old; });
+          }
+        }
+        c += span;
+      });
+    });
+  });
+  return () => undo.forEach(f => f());
+}
+
+/** Avisa cuando termina la impresión (los móviles no siempre disparan 'afterprint'). */
+function cdWatchPrintEnd(cb){
+  let done = false, mql = null;
+  const fin = () => {
+    if(done) return;
+    done = true;
+    window.removeEventListener('afterprint', fin);
+    window.removeEventListener('focus', onFocus);
+    if(mql && mql.removeEventListener) mql.removeEventListener('change', onMql);
+    cb();
+  };
+  const onFocus = () => setTimeout(fin, 300);
+  const onMql = (e) => { if(!e.matches) fin(); };
+  if(window.matchMedia){
+    mql = window.matchMedia('print');
+    if(mql.addEventListener) mql.addEventListener('change', onMql);
+  }
+  window.addEventListener('afterprint', fin);
+  window.addEventListener('focus', onFocus);
+  setTimeout(fin, 60000);
+}
+
+let cdPageRestore = null;
+function cdCleanupPagePrint(){
+  if(cdPageRestore){ cdPageRestore(); cdPageRestore = null; }
+}
+/** Prepara la página visible: encabezado con logo y columnas de acciones fuera. */
+function cdPreparePagePrint(){
+  cdCleanupPagePrint();
+  const gh = document.getElementById('cdGlobalHead');
+  const view = cdVisibleView();
+  if(gh){
+    const own = view && view.querySelector('.cd-print-head[data-own]'); // el Estado de Cliente trae su propio encabezado
+    if(own){ gh.innerHTML = ''; }
+    else { gh.innerHTML = cdHeadInnerHtml(cdPageTitle(view)); }
+  }
+  cdPageRestore = cdMarkNoPrintCols(view || document.getElementById('appRoot'));
+}
+/** Imprime la vista actual con el diseño unificado. */
+function cdPrintPage(){
+  cdPreparePagePrint();
+  cdWatchPrintEnd(cdCleanupPagePrint);
+  window.print();
+}
+// También cubre Ctrl+P / el menú del navegador
+window.addEventListener('beforeprint', () => {
+  if(!document.body.classList.contains('printing-modal')) cdPreparePagePrint();
+});
+
+/** Prepara un modal para imprimir: encabezado con logo (si no tiene el suyo) y columnas de acciones fuera. */
+function cdPrepareModalPrint(overlay){
+  const undo = [];
+  const modal = overlay.querySelector('.modal');
+  if(modal && !overlay.querySelector('.factura-doc-header')){
+    const ph = overlay.querySelector('.print-header h2');
+    const head = document.createElement('div');
+    head.className = 'cd-print-head cd-injected';
+    head.innerHTML = cdHeadInnerHtml(ph ? cdCleanTitle(ph.textContent) : 'Reporte');
+    modal.insertBefore(head, modal.firstChild);
+    undo.push(() => head.remove());
+  }
+  undo.push(cdMarkNoPrintCols(overlay));
+  return () => undo.forEach(f => f());
+}
+
 // Imprime SOLO el contenido de un modal (usado para "Deuda por producto" y "Deuda total")
 function printModal(overlay){
   overlay.classList.add('printing');
   document.body.classList.add('printing-modal');
+  const undoPrep = cdPrepareModalPrint(overlay);
   let cleaned = false;
   const cleanup = () => {
     if(cleaned) return;
     cleaned = true;
+    undoPrep();
     overlay.classList.remove('printing');
     document.body.classList.remove('printing-modal');
     window.removeEventListener('afterprint', cleanup);
@@ -3787,9 +4091,12 @@ function abrirFacturaModal(factura){
   const overlay = openModal(`
     <div class="factura-doc">
       <div class="factura-doc-header">
-        <div>
-          <h2 style="margin:0;">Casa Dorada</h2>
-          <div class="sub" style="margin-top:2px;">Factura de venta</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img class="cd-doc-logo" src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="" onerror="this.style.display='none'">
+          <div>
+            <h2 style="margin:0;">Casa Dorada</h2>
+            <div class="sub" style="margin-top:2px;">Factura de venta</div>
+          </div>
         </div>
         <div style="text-align:right;">
           <div class="factura-doc-numero">N° ${factura.numero}</div>
@@ -4804,7 +5111,7 @@ document.getElementById('pedidosViewSearch').addEventListener('input', (e)=>{
   pedidosViewSearchTerm = e.target.value;
   renderPedidosView();
 });
-document.getElementById('btnImprimirPedidosView').addEventListener('click', ()=> window.print());
+document.getElementById('btnImprimirPedidosView').addEventListener('click', ()=> cdPrintPage());
 
 // Vista "Facturas": búsqueda
 document.getElementById('facturasSearch').addEventListener('input', ()=> renderFacturasView());
@@ -4968,7 +5275,7 @@ function injectPrintButtons(){
     btn.type = 'button';
     btn.className = 'print-btn-modal no-print';
     btn.textContent = '🖨 Imprimir';
-    btn.addEventListener('click', () => window.print());
+    btn.addEventListener('click', () => cdPrintPage());
     header.appendChild(btn);
   });
 }
@@ -5541,9 +5848,12 @@ function abrirComprobanteProduccionModal(groupKey){
   const overlay = openModal(`
     <div class="factura-doc">
       <div class="factura-doc-header">
-        <div>
-          <h2 style="margin:0;">Casa Dorada</h2>
-          <div class="sub" style="margin-top:2px;">Comprobante de servicio — ${escapeHtml(etapaLabel)}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img class="cd-doc-logo" src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="" onerror="this.style.display='none'">
+          <div>
+            <h2 style="margin:0;">Casa Dorada</h2>
+            <div class="sub" style="margin-top:2px;">Comprobante de servicio — ${escapeHtml(etapaLabel)}</div>
+          </div>
         </div>
         <div style="text-align:right;">
           <div class="sub">${escapeHtml(g.fecha || '—')}</div>
@@ -7058,9 +7368,12 @@ function abrirComprobanteEtapaModal(key){
   const overlay = openModal(`
     <div class="factura-doc">
       <div class="factura-doc-header">
-        <div>
-          <h2 style="margin:0;">Casa Dorada</h2>
-          <div class="sub" style="margin-top:2px;">Comprobante de servicio — ${escapeHtml(etapaLabel)}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img class="cd-doc-logo" src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="" onerror="this.style.display='none'">
+          <div>
+            <h2 style="margin:0;">Casa Dorada</h2>
+            <div class="sub" style="margin-top:2px;">Comprobante de servicio — ${escapeHtml(etapaLabel)}</div>
+          </div>
         </div>
         <div style="text-align:right;"><div class="sub">${escapeHtml(info.periodoTxt || '')}</div></div>
       </div>
