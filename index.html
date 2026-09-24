@@ -358,6 +358,18 @@
 
   /* ---- Gestión de vendedores / clientes (jalarlos) ---- */
   .registry-add-row{display:flex;gap:8px;margin-bottom:14px;}
+  .dup-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--gold-pale);border:1px solid var(--gold-pale-2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--gold-dark);}
+  .dup-group{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--white);}
+  .dup-group.off{opacity:.55;}
+  .dup-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;cursor:pointer;}
+  .dup-head input{width:auto;flex:0 0 auto;margin:0;}
+  .dup-note{font-size:12px;color:var(--ink-soft);margin:3px 0 4px 24px;}
+  .dup-badge{font-size:10.5px;font-weight:700;color:var(--gold-dark);background:var(--gold-pale);border-radius:20px;padding:2px 8px;text-transform:uppercase;}
+  .dup-row{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink-soft);padding:4px 0;border-bottom:1px dashed var(--line);}
+  .dup-mode{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:12.5px;background:var(--cream-2);}
+  .dup-result{font-size:12.5px;margin-top:8px;color:var(--gold-dark);font-weight:600;}
+  .dup-backup{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:12px 0 4px;}
+  .dup-backup input{width:auto;margin:0;}
   .registry-add-row input{flex:1;}
   .registry-list{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;}
   .registry-item{
@@ -1174,7 +1186,9 @@
         <div class="registry-add-row no-print">
           <input type="text" id="searchClientesView" placeholder="Buscar por nombre, NIT, ciudad o teléfono...">
           <button class="btn-confirm" id="btnImportarClientesBase" style="flex:0 0 auto;">Importar base (368)</button>
+          <button class="filter-clear-btn" id="btnUnificarDuplicados" style="flex:0 0 auto;">🔀 Unificar duplicados</button>
         </div>
+        <div id="dupBanner" class="no-print"></div>
         <div class="registry-list" id="distribuidoresListView"></div>
       </div>
     </div>
@@ -2257,14 +2271,31 @@ function getOrderLines(distId){
     lines.push({key, productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad, origen:'catalogo', editado: !!ov});
   });
 
+  // Cada línea extra lleva un id fijo (uid). Antes la clave de "entregado" era su posición en la lista,
+  // y al borrar una línea todas las siguientes (de cualquier cliente) heredaban la entrega equivocada.
+  // Las líneas antiguas conservan como uid su posición original, así sus entregas guardadas siguen valiendo.
+  APPDATA.extras.forEach((ex, i) => {
+    if(ex.uid === undefined || ex.uid === null) ex.uid = APPDATA.extrasUidsV2 ? newExtraUid() : String(i);
+  });
+  APPDATA.extrasUidsV2 = true;
   APPDATA.extras.forEach((ex, i) => {
     if(ex.distId === distId){
       const prod = products[ex.productoIdx] || {categoria:'', producto:'(producto eliminado)', medida:'', precio:0};
       const precio = (ex.precio !== undefined && ex.precio !== null) ? ex.precio : (prod.precio || 0);
-      lines.push({key:'extra-'+i, extraIdx:i, productoIdx: ex.productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad:ex.cantidad, origen:'extra'});
+      lines.push({key:'extra-'+ex.uid, extraIdx:i, productoIdx: ex.productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad:ex.cantidad, origen:'extra'});
     }
   });
   return lines;
+}
+
+let _extraUidSeq = 0;
+function newExtraUid(){
+  return 'u' + Date.now().toString(36) + (++_extraUidSeq).toString(36) + Math.random().toString(36).slice(2, 5);
+}
+/** Borra una línea agregada a mano y su entrega guardada, sin afectar a las demás líneas. */
+function deleteExtraLine(distId, line){
+  APPDATA.extras.splice(line.extraIdx, 1);
+  if(APPDATA.entregas && APPDATA.entregas[distId]) delete APPDATA.entregas[distId][line.key];
 }
 
 function getEntregado(distId, lineKey){
@@ -2619,7 +2650,7 @@ function renderMain(){
       const line = allLines.find(l=>l.key===btn.dataset.key);
       if(!line) return;
       if(line.origen==='extra'){
-        APPDATA.extras.splice(line.extraIdx,1);
+        deleteExtraLine(selectedDistId, line);
       }else{
         if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
         if(!APPDATA.catalogOverrides[selectedDistId]) APPDATA.catalogOverrides[selectedDistId] = {};
@@ -3270,6 +3301,7 @@ let clientesViewTerm = '';
 function renderDistribuidoresView(){
   const listEl = document.getElementById('distribuidoresListView');
   if(!listEl) return;
+  cdRenderDupBanner();
   const conPedidos = new Set(getAllDistributors().map(d=>d.nombre));
   const term = normalizeText(clientesViewTerm.trim());
   const todos = getAllDistribuidorNombres().filter(n=>{
@@ -3364,6 +3396,250 @@ document.getElementById('btnImportarClientesBase').addEventListener('click', ()=
   if(confirm(`Se van a importar hasta ${CLIENTES_BASE.length} clientes del reporte (NIT, teléfono, ciudad y dirección).\n\nLos datos que ya tengas escritos no se sobrescriben. ¿Continuar?`)) importarClientesBase();
 });
 document.getElementById('searchClientesView').addEventListener('input', (e)=>{ clientesViewTerm = e.target.value; renderDistribuidoresView(); });
+
+// ---------- Unificar clientes duplicados ----------
+// Dos clientes son "el mismo" si su nombre coincide sin importar mayúsculas, tildes, espacios o signos
+// (misma clave que usa clienteKey). Puede haber duplicados en el listado de Clientes (nombres) y/o
+// varios pedidos del mismo cliente.
+
+/** Grupos de clientes duplicados: [{key, pedidos:[...], registro:[nombres], nombres:Set}] */
+function cdFindDuplicateClients(){
+  const groups = new Map();
+  const get = k => { if(!groups.has(k)) groups.set(k, {key:k, pedidos:[], registro:[], nombres:new Set()}); return groups.get(k); };
+  getAllDistributors().forEach(d => {
+    const k = clienteKey(d.nombre); if(!k) return;
+    const g = get(k); g.pedidos.push(d); g.nombres.add(d.nombre);
+  });
+  (APPDATA.distribuidoresRegistry || []).forEach(n => {
+    const k = clienteKey(n); if(!k) return;
+    const g = get(k); g.registro.push(n); g.nombres.add(n);
+  });
+  return [...groups.values()].filter(g => g.pedidos.length > 1 || g.registro.length > 1 || g.nombres.size > 1);
+}
+
+function cdRenderDupBanner(){
+  const box = document.getElementById('dupBanner');
+  const btn = document.getElementById('btnUnificarDuplicados');
+  if(!box) return;
+  const n = cdFindDuplicateClients().length;
+  if(btn) btn.textContent = n ? `🔀 Unificar duplicados (${n})` : '🔀 Unificar duplicados';
+  box.innerHTML = n ? `<div class="dup-banner"><span>Se detectaron <b>${n}</b> ${n===1?'cliente duplicado':'clientes duplicados'}.</span><button class="btn-confirm" id="btnDupBannerGo" style="flex:0 0 auto;">Revisar y unificar</button></div>` : '';
+  const go = document.getElementById('btnDupBannerGo');
+  if(go) go.addEventListener('click', openUnificarDuplicadosModal);
+}
+
+/** Líneas de un pedido agrupadas por producto+precio: Map(clave → {productoIdx, precio, cantidad, entregado, lines}) */
+function cdAggregate(distId){
+  const m = new Map();
+  getOrderLines(distId).forEach(l => {
+    const k = l.productoIdx + '|' + l.precio;
+    const ent = Math.min(getEntregado(distId, l.key), l.cantidad);
+    let a = m.get(k);
+    if(!a){ a = {productoIdx:l.productoIdx, precio:l.precio, cantidad:0, entregado:0, lines:[]}; m.set(k, a); }
+    a.cantidad += l.cantidad; a.entregado += ent; a.lines.push(l);
+  });
+  return m;
+}
+function cdSignature(distId){
+  return [...cdAggregate(distId)].map(([k,a]) => k + 'x' + a.cantidad).sort().join('#');
+}
+/** Ordena los pedidos de un grupo: el primero es el que se conserva (más líneas, más entregado, fecha más antigua). */
+function cdSortPedidos(pedidos){
+  return [...pedidos].sort((a,b) => {
+    const ta = distTotals(a.id), tb = distTotals(b.id);
+    if(tb.numLines !== ta.numLines) return tb.numLines - ta.numLines;
+    if(tb.totalEntregadoVal !== ta.totalEntregadoVal) return tb.totalEntregadoVal - ta.totalEntregadoVal;
+    const fa = parseFechaToTime(a.fecha), fb = parseFechaToTime(b.fecha);
+    if(fa === fb) return 0;
+    if(fa === null) return 1;
+    if(fb === null) return -1;
+    return fa - fb;
+  });
+}
+function cdCanonicalName(g, survivor){
+  const counts = {};
+  g.pedidos.forEach(d => { counts[d.nombre] = (counts[d.nombre] || 0) + 1; });
+  g.registro.forEach(n => { counts[n] = (counts[n] || 0) + 0.5; });
+  let best = survivor ? survivor.nombre : g.registro[0], bc = -1;
+  Object.entries(counts).forEach(([n, c]) => {
+    // a igualdad de uso se prefiere el que no está todo en mayúsculas y luego el del pedido que se conserva
+    const score = c + (n !== n.toUpperCase() ? 0.25 : 0) + (survivor && n === survivor.nombre ? 0.1 : 0);
+    if(score > bc){ best = n; bc = score; }
+  });
+  return String(best || '').trim();
+}
+/** Calcula cómo quedarían las líneas al juntar los pedidos `otherIds` dentro de `survivorId`.
+ *  mode 'sumar': suma cantidades y entregas (son pedidos distintos).
+ *  mode 'conservar': toma la mayor cantidad/entrega (es el mismo pedido digitado varias veces). */
+function cdBuildMergePlan(survivorId, otherIds, mode){
+  const S = cdAggregate(survivorId);
+  const cur = new Map([...S].map(([k, a]) => [k, {...a}]));
+  otherIds.forEach(id => {
+    cdAggregate(id).forEach((a, k) => {
+      let c = cur.get(k);
+      if(!c){ c = {productoIdx:a.productoIdx, precio:a.precio, cantidad:0, entregado:0, lines:[]}; cur.set(k, c); }
+      if(mode === 'sumar'){ c.cantidad += a.cantidad; c.entregado += a.entregado; }
+      else { c.cantidad = Math.max(c.cantidad, a.cantidad); c.entregado = Math.max(c.entregado, a.entregado); }
+    });
+  });
+  let totalPedido = 0, totalEntregado = 0;
+  cur.forEach(c => { totalPedido += c.cantidad * c.precio; totalEntregado += Math.min(c.entregado, c.cantidad) * c.precio; });
+  return {lines:cur, S, totalPedido, totalEntregado};
+}
+
+function cdEnsureMap(name){ if(!APPDATA[name]) APPDATA[name] = {}; return APPDATA[name]; }
+function cdEarliest(values){
+  let best = null, bt = null;
+  values.forEach(v => { const t = parseFechaToTime(v); if(t !== null && (bt === null || t < bt)){ best = v; bt = t; } });
+  return best;
+}
+
+/** Unifica un grupo (solo en memoria; quien llama guarda). mode: 'sumar' | 'conservar' | 'nombre' */
+function cdUnificarGrupo(g, mode){
+  const ordered = cdSortPedidos(g.pedidos);
+  const S = ordered[0], others = ordered.slice(1);
+  const canon = cdCanonicalName(g, S);
+  let remaining = ordered;
+
+  if(S && others.length && mode !== 'nombre'){
+    const plan = cdBuildMergePlan(S.id, others.map(o => o.id), mode);
+    plan.lines.forEach((c, k) => {
+      const s = plan.S.get(k);
+      if(s){
+        const dC = Math.max(0, c.cantidad - s.cantidad), dE = Math.max(0, c.entregado - s.entregado);
+        if(dC > 0 || dE > 0){
+          const t = s.lines[0];
+          if(dC > 0){
+            const nueva = t.cantidad + dC;
+            if(t.origen === 'extra'){ APPDATA.extras[t.extraIdx] = {...APPDATA.extras[t.extraIdx], cantidad:nueva}; }
+            else {
+              const co = cdEnsureMap('catalogOverrides');
+              if(!co[S.id]) co[S.id] = {};
+              co[S.id][t.key] = {...(co[S.id][t.key] || {}), productoIdx:t.productoIdx, cantidad:nueva, precio:t.precio};
+            }
+          }
+          if(dE > 0) setEntregado(S.id, t.key, getEntregado(S.id, t.key) + dE);
+        }
+      } else {
+        const uid = newExtraUid();
+        APPDATA.extras.push({uid, distId:S.id, productoIdx:c.productoIdx, cantidad:c.cantidad, precio:c.precio});
+        setEntregado(S.id, 'extra-' + uid, c.entregado);
+      }
+    });
+    // observaciones (sin repetir textos)
+    const obs = getObservaciones(S.id).slice();
+    others.forEach(o => getObservaciones(o.id).forEach(ob => { if(!obs.some(x => x.texto === ob.texto)) obs.push(ob); }));
+    if(obs.length) cdEnsureMap('distObservaciones')[S.id] = obs;
+    // vendedor, fechas y urgente
+    if(!S.vendedor){ const v = others.map(o => o.vendedor).find(Boolean); if(v) cdEnsureMap('distVendedorOverrides')[S.id] = v; }
+    const desp = cdEarliest(ordered.map(d => d.fechaDespacho));
+    if(desp && fechaToInputValue(desp) !== fechaToInputValue(S.fechaDespacho)) cdEnsureMap('distDespachoOverrides')[S.id] = fechaToInputValue(desp);
+    const fec = cdEarliest(ordered.map(d => d.fecha));
+    if(fec && fechaToInputValue(fec) !== fechaToInputValue(S.fecha)) cdEnsureMap('distFechaOverrides')[S.id] = fechaToInputValue(fec);
+    if(others.some(o => o.urgente)) cdEnsureMap('distUrgenteOverrides')[S.id] = true;
+    // facturas de los pedidos que se unen pasan al que queda
+    const ids = new Set(others.map(o => o.id));
+    (APPDATA.facturas || []).forEach(f => { if(ids.has(f.distId)){ f.distId = S.id; f.cliente = canon; } });
+    // los demás pedidos se marcan como eliminados (los datos viejos no se borran físicamente)
+    if(!APPDATA.distribuidoresEliminados) APPDATA.distribuidoresEliminados = [];
+    others.forEach(o => { if(!APPDATA.distribuidoresEliminados.includes(o.id)) APPDATA.distribuidoresEliminados.push(o.id); });
+    if(selectedDistId && ids.has(selectedDistId)) selectedDistId = S.id;
+    remaining = [S];
+  }
+
+  // nombre único para los pedidos que quedan
+  remaining.forEach(d => { if(d.nombre !== canon) cdEnsureMap('distNameOverrides')[d.id] = canon; });
+  // listado de Clientes sin variantes repetidas
+  const reg = APPDATA.distribuidoresRegistry || [];
+  const habiaRegistro = reg.some(n => clienteKey(n) === g.key);
+  APPDATA.distribuidoresRegistry = reg.filter(n => clienteKey(n) !== g.key);
+  if(habiaRegistro) APPDATA.distribuidoresRegistry.push(canon);
+}
+
+function cdDescargarRespaldo(){
+  try{
+    const blob = new Blob([JSON.stringify(APPDATA)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'respaldo-casa-dorada-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }catch(e){ console.warn('No se pudo generar el respaldo', e); }
+}
+
+function openUnificarDuplicadosModal(){
+  const groups = cdFindDuplicateClients().map(g => {
+    const ordered = cdSortPedidos(g.pedidos);
+    const identicos = ordered.length > 1 && new Set(ordered.map(d => cdSignature(d.id))).size === 1;
+    return {...g, ordered, canonical: cdCanonicalName(g, ordered[0]), identicos,
+      mode: ordered.length > 1 ? (identicos ? 'conservar' : 'sumar') : 'nombre', checked:true};
+  }).sort((a,b) => a.canonical.localeCompare(b.canonical));
+  if(!groups.length){ showToast('No hay clientes duplicados'); return; }
+
+  const overlay = openModal(`
+    <h3>Unificar clientes duplicados</h3>
+    <div class="hint" style="margin-bottom:12px;">Estos clientes están repetidos (mismo nombre, sin importar mayúsculas o tildes). Revisa cada uno y elige cómo unirlo. El pedido marcado con ★ es el que se conserva.</div>
+    <div id="dupList"></div>
+    <label class="dup-backup"><input type="checkbox" id="dupBackup" checked> Descargar un respaldo (archivo .json) antes de unificar</label>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Unificar</button>
+    </div>
+  `);
+  overlay.querySelector('.modal').classList.add('wide');
+  const listEl = overlay.querySelector('#dupList');
+  const btnOk = overlay.querySelector('#btnConfirm');
+
+  function resultText(g){
+    if(g.ordered.length <= 1) return `Quedará un solo cliente: “${escapeHtml(g.canonical)}”.`;
+    if(g.mode === 'nombre') return `Quedan ${g.ordered.length} pedidos separados, todos con el nombre “${escapeHtml(g.canonical)}”.`;
+    const plan = cdBuildMergePlan(g.ordered[0].id, g.ordered.slice(1).map(o => o.id), g.mode);
+    return `Quedará 1 pedido · Pedido ${fmt(plan.totalPedido)} · Entregado ${fmt(plan.totalEntregado)} · Debe ${fmt(plan.totalPedido - plan.totalEntregado)}`;
+  }
+  function paint(){
+    listEl.innerHTML = groups.map((g, i) => {
+      const otros = [...g.nombres].filter(n => n !== g.canonical);
+      return `
+      <div class="dup-group ${g.checked ? '' : 'off'}">
+        <label class="dup-head"><input type="checkbox" data-chk="${i}" ${g.checked ? 'checked' : ''}> <span>${escapeHtml(g.canonical)}</span>
+          ${g.identicos ? '<span class="dup-badge">Pedidos idénticos</span>' : ''}</label>
+        ${otros.length ? `<div class="dup-note">También escrito como: ${otros.map(escapeHtml).join(' · ')}</div>` : ''}
+        ${g.ordered.map((d, j) => { const t = distTotals(d.id); return `
+          <div class="dup-row"><span>${j === 0 && g.ordered.length > 1 ? '★ ' : ''}${escapeHtml(d.fecha ? String(d.fecha) : 'Sin fecha')} · ${t.numLines} ${t.numLines === 1 ? 'línea' : 'líneas'}</span><span>${fmt(t.totalPedido)} · entregado ${fmt(t.totalEntregadoVal)}</span></div>`; }).join('')}
+        ${g.ordered.length > 1 ? `
+        <select class="dup-mode" data-mode="${i}">
+          <option value="conservar" ${g.mode === 'conservar' ? 'selected' : ''}>Es el mismo pedido repetido: conservar uno (no sumar)</option>
+          <option value="sumar" ${g.mode === 'sumar' ? 'selected' : ''}>Son pedidos distintos: sumarlos en un solo pedido</option>
+          <option value="nombre" ${g.mode === 'nombre' ? 'selected' : ''}>Dejar los pedidos separados y solo unificar el nombre</option>
+        </select>` : ''}
+        <div class="dup-result">${resultText(g)}</div>
+      </div>`;
+    }).join('');
+    const n = groups.filter(g => g.checked).length;
+    btnOk.textContent = n ? `Unificar (${n})` : 'Unificar';
+    btnOk.disabled = !n;
+  }
+  paint();
+  listEl.addEventListener('change', (e) => {
+    const t = e.target;
+    if(t.dataset.chk !== undefined){ groups[+t.dataset.chk].checked = t.checked; paint(); }
+    else if(t.dataset.mode !== undefined){ groups[+t.dataset.mode].mode = t.value; paint(); }
+  });
+  overlay.querySelector('#btnCancel').addEventListener('click', () => overlay.remove());
+  btnOk.addEventListener('click', async () => {
+    const elegidos = groups.filter(g => g.checked);
+    if(!elegidos.length) return;
+    btnOk.disabled = true;
+    if(overlay.querySelector('#dupBackup').checked) cdDescargarRespaldo();
+    elegidos.forEach(g => cdUnificarGrupo(g, g.mode));
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+    showToast(`Listo: ${elegidos.length} ${elegidos.length === 1 ? 'cliente unificado' : 'clientes unificados'}`);
+  });
+}
+document.getElementById('btnUnificarDuplicados').addEventListener('click', openUnificarDuplicadosModal);
+
 
 // ---- Inventario: lista de precios completa, editable (incluye los productos originales) ----
 let inventarioSearchTerm = '';
@@ -4250,7 +4526,7 @@ function openAddProductModal(distId){
     const cantidad = parseFloat(overlay.querySelector('#inpCantidad').value) || 0;
     const precio = parseFloat(precioEl.value) || 0;
     if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); return; }
-    APPDATA.extras.push({distId, productoIdx, cantidad, precio});
+    APPDATA.extras.push({uid:newExtraUid(), distId, productoIdx, cantidad, precio});
     await saveAppData(APPDATA);
     overlay.remove();
     renderAll();
@@ -4295,7 +4571,7 @@ function openEditLineModal(distId, line){
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
   overlay.querySelector('#btnDelete').addEventListener('click', async ()=>{
     if(line.origen==='extra'){
-      APPDATA.extras.splice(line.extraIdx,1);
+      deleteExtraLine(distId, line);
     }else{
       if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
       if(!APPDATA.catalogOverrides[distId]) APPDATA.catalogOverrides[distId] = {};
@@ -4873,7 +5149,7 @@ function openDuplicatePedidoModal(dist){
     APPDATA.nuevosDistribuidores.push({id, nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
     registerVendedor(vendedor);
     sourceLines.forEach(l=>{
-      APPDATA.extras.push({distId:id, productoIdx: l.productoIdx, cantidad: l.cantidad, precio: l.precio});
+      APPDATA.extras.push({uid:newExtraUid(), distId:id, productoIdx: l.productoIdx, cantidad: l.cantidad, precio: l.precio});
     });
     await saveAppData(APPDATA);
     selectedDistId = id;
@@ -5141,7 +5417,9 @@ document.getElementById('btnAgregarDistribuidorView').addEventListener('click', 
   const val = inp.value.trim();
   if(!val){ showToast('Escribe un nombre'); return; }
   if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
-  if(!APPDATA.distribuidoresRegistry.includes(val)) APPDATA.distribuidoresRegistry.push(val);
+  const yaExiste = getAllDistribuidorNombres().find(n => clienteKey(n) === clienteKey(val));
+  if(yaExiste){ showToast(`Ese cliente ya existe: "${yaExiste}"`); return; }
+  APPDATA.distribuidoresRegistry.push(val);
   await saveAppData(APPDATA);
   inp.value = '';
   renderAll();
