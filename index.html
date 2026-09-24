@@ -3619,9 +3619,10 @@ function abrirEditarFacturaModal(factura){
   });
 }
 
-/** Genera y descarga la factura como archivo PDF, usando el documento ya renderizado en el modal
- * (sin los botones de acción) para que el PDF coincida exactamente con lo que se ve/imprime. */
-function exportarFacturaPDF(overlay, factura){
+/** Genera y descarga el documento (factura o comprobante) como archivo PDF, usando el nodo
+ * `.factura-doc` ya renderizado en el modal (sin los botones de acción) para que el PDF
+ * coincida exactamente con lo que se ve/imprime. Compartido por facturas y comprobantes. */
+function exportarDocumentoPDF(overlay, nombreArchivo){
   if(typeof html2pdf === 'undefined'){
     showToast('No se pudo cargar el generador de PDF. Usa "Imprimir" y elige "Guardar como PDF".');
     return;
@@ -3636,7 +3637,6 @@ function exportarFacturaPDF(overlay, factura){
   wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:780px;background:#fff;';
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
-  const nombreArchivo = `Factura_N${factura.numero}_${(factura.cliente || 'cliente').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
   html2pdf().set({
     margin: 10,
     filename: nombreArchivo,
@@ -3649,6 +3649,12 @@ function exportarFacturaPDF(overlay, factura){
     wrapper.remove();
     showToast('No se pudo generar el PDF. Intenta con "Imprimir".');
   });
+}
+
+/** Genera y descarga la factura como archivo PDF. */
+function exportarFacturaPDF(overlay, factura){
+  const nombreArchivo = `Factura_N${factura.numero}_${(factura.cliente || 'cliente').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+  exportarDocumentoPDF(overlay, nombreArchivo);
 }
 
 /** Muestra una factura ya generada como documento, con botón para imprimirla. */
@@ -4771,10 +4777,28 @@ function currentAuth(){
   return APPDATA.auth || DEFAULT_APPDATA.auth;
 }
 
+// Agrega un botón "🖨 Imprimir" a cualquier encabezado de página (.page-card-header) que todavía
+// no tenga uno propio, para poder imprimir cualquier módulo/tabla de la app (usa las mismas reglas
+// de impresión — @media print — que ya ocultan menús, filtros y botones). Se ejecuta una sola vez
+// al entrar a la app.
+function injectPrintButtons(){
+  document.querySelectorAll('.page-card-header, .prod-page-head').forEach(header => {
+    // Detecta por texto ("Imprimir"), no por clase: así no lo confunde con otros botones que
+    // también usan la clase print-btn-modal (ej. el de "🧾 Comprobante" de los dashboards).
+    if([...header.querySelectorAll('button')].some(b => /imprimir/i.test(b.textContent))) return; // ya tiene uno propio
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'print-btn-modal no-print';
+    btn.textContent = '🖨 Imprimir';
+    btn.addEventListener('click', () => window.print());
+    header.appendChild(btn);
+  });
+}
+
 function showApp(){
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('appRoot').style.display = '';
-  if(!appRendered){ syncPlantaProductosFromInventario(); renderAll(); appRendered = true; }
+  if(!appRendered){ syncPlantaProductosFromInventario(); renderAll(); injectPrintButtons(); appRendered = true; }
 }
 
 const SESSION_KEY = 'casaDoradaSesionActiva';
@@ -5309,6 +5333,7 @@ function renderProduccionRegistros(body, term){
         <td class="num"><strong>${valor ? fmt(valor) : '—'}</strong>${faltan ? ' <span title="Hay productos sin precio de servicio (defínelos en Precios de servicio)" style="color:#B65B2E;">⚠</span>' : ''}</td>
         <td>${g.obs ? `<span class="cell-clamp" title="${escapeAttr(g.obs)}">${escapeHtml(g.obs)}</span>` : '—'}</td>
         <td class="row-actions no-print">
+          <button class="icon-btn" data-prod-factura="${k}" title="Comprobante de servicio (ver, imprimir, PDF)">🧾</button>
           <button class="icon-btn icon-edit" data-prod-edit="${k}" title="Editar registro">✎</button>
           <button class="icon-btn icon-delete" data-prod-del="${k}" title="Eliminar registro completo">🗑</button>
         </td>
@@ -5324,6 +5349,73 @@ function renderProduccionRegistros(body, term){
         </td>
       </tr>`;
   }).join('');
+}
+
+// Recalcula el detalle (producto, cantidad, precio de servicio, subtotal) de UN registro de
+// Producción Diaria (identificado por su groupKey) para poder mostrarlo/imprimirlo como comprobante.
+function calcularDetalleGrupoProduccion(groupKey){
+  const list = getPlantaList('produccion');
+  const lineas = list.map((it, i) => ({it, i})).filter(o => produccionGrupoKey(o.it, o.i) === groupKey).map(o => o.it);
+  if(!lineas.length) return null;
+  const etapa = normEtapa(lineas[0].etapa);
+  const fecha = lineas[0].fecha || '';
+  const obs = lineas[0].observaciones || '';
+  const precioDe = crearResolvedorPrecioServicio();
+  const detalle = lineas.map(l => {
+    const cant = Number(l.cantidad) || 0, precio = precioDe(etapa, l.producto);
+    return { producto: l.producto, cant, precio, sub: cant * precio };
+  });
+  const total = detalle.reduce((a, l) => a + l.cant, 0);
+  const valor = detalle.reduce((a, l) => a + l.sub, 0);
+  return { etapa, fecha, obs, detalle, total, valor };
+}
+
+/** Comprobante de servicio de UN registro de Producción Diaria: mismo producto/cantidad/precio/subtotal
+ * que se ve en el desglose, pero como documento para ver, imprimir o descargar en PDF (ej. para
+ * cuadrar cuentas con el Taller u otra etapa que cobra por unidad producida). */
+function abrirComprobanteProduccionModal(groupKey){
+  const g = calcularDetalleGrupoProduccion(groupKey);
+  if(!g){ showToast('No se encontró este registro.'); return; }
+  const etapaLabel = (ETAPAS_PRODUCCION.find(e => e.key === g.etapa) || {}).label || g.etapa;
+  const overlay = openModal(`
+    <div class="factura-doc">
+      <div class="factura-doc-header">
+        <div>
+          <h2 style="margin:0;">Casa Dorada</h2>
+          <div class="sub" style="margin-top:2px;">Comprobante de servicio — ${escapeHtml(etapaLabel)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="sub">${escapeHtml(g.fecha || '—')}</div>
+        </div>
+      </div>
+      ${g.obs ? `<div class="factura-doc-cliente"><strong>Observaciones:</strong> ${escapeHtml(g.obs)}</div>` : ''}
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio servicio</th><th class="num">Subtotal</th></tr></thead>
+          <tbody>
+            ${g.detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num">${l.precio ? fmt(l.precio) : '—'}</td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="factura-doc-totales">
+        <div><span>Unidades totales</span><b>${fmtNum(g.total)}</b></div>
+        <div class="factura-doc-total-final"><span>TOTAL DEL SERVICIO</span><b>${fmt(g.valor)}</b></div>
+      </div>
+      <div class="modal-actions no-print">
+        <button class="btn-cancel" id="btnCancel">Cerrar</button>
+        <button class="print-btn-modal" id="btnDescargarComprobantePDF">⬇️ Descargar PDF</button>
+        <button class="print-btn-modal" id="btnImprimirComprobante">🖨 Imprimir</button>
+      </div>
+    </div>
+  `);
+  const modalEl = overlay.querySelector('.modal');
+  if(modalEl) modalEl.classList.add('wide');
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#btnImprimirComprobante').addEventListener('click', ()=> printModal(overlay));
+  overlay.querySelector('#btnDescargarComprobantePDF').addEventListener('click', ()=>{
+    const nombreArchivo = `Comprobante_${etapaLabel}_${(g.fecha || 'sinfecha').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+    exportarDocumentoPDF(overlay, nombreArchivo);
+  });
 }
 
 // "Cobro del servicio por día": por fecha y etapa, cuánto te cobra el servicio por lo producido (unidades × precio
@@ -5843,6 +5935,22 @@ function openPlantaModal(moduleKey, idx){
   });
 }
 
+function actualizarPrecioServicioParaProducto(etapa, producto, precio){
+  // Guarda/actualiza el precio de servicio de ESE producto específico para esa etapa (no toca
+  // entradas "de familia" que compartan varios productos, para no cambiarles el precio a todos
+  // por editar uno solo). Si no existe una entrada exacta producto+etapa, crea una nueva.
+  if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
+  const lista = APPDATA.plantaServiciosMaquila;
+  const nom = normalizeText(producto);
+  let entry = lista.find(x => x.etapa === etapa && normalizeText(x.servicio) === nom);
+  if(!entry) entry = lista.find(x => !x.etapa && normalizeText(x.servicio) === nom);
+  if(entry){
+    entry.precio = precio;
+  } else {
+    lista.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2,6), etapa, servicio: producto, precio });
+  }
+}
+
 // Modal de Producción Diaria: UNA fecha + UNA etapa (Corte, Taller, Ultrasonido o Confortadora) para todo el registro, y varias
 // filas de producto + cantidad. Al guardar se crea una fila de producción por producto (todas comparten
 // registroId), así los dashboards, la disponibilidad y la utilidad del mes siguen leyendo el mismo formato.
@@ -5861,16 +5969,19 @@ function openProduccionModal(groupKey){
     ? [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))]
     : productos;
   let etapaActual = normEtapa(record.etapa); // igual que el select: sin registro previo arranca en Taller
+  const precioDe = crearResolvedorPrecioServicio();
   const optsHtml = (sel) => {
     let ops = opcionesPara(etapaActual);
     // al editar un registro antiguo se conserva su valor aunque ya no esté en la lista
     if(sel && !ops.some(o => String(o.value) === String(sel))) ops = [...ops, {value:sel, label:sel}];
     return ops.map(o => `<option value="${escapeAttr(o.value)}" ${String(o.value)===String(sel||'')?'selected':''}>${escapeHtml(o.label)}</option>`).join('');
   };
-  const filaHtml = (prod, cant) => `
+  const precioValor = (prod) => prod ? precioDe(etapaActual, prod) : '';
+  const filaHtml = (prod, cant, precioOverride) => `
     <div class="prod-linea" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
       <select class="pl-producto" style="flex:1;min-width:0;">${optsHtml(prod)}</select>
       <input type="number" class="pl-cantidad" min="0" placeholder="Cant." value="${escapeAttr(cant ?? '')}" style="width:90px;">
+      <input type="number" class="pl-precio" min="0" step="1" placeholder="$" title="Precio del servicio — puedes editarlo aquí, se guarda al Guardar" value="${escapeAttr(precioOverride !== undefined ? precioOverride : precioValor(prod))}" style="width:92px;flex-shrink:0;">
       <button type="button" class="icon-btn icon-delete pl-quitar" title="Quitar">✕</button>
     </div>`;
   const overlay = openModal(`
@@ -5882,6 +5993,9 @@ function openProduccionModal(groupKey){
       </select>
     </div>
     <div class="field"><label>Productos y cantidades *</label>
+      <div style="display:flex;gap:8px;font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:4px;">
+        <span style="flex:1;">PRODUCTO</span><span style="width:90px;">CANTIDAD</span><span style="width:92px;text-align:right;">PRECIO SERVICIO</span><span style="width:28px;"></span>
+      </div>
       <div id="pp_lineas">${editing ? lineasGrupo.map(o => filaHtml(o.it.producto, o.it.cantidad)).join('') : filaHtml('', '')}</div>
       <button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>
     </div>
@@ -5895,20 +6009,31 @@ function openProduccionModal(groupKey){
     </div>
   `);
   const lineasBox = overlay.querySelector('#pp_lineas');
+  const actualizarPrecioFila = (linea) => {
+    const sel = linea.querySelector('.pl-producto');
+    const inp = linea.querySelector('.pl-precio');
+    if(sel && inp) inp.value = precioValor(sel.value);
+  };
   overlay.querySelector('#pp_etapa').addEventListener('change', (e)=>{
     etapaActual = normEtapa(e.target.value);
     const validas = opcionesPara(etapaActual);
-    lineasBox.querySelectorAll('.pl-producto').forEach(sel => {
+    lineasBox.querySelectorAll('.prod-linea').forEach(linea => {
+      const sel = linea.querySelector('.pl-producto');
       const actual = sel.value;
       const ok = validas.some(o => o.value === actual);
       sel.innerHTML = optsHtml(ok ? actual : '');
       if(!ok) sel.value = '';
+      actualizarPrecioFila(linea);
     });
   });
   overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
   {
     overlay.querySelector('#pp_agregar').addEventListener('click', ()=>{
       lineasBox.insertAdjacentHTML('beforeend', filaHtml('', ''));
+    });
+    lineasBox.addEventListener('change', (e)=>{
+      if(!e.target.classList.contains('pl-producto')) return;
+      actualizarPrecioFila(e.target.closest('.prod-linea'));
     });
     lineasBox.addEventListener('click', (e)=>{
       const btn = e.target.closest('.pl-quitar');
@@ -5936,19 +6061,26 @@ function openProduccionModal(groupKey){
     const etapa = normEtapa(overlay.querySelector('#pp_etapa').value);
     const obs = overlay.querySelector('#pp_obs').value;
     if(!fecha){ showToast('Completa el campo "Fecha"'); overlay.querySelector('#pp_fecha').focus(); return; }
-    // Junta las filas válidas; si un producto se repite, suma sus cantidades.
+    // Junta las filas válidas; si un producto se repite, suma sus cantidades (el precio de la
+    // última fila de ese producto es el que queda). El precio de cada fila se guarda como el
+    // precio de servicio de ese producto para esta etapa (si lo editaste, queda editado de aquí
+    // en adelante también en "Precios de servicio").
     const porProducto = new Map();
+    const precioPorProducto = new Map();
     let hayIncompleta = false;
     lineasBox.querySelectorAll('.prod-linea').forEach(row => {
       const prod = row.querySelector('.pl-producto').value;
       const cantRaw = row.querySelector('.pl-cantidad').value;
+      const precioRaw = row.querySelector('.pl-precio').value;
       if(!prod && cantRaw === '') return; // fila vacía: se ignora
       const cant = Number(cantRaw);
       if(!prod || cantRaw === '' || !(cant > 0)){ hayIncompleta = true; return; }
       porProducto.set(prod, (porProducto.get(prod) || 0) + cant);
+      if(precioRaw !== '') precioPorProducto.set(prod, Number(precioRaw) || 0);
     });
     if(hayIncompleta){ showToast('Cada fila necesita un producto y una cantidad mayor a 0'); return; }
     if(!porProducto.size){ showToast('Agrega al menos un producto con su cantidad'); return; }
+    precioPorProducto.forEach((precio, prod) => actualizarPrecioServicioParaProducto(etapa, prod, precio));
     const freshList = getPlantaList('produccion');
     if(editing){
       // Reemplaza todas las filas del registro por las nuevas (conserva id/registroId de las que siguen igual)
@@ -6018,6 +6150,8 @@ Object.keys(PLANTA_MODULES).forEach(initPlantaModule);
     }
     const ed = e.target.closest('[data-prod-edit]');
     if(ed){ openProduccionModal(ed.dataset.prodEdit); return; }
+    const fac = e.target.closest('[data-prod-factura]');
+    if(fac){ abrirComprobanteProduccionModal(fac.dataset.prodFactura); return; }
     const del = e.target.closest('[data-prod-del]');
     if(del){
       if(!confirm('¿Eliminar este registro de producción completo (todos sus productos)?')) return;
@@ -6681,6 +6815,7 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 // El valor de producción y el costo variable salen del precio de venta y el costeo de cada producto.
 const DASH_ETAPA_LABEL = { Corte:'Corte', Taller:'Producción (Taller)', Ultrasonido:'Ultrasonido', Confortadora:'Confortadora' };
 const dashEtapaCharts = {};
+const dashEtapaUltimo = {}; // último cálculo mostrado por etapa (para el botón "🧾 Comprobante")
 
 function calcularUtilidadEtapa(etapa, desde, hasta, producto){
   const tD = desde ? parseFechaToTime(desde) : null;
@@ -6747,6 +6882,7 @@ function dashEtapaHtml(e){
           <div class="prod-field"><label for="${id('hasta')}">Hasta</label><input type="date" id="${id('hasta')}"></div>
           <div class="prod-field"><label for="${id('producto')}">${esServ ? 'Servicio' : 'Producto'}</label><select id="${id('producto')}"></select></div>
           <button type="button" class="prod-btn prod-btn-outline" id="${id('limpiar')}">Limpiar filtros</button>
+          <button type="button" class="print-btn-modal" id="${id('factura')}" title="Comprobante de servicio del periodo filtrado (ver, imprimir, PDF)">🧾 Comprobante</button>
         </div>
       </div>
       <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
@@ -6776,7 +6912,6 @@ function renderDashEtapa(key){
   const q = s => document.getElementById('dashE_' + key + '_' + s);
   if(!q('mes')) return;
   const esServ = !!SERVICIOS_POR_ETAPA[key];
-
   // Opciones del filtro de producto/servicio: lo que se ha registrado en esta etapa (+ los servicios fijos de la etapa)
   const selProd = q('producto');
   const previo = selProd.value;
@@ -6803,6 +6938,7 @@ function renderDashEtapa(key){
     periodoTxt = 'Periodo: ' + new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month:'long', year:'numeric' });
   }
   q('periodo').textContent = periodoTxt + (producto ? ' · ' + producto : '');
+  dashEtapaUltimo[key] = { d, periodoTxt, producto, esServ };
 
   q('unidades').textContent = fmtNum(d.unidades);
   q('valor').textContent = fmt(d.valor);
@@ -6846,6 +6982,52 @@ function renderDashEtapa(key){
   });
 }
 
+/** Comprobante de servicio del periodo filtrado en el Dashboard de una etapa: usa exactamente los
+ * mismos totales que se ven en pantalla (unidades × precio de servicio por producto), como documento
+ * para ver, imprimir o descargar en PDF. */
+function abrirComprobanteEtapaModal(key){
+  const info = dashEtapaUltimo[key];
+  if(!info || !info.d.filas.length){ showToast('No hay producción con estos filtros para generar el comprobante.'); return; }
+  const d = info.d;
+  const etapaLabel = DASH_ETAPA_LABEL[key] || key;
+  const overlay = openModal(`
+    <div class="factura-doc">
+      <div class="factura-doc-header">
+        <div>
+          <h2 style="margin:0;">Casa Dorada</h2>
+          <div class="sub" style="margin-top:2px;">Comprobante de servicio — ${escapeHtml(etapaLabel)}</div>
+        </div>
+        <div style="text-align:right;"><div class="sub">${escapeHtml(info.periodoTxt || '')}</div></div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>${info.esServ ? 'Servicio' : 'Producto'}</th><th class="num">Cantidad</th><th class="num">Precio servicio</th><th class="num">Subtotal</th></tr></thead>
+          <tbody>
+            ${d.filas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td class="num">${fmtNum(f.cantidad)}</td><td class="num">${f.precioServicio ? fmt(f.precioServicio) : '—'}</td><td class="num">${f.cobro ? fmt(f.cobro) : '—'}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="factura-doc-totales">
+        <div><span>Unidades totales</span><b>${fmtNum(d.unidades)}</b></div>
+        <div class="factura-doc-total-final"><span>TOTAL DEL SERVICIO</span><b>${fmt(d.cobro)}</b></div>
+      </div>
+      <div class="modal-actions no-print">
+        <button class="btn-cancel" id="btnCancel">Cerrar</button>
+        <button class="print-btn-modal" id="btnDescargarComprobantePDF">⬇️ Descargar PDF</button>
+        <button class="print-btn-modal" id="btnImprimirComprobante">🖨 Imprimir</button>
+      </div>
+    </div>
+  `);
+  const modalEl = overlay.querySelector('.modal');
+  if(modalEl) modalEl.classList.add('wide');
+  overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#btnImprimirComprobante').addEventListener('click', ()=> printModal(overlay));
+  overlay.querySelector('#btnDescargarComprobantePDF').addEventListener('click', ()=>{
+    const nombreArchivo = `Comprobante_${etapaLabel}_${(info.periodoTxt || 'periodo').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+    exportarDocumentoPDF(overlay, nombreArchivo);
+  });
+}
+
 (function crearDashboardsEtapa(){
   const ref = document.getElementById('viewOperarios');
   if(!ref) return;
@@ -6863,6 +7045,7 @@ function renderDashEtapa(key){
     ['desde', 'hasta'].forEach(f => el(f).addEventListener('change', () => { if(el('desde').value || el('hasta').value) el('mes').value = ''; rr(); }));
     el('producto').addEventListener('change', rr);
     el('limpiar').addEventListener('click', () => { el('mes').value = ''; el('desde').value = ''; el('hasta').value = ''; el('producto').value = ''; rr(); });
+    el('factura').addEventListener('click', () => abrirComprobanteEtapaModal(e.key));
   });
 })();
 
