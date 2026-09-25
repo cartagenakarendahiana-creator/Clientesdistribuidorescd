@@ -673,6 +673,10 @@
     .cd-ph-info span b{color:#111827;font-weight:700;}
     .cd-ph-info span.desp{background:#F6EFE1;border-color:#E3D3AC;color:#7C5F2C;}
     .cd-ph-info span.desp b{color:#7C5F2C;}
+    .cd-ph-obs{margin-top:10px;padding:8px 12px;border:1px solid #E3D3AC;background:#F6EFE1 !important;border-radius:8px;}
+    .cd-ph-obs-title{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#7C5F2C;margin-bottom:4px;}
+    .cd-ph-obs-item{font-size:10.5px;color:#111827;line-height:1.5;}
+    .cd-ph-obs-date{font-weight:700;color:#7C5F2C;}
 
     /* Tarjetas de totales */
     #mainPanel .totals-row{display:flex;flex-wrap:nowrap;gap:8px;margin:0 0 12px;}
@@ -2553,6 +2557,11 @@ function renderMain(){
           ${dist.direccion ? `<span>Dirección: <b>${escapeHtml(dist.direccion)}</b></span>` : ''}
         </div>
       </div>
+      ${dist.observaciones.length ? `
+      <div class="cd-ph-obs">
+        <div class="cd-ph-obs-title">Observaciones del cliente</div>
+        ${dist.observaciones.map(o => `<div class="cd-ph-obs-item">${o.fecha ? `<span class="cd-ph-obs-date">${formatObsFecha(o.fecha)}:</span> ` : ''}${escapeHtml(o.texto)}</div>`).join('')}
+      </div>` : ''}
     </div>
     <div class="dist-header">
       <div>
@@ -6045,6 +6054,16 @@ function crearResolvedorPrecioServicio(){
 }
 function produccionGrupoKey(item, idx){ return item.registroId || item.id || ('idx' + idx); }
 
+// Vuelve a dibujar cualquier Dashboard · Etapa que esté visible en este momento (tabla, gráficos
+// y ahora también el listado de registros editable). Se llama después de crear/editar/eliminar
+// un registro de Producción Diaria desde cualquier parte de la app, incluidos los propios dashboards.
+function refrescarDashboardsEtapaVisibles(){
+  ETAPAS_PRODUCCION.forEach(e => {
+    const el = document.getElementById('viewDash' + e.key.toLowerCase());
+    if(el && el.style.display !== 'none' && typeof renderDashEtapa === 'function') renderDashEtapa(e.key);
+  });
+}
+
 function renderProduccionRegistros(body, term){
   const raw = getPlantaList('produccion');
   const grupos = new Map();
@@ -6610,7 +6629,7 @@ function actualizarPrecioServicioParaProducto(etapa, producto, precio){
 // Modal de Producción Diaria: UNA fecha + UNA etapa (Corte, Taller, Ultrasonido o Confortadora) para todo el registro, y varias
 // filas de producto + cantidad. Al guardar se crea una fila de producción por producto (todas comparten
 // registroId), así los dashboards, la disponibilidad y la utilidad del mes siguen leyendo el mismo formato.
-function openProduccionModal(groupKey){
+function openProduccionModal(groupKey, defaultEtapa){
   const list = getPlantaList('produccion');
   const lineasGrupo = (typeof groupKey === 'string')
     ? list.map((it, i) => ({it, i})).filter(o => produccionGrupoKey(o.it, o.i) === groupKey)
@@ -6624,7 +6643,8 @@ function openProduccionModal(groupKey){
   const opcionesPara = (etapa) => SERVICIOS_POR_ETAPA[etapa]
     ? [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))]
     : productos;
-  let etapaActual = normEtapa(record.etapa); // igual que el select: sin registro previo arranca en Taller
+  // Al crear desde un Dashboard de etapa arranca en esa etapa; al editar, en la del registro.
+  let etapaActual = editing ? normEtapa(record.etapa) : normEtapa(defaultEtapa || record.etapa);
   const precioDe = crearResolvedorPrecioServicio();
   const optsHtml = (sel) => {
     let ops = opcionesPara(etapaActual);
@@ -6645,7 +6665,7 @@ function openProduccionModal(groupKey){
     <div class="field"><label>Fecha *</label><input type="date" id="pp_fecha" value="${escapeAttr(record.fecha || hoyStr)}"></div>
     <div class="field"><label>Etapa *</label>
       <select id="pp_etapa">
-        ${ETAPAS_PRODUCCION.map(e => `<option value="${e.key}" ${normEtapa(record.etapa)===e.key?'selected':''}>${escapeHtml(e.label)}</option>`).join('')}
+        ${ETAPAS_PRODUCCION.map(e => `<option value="${e.key}" ${etapaActual===e.key?'selected':''}>${escapeHtml(e.label)}</option>`).join('')}
       </select>
     </div>
     <div class="field"><label>Productos y cantidades *</label>
@@ -6710,6 +6730,7 @@ function openProduccionModal(groupKey){
       await saveAppData(APPDATA);
       overlay.remove();
       renderPlantaModule('produccion');
+      refrescarDashboardsEtapaVisibles();
     });
   }
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
@@ -6762,6 +6783,7 @@ function openProduccionModal(groupKey){
     await saveAppData(APPDATA);
     overlay.remove();
     renderPlantaModule('produccion');
+    refrescarDashboardsEtapaVisibles();
     showToast(editing ? 'Registro actualizado' : `Registro guardado: ${porProducto.size} producto${porProducto.size>1?'s':''}`);
   });
 }
@@ -6814,7 +6836,7 @@ Object.keys(PLANTA_MODULES).forEach(initPlantaModule);
       const key = del.dataset.prodDel;
       const list = getPlantaList('produccion');
       for(let i = list.length - 1; i >= 0; i--){ if(produccionGrupoKey(list[i], i) === key) list.splice(i, 1); }
-      saveAppData(APPDATA).then(()=> renderPlantaModule('produccion'));
+      saveAppData(APPDATA).then(()=> { renderPlantaModule('produccion'); refrescarDashboardsEtapaVisibles(); });
     }
   });
 })();
@@ -7521,6 +7543,43 @@ function calcularUtilidadEtapaMes(y, m, etapa, producto){
   return calcularUtilidadEtapa(etapa, `${y}-${mm}-01`, `${y}-${mm}-${ultimo}`, producto);
 }
 
+// Registros individuales (no agregados) de Producción Diaria para una etapa y periodo, agrupados por
+// registro (fecha + etapa guardadas juntas) para poder editarlos/eliminarlos desde el Dashboard de la etapa.
+function registrosProduccionEtapaFiltrados(etapa, desde, hasta, producto){
+  const tD = desde ? parseFechaToTime(desde) : null;
+  const tH = hasta ? parseFechaToTime(hasta) : null;
+  const grupos = new Map();
+  getPlantaList('produccion').forEach((item, idx) => {
+    if(normEtapa(item.etapa) !== etapa) return;
+    const t = parseFechaToTime(item.fecha);
+    if(t === null) return;
+    if(tD !== null && t < tD) return;
+    if(tH !== null && t > tH) return;
+    if(producto && item.producto !== producto) return;
+    const gkey = produccionGrupoKey(item, idx);
+    if(!grupos.has(gkey)) grupos.set(gkey, { key: gkey, fecha: item.fecha, productos: [], cantidad: 0 });
+    const g = grupos.get(gkey);
+    g.productos.push(item.producto || '—');
+    g.cantidad += Number(item.cantidad) || 0;
+  });
+  return [...grupos.values()].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+}
+
+function renderDashEtapaRegistrosTabla(key, desde, hasta, producto){
+  const tbody = document.getElementById('dashE_' + key + '_registrosBody');
+  if(!tbody) return;
+  const lista = registrosProduccionEtapaFiltrados(key, desde, hasta, producto);
+  tbody.innerHTML = lista.length ? lista.map(g => `<tr>
+      <td>${escapeHtml(g.fecha || '—')}</td>
+      <td>${escapeHtml(g.productos.join(', '))}</td>
+      <td class="num">${fmtNum(g.cantidad)}</td>
+      <td class="row-actions no-print">
+        <button class="icon-btn icon-edit" data-dash-prod-edit="${escapeAttr(g.key)}" title="Editar registro">✎</button>
+        <button class="icon-btn icon-delete" data-dash-prod-del="${escapeAttr(g.key)}" title="Eliminar registro completo">🗑</button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:16px 10px;">Sin registros en este periodo. Usa "+ Nuevo registro" para crear el primero.</td></tr>`;
+}
+
 function dashEtapaHtml(e){
   const k = e.key, id = s => 'dashE_' + k + '_' + s;
   const esServ = !!SERVICIOS_POR_ETAPA[k];
@@ -7539,6 +7598,7 @@ function dashEtapaHtml(e){
           <div class="prod-field"><label for="${id('producto')}">${esServ ? 'Servicio' : 'Producto'}</label><select id="${id('producto')}"></select></div>
           <button type="button" class="prod-btn prod-btn-outline" id="${id('limpiar')}">Limpiar filtros</button>
           <button type="button" class="print-btn-modal" id="${id('factura')}" title="Comprobante de servicio del periodo filtrado (ver, imprimir, PDF)">🧾 Comprobante</button>
+          <button type="button" class="global-add-btn" id="${id('nuevo')}" title="Crear un nuevo registro de producción para esta etapa">+ Nuevo registro</button>
         </div>
       </div>
       <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
@@ -7561,6 +7621,17 @@ function dashEtapaHtml(e){
       </div>
       <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y se descuenta como costo; si está en $0, defínelo allí. El precio de venta y el costo variable salen de Producción → Productos (costeo). Los costos fijos se prorratean según las unidades de la etapa.
         Usa "Mes" para un mes completo o "Desde / Hasta" para un rango de fechas (si llenas fechas, se ignora el mes).</div>
+      <div class="prod-table-wrap" style="margin-top:18px;">
+        <div class="page-card-header" style="margin-bottom:8px;">
+          <div><h3 style="margin:0;font-size:14px;">Registros de producción del periodo</h3>
+            <div class="sub">Cada fila es un registro guardado en Producción Diaria (con esta etapa). Edítalo o elimínalo aunque ya esté guardado.</div>
+          </div>
+        </div>
+        <table class="prod-table">
+          <thead><tr><th>Fecha</th><th>Producto(s)</th><th class="num">Cantidad</th><th></th></tr></thead>
+          <tbody id="${id('registrosBody')}"></tbody>
+        </table>
+      </div>
     </div></div>`;
 }
 
@@ -7581,20 +7652,24 @@ function renderDashEtapa(key){
   const desdeIn = q('desde').value, hastaIn = q('hasta').value;
   const rango = !!(desdeIn || hastaIn);
   if(!rango && !q('mes').value) q('mes').value = currentMonthValue();
-  let d, ancla, periodoTxt;
+  let d, ancla, periodoTxt, regDesde, regHasta;
   if(rango){
     d = calcularUtilidadEtapa(key, desdeIn, hastaIn, producto);
     const ref = (hastaIn || desdeIn).slice(0, 7).split('-').map(Number);
     ancla = { y: ref[0], m: ref[1] };
     periodoTxt = 'Periodo: ' + (desdeIn ? 'desde ' + desdeIn : 'desde el inicio') + (hastaIn ? ' hasta ' + hastaIn : ' hasta hoy');
+    regDesde = desdeIn || null; regHasta = hastaIn || null;
   }else{
     const [y, m] = q('mes').value.split('-').map(Number);
     d = calcularUtilidadEtapaMes(y, m, key, producto);
     ancla = { y, m };
     periodoTxt = 'Periodo: ' + new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month:'long', year:'numeric' });
+    const mm = String(m).padStart(2,'0'), ultimo = String(new Date(y, m, 0).getDate()).padStart(2,'0');
+    regDesde = `${y}-${mm}-01`; regHasta = `${y}-${mm}-${ultimo}`;
   }
   q('periodo').textContent = periodoTxt + (producto ? ' · ' + producto : '');
   dashEtapaUltimo[key] = { d, periodoTxt, producto, esServ };
+  renderDashEtapaRegistrosTabla(key, regDesde, regHasta, producto);
 
   q('unidades').textContent = fmtNum(d.unidades);
   q('valor').textContent = fmt(d.valor);
@@ -7705,6 +7780,19 @@ function abrirComprobanteEtapaModal(key){
     el('producto').addEventListener('change', rr);
     el('limpiar').addEventListener('click', () => { el('mes').value = ''; el('desde').value = ''; el('hasta').value = ''; el('producto').value = ''; rr(); });
     el('factura').addEventListener('click', () => abrirComprobanteEtapaModal(e.key));
+    el('nuevo').addEventListener('click', () => openProduccionModal(undefined, e.key));
+    el('registrosBody').addEventListener('click', (ev) => {
+      const edBtn = ev.target.closest('[data-dash-prod-edit]');
+      if(edBtn){ openProduccionModal(edBtn.dataset.dashProdEdit); return; }
+      const delBtn = ev.target.closest('[data-dash-prod-del]');
+      if(delBtn){
+        if(!confirm('¿Eliminar este registro de producción completo (todos sus productos)?')) return;
+        const gkey = delBtn.dataset.dashProdDel;
+        const list = getPlantaList('produccion');
+        for(let i = list.length - 1; i >= 0; i--){ if(produccionGrupoKey(list[i], i) === gkey) list.splice(i, 1); }
+        saveAppData(APPDATA).then(()=> { renderPlantaModule('produccion'); refrescarDashboardsEtapaVisibles(); });
+      }
+    });
   });
 })();
 
