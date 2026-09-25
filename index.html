@@ -262,6 +262,9 @@
   }
   .badge.debe{background:var(--gold);color:var(--white);}
   .badge.saldado{background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);}
+  .filtro-etapa-chip{display:inline-flex;align-items:center;gap:4px;background:var(--gold-pale);border:1px solid var(--line-gold);color:var(--gold-dark);border-radius:20px;padding:3px 6px 3px 12px;font-size:12px;font-weight:600;margin-left:10px;vertical-align:middle;}
+  .filtro-etapa-chip button{background:none;border:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:2px 5px;}
+  .filtro-etapa-chip button:hover{opacity:.7;}
   .icon-btn{
     background:none;border:none;cursor:pointer;font-size:13px;line-height:1;
     padding:4px 5px;border-radius:6px;color:var(--ink-soft);flex-shrink:0;
@@ -673,10 +676,11 @@
     .cd-ph-info span b{color:#111827;font-weight:700;}
     .cd-ph-info span.desp{background:#F6EFE1;border-color:#E3D3AC;color:#7C5F2C;}
     .cd-ph-info span.desp b{color:#7C5F2C;}
-    .cd-ph-obs{margin-top:10px;padding:8px 12px;border:1px solid #E3D3AC;background:#F6EFE1 !important;border-radius:8px;}
+    .cd-ph-obs{margin-top:10px;}
     .cd-ph-obs-title{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#7C5F2C;margin-bottom:4px;}
-    .cd-ph-obs-item{font-size:10.5px;color:#111827;line-height:1.5;}
-    .cd-ph-obs-date{font-weight:700;color:#7C5F2C;}
+    .cd-ph-obs-table{width:100%;border-collapse:collapse;border:1px solid #E3D3AC;}
+    .cd-ph-obs-table td{border:1px solid #E3D3AC;padding:5px 8px;font-size:10.5px;color:#111827;line-height:1.45;vertical-align:top;}
+    .cd-ph-obs-date{width:78px;white-space:nowrap;font-weight:700;color:#7C5F2C;background:#F6EFE1 !important;text-align:center;}
 
     /* Tarjetas de totales */
     #mainPanel .totals-row{display:flex;flex-wrap:nowrap;gap:8px;margin:0 0 12px;}
@@ -826,6 +830,11 @@
   .prod-view .prod-stat{border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--cream);}
   .prod-view .prod-stat .num{font-size:22px; color:var(--gold-dark); font-weight:700;}
   .prod-view .prod-stat .lbl{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .prod-view .prod-stat.prod-stat-clickable{cursor:pointer; transition:box-shadow .15s, border-color .15s;}
+  .prod-view .prod-stat.prod-stat-clickable:hover{border-color:var(--gold); box-shadow:var(--shadow-sm);}
+  .prod-view .prod-stat.prod-stat-clickable .lbl{display:flex; align-items:center; gap:4px;}
+  .prod-view .prod-stat.prod-stat-clickable .lbl .chev{font-size:10px; transition:transform .15s; margin-left:2px;}
+  .prod-view .prod-stat.prod-stat-clickable.open .lbl .chev{transform:rotate(180deg);}
 
   .prod-view .prod-table-wrap{overflow-x:auto;}
   .prod-view .prod-chart-box{position:relative; height:260px;}
@@ -983,8 +992,32 @@
           <button class="nav-dropdown-item" data-nav="operaciones" type="button">Operaciones</button>
           <button class="nav-dropdown-item" data-nav="asignaciones" type="button">Asignaciones</button>
           <button class="nav-dropdown-item" data-nav="ordenesproduccion" type="button">Órdenes de Producción</button>
-          <button class="nav-dropdown-item" data-nav="costosfijos" type="button">Costos Fijos</button>
-          <button class="nav-dropdown-item" data-nav="gastosadicionales" type="button">Gastos Adicionales</button>
+          <div class="nav-dropdown-sub-group">
+            <button class="nav-dropdown-sub-toggle" type="button" aria-expanded="false">
+              Centro de Costos
+              <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+            </button>
+            <div class="nav-dropdown-sub">
+              <button class="nav-dropdown-item" data-nav="costosfijos" data-etapa-filtro="Corte" type="button">Corte</button>
+              <button class="nav-dropdown-item" data-nav="costosfijos" data-etapa-filtro="Taller" type="button">Producción (Taller)</button>
+              <button class="nav-dropdown-item" data-nav="costosfijos" data-etapa-filtro="Ultrasonido" type="button">Ultrasonido</button>
+              <button class="nav-dropdown-item" data-nav="costosfijos" data-etapa-filtro="Confortadora" type="button">Confortadora</button>
+              <button class="nav-dropdown-item" data-nav="costosfijos" type="button">General (todas las etapas)</button>
+            </div>
+          </div>
+          <div class="nav-dropdown-sub-group">
+            <button class="nav-dropdown-sub-toggle" type="button" aria-expanded="false">
+              Gastos Adicionales
+              <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+            </button>
+            <div class="nav-dropdown-sub">
+              <button class="nav-dropdown-item" data-nav="gastosadicionales" data-etapa-filtro="Corte" type="button">Corte</button>
+              <button class="nav-dropdown-item" data-nav="gastosadicionales" data-etapa-filtro="Taller" type="button">Producción (Taller)</button>
+              <button class="nav-dropdown-item" data-nav="gastosadicionales" data-etapa-filtro="Ultrasonido" type="button">Ultrasonido</button>
+              <button class="nav-dropdown-item" data-nav="gastosadicionales" data-etapa-filtro="Confortadora" type="button">Confortadora</button>
+              <button class="nav-dropdown-item" data-nav="gastosadicionales" type="button">General (todas las etapas)</button>
+            </div>
+          </div>
           <button class="nav-dropdown-item" data-nav="novedades" type="button">Novedades</button>
           <button class="nav-dropdown-item" data-nav="jornadalaboral" type="button">Jornada Laboral</button>
         </div>
@@ -1444,7 +1477,7 @@
             <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
               <div>
                 <h3 style="margin:0;">Utilidad Real del Mes</h3>
-                <div class="sub" style="margin-top:2px;">Facturación de Producción − Costos Fijos − Costos Variables (Producción × Mes × Producto) − Gastos Adicionales</div>
+                <div class="sub" style="margin-top:2px;">Facturación de Producción − Centro de Costos − Costos Variables (Producción × Mes × Producto) − Gastos Adicionales</div>
               </div>
               <div class="prod-field">
                 <label for="utilMesSelector">Mes</label>
@@ -1453,9 +1486,9 @@
             </div>
             <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
               <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes (Producción)</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesFijos">–</div><div class="lbl">Costos Fijos</div></div>
+              <div class="prod-stat prod-stat-clickable" id="statUtilMesFijos" data-detalle="detalleUtilMesFijos"><div class="num" id="utilMesFijos">–</div><div class="lbl">Centro de Costos <span class="chev">▾</span></div></div>
               <div class="prod-stat"><div class="num" id="utilMesVariables">–</div><div class="lbl">Costos Variables (producción real)</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesGastosAdicionales">–</div><div class="lbl">Gastos Adicionales</div></div>
+              <div class="prod-stat prod-stat-clickable" id="statUtilMesGastos" data-detalle="detalleUtilMesGastos"><div class="num" id="utilMesGastosAdicionales">–</div><div class="lbl">Gastos Adicionales <span class="chev">▾</span></div></div>
               <div class="prod-stat"><div class="num" id="utilMesNeta">–</div><div class="lbl">Utilidad Neta</div></div>
             </div>
             <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
@@ -1470,13 +1503,13 @@
               <div class="prod-stat"><div class="num" id="utilMesCostoUltrasonido">–</div><div class="lbl">Costo variable · Ultrasonido</div></div>
               <div class="prod-stat"><div class="num" id="utilMesCostoConfortadora">–</div><div class="lbl">Costo variable · Confortadora</div></div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
-              <div class="prod-stat"><div class="num" id="utilMesFijosCorte">–</div><div class="lbl">Costos Fijos · Corte</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesFijosTaller">–</div><div class="lbl">Costos Fijos · Taller</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesFijosUltrasonido">–</div><div class="lbl">Costos Fijos · Ultrasonido</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesFijosConfortadora">–</div><div class="lbl">Costos Fijos · Confortadora</div></div>
+            <div class="prod-stat-grid" id="detalleUtilMesFijos" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;display:none;">
+              <div class="prod-stat"><div class="num" id="utilMesFijosCorte">–</div><div class="lbl">Centro de Costos · Corte</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesFijosTaller">–</div><div class="lbl">Centro de Costos · Taller</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesFijosUltrasonido">–</div><div class="lbl">Centro de Costos · Ultrasonido</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesFijosConfortadora">–</div><div class="lbl">Centro de Costos · Confortadora</div></div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
+            <div class="prod-stat-grid" id="detalleUtilMesGastos" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;display:none;">
               <div class="prod-stat"><div class="num" id="utilMesGastosCorte">–</div><div class="lbl">Gastos Adicionales · Corte</div></div>
               <div class="prod-stat"><div class="num" id="utilMesGastosTaller">–</div><div class="lbl">Gastos Adicionales · Taller</div></div>
               <div class="prod-stat"><div class="num" id="utilMesGastosUltrasonido">–</div><div class="lbl">Gastos Adicionales · Ultrasonido</div></div>
@@ -1548,7 +1581,7 @@
           </div>
 
           <div class="prod-card col-6">
-            <h3>Costos Fijos por Categoría (mensual)</h3>
+            <h3>Centro de Costos por Categoría (mensual)</h3>
             <div class="prod-chart-box"><canvas id="utilChartFijos"></canvas></div>
           </div>
 
@@ -1727,7 +1760,7 @@
           </div>
           <div class="prod-card col-6" style="border:1px solid var(--line);border-radius:10px;">
             <h3 style="margin:0 0 4px;">Ultrasonido</h3>
-            <div class="prod-stat" style="margin:10px 0 4px;"><div class="num" id="prodEtapaStatUltrasonido">–</div><div class="lbl">Unidades fabricadas en Ultrasonido</div></div>
+            <div class="prod-stat" style="margin:10px 0 4px;"><div class="num" id="prodEtapaStatUltrasonido">–</div><div class="lbl">Metros fabricados en Ultrasonido</div></div>
             <div class="prod-chart-box"><canvas id="prodEtapaUltrasonidoPieChart"></canvas></div>
           </div>
           <div class="prod-card col-6" style="border:1px solid var(--line);border-radius:10px;">
@@ -1769,7 +1802,7 @@
         </div>
         <div class="kpi-strip" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;padding:0;">
           <div class="kpi-card"><div class="lab">Registros (según filtros)</div><b class="v" id="produccionKpiRegistros">0</b></div>
-          <div class="kpi-card"><div class="lab">Unidades fabricadas</div><b class="v" id="produccionKpiUnidades">0</b></div>
+          <div class="kpi-card"><div class="lab" id="produccionKpiUnidadesLabel">Unidades fabricadas</div><b class="v" id="produccionKpiUnidades">0</b></div>
           <div class="kpi-card"><div class="lab">Productos distintos</div><b class="v" id="produccionKpiProductos">0</b></div>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
@@ -1778,7 +1811,7 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Fecha</th><th>Etapa</th><th>Registro</th><th class="num">Total unidades</th><th class="num">Valor del servicio</th><th>Observaciones</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Etapa</th><th>Registro</th><th class="num" id="produccionColTotalUnidadesLabel">Total unidades</th><th class="num">Valor del servicio</th><th>Observaciones</th><th></th></tr></thead>
             <tbody id="produccionBody"></tbody>
           </table>
         </div>
@@ -1789,18 +1822,18 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Fecha</th><th>Etapa</th><th class="num">Unidades</th><th class="num">Valor del servicio</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Etapa</th><th class="num" id="produccionServicioDiaUnidadesLabel">Unidades</th><th class="num">Valor del servicio</th></tr></thead>
             <tbody id="produccionServicioDiaBody"></tbody>
           </table>
         </div>
       </div>
       <div class="page-card" style="margin-top:16px;">
         <div class="page-card-header">
-          <div><h2>Unidades fabricadas por producto</h2><div class="sub">Suma de unidades producidas por producto, respetando el rango de fechas, la etapa y el producto filtrados arriba.</div></div>
+          <div><h2 id="produccionUnidadesPorProductoTitulo">Unidades fabricadas por producto</h2><div class="sub">Suma de unidades producidas por producto, respetando el rango de fechas, la etapa y el producto filtrados arriba.</div></div>
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Producto</th><th class="num">Unidades fabricadas</th><th class="num">Registros</th></tr></thead>
+            <thead><tr><th>Producto</th><th class="num" id="produccionUnidadesPorProductoColLabel">Unidades fabricadas</th><th class="num">Registros</th></tr></thead>
             <tbody id="produccionTotalesPorProductoBody"></tbody>
           </table>
         </div>
@@ -1848,7 +1881,7 @@
     <div class="page-section">
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>Costos Fijos</h2><div class="sub">Costos estructurales. Cada uno se asigna a una etapa (Corte, Taller, Ultrasonido o Confortadora) y así queda separado en el dashboard de esa etapa.</div></div>
+          <div><h2>Centro de Costos <span id="costosfijosFiltroChip" style="display:none;"></span></h2><div class="sub">Costos estructurales. Cada uno se asigna a una etapa (Corte, Taller, Ultrasonido o Confortadora) y así queda separado en el dashboard de esa etapa.</div></div>
           <button class="global-add-btn no-print" id="btnNuevoCostoFijo">+ Nuevo costo fijo</button>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
@@ -1869,7 +1902,7 @@
     <div class="page-section">
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>Gastos Adicionales</h2><div class="sub">Gastos extra que no son costo fijo ni costo variable de producción (ej. reparaciones, imprevistos, compras puntuales). Cada gasto se asigna a una etapa específica y se descuenta del mes en que ocurrió, tanto en el Dashboard de Costos y Utilidades como en el Dashboard de esa etapa.</div></div>
+          <div><h2>Gastos Adicionales <span id="gastosadicionalesFiltroChip" style="display:none;"></span></h2><div class="sub">Gastos extra que no son costo fijo ni costo variable de producción (ej. reparaciones, imprevistos, compras puntuales). Cada gasto se asigna a una etapa específica y se descuenta del mes en que ocurrió, tanto en el Dashboard de Costos y Utilidades como en el Dashboard de esa etapa.</div></div>
           <button class="global-add-btn no-print" id="btnNuevoGastoAdicional">+ Nuevo gasto adicional</button>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
@@ -2598,7 +2631,9 @@ function renderMain(){
       ${dist.observaciones.length ? `
       <div class="cd-ph-obs">
         <div class="cd-ph-obs-title">Observaciones del cliente</div>
-        ${dist.observaciones.map(o => `<div class="cd-ph-obs-item">${o.fecha ? `<span class="cd-ph-obs-date">${formatObsFecha(o.fecha)}:</span> ` : ''}${escapeHtml(o.texto)}</div>`).join('')}
+        <table class="cd-ph-obs-table"><tbody>
+          ${dist.observaciones.map(o => `<tr><td class="cd-ph-obs-date">${o.fecha ? formatObsFecha(o.fecha) : '—'}</td><td>${escapeHtml(o.texto)}</td></tr>`).join('')}
+        </tbody></table>
       </div>` : ''}
     </div>
     <div class="dist-header">
@@ -2871,7 +2906,9 @@ function switchView(viewName){
     if(el) el.style.display = (name === viewName) ? '' : 'none';
   });
   document.querySelectorAll('.nav-dropdown-item').forEach(item=>{
-    item.classList.toggle('active', item.dataset.nav === viewName);
+    const itemEtapa = item.dataset.etapaFiltro || null;
+    const filtroActual = plantaEtapaFiltro[item.dataset.nav] || null;
+    item.classList.toggle('active', item.dataset.nav === viewName && itemEtapa === filtroActual);
   });
   document.querySelectorAll('.nav-dropdown').forEach(dd=>{
     dd.classList.toggle('has-active', !!dd.querySelector('.nav-dropdown-item.active'));
@@ -2889,6 +2926,7 @@ function switchView(viewName){
   if(viewName === 'produccion'){ initProduccionEtapaDashboard(); initProduccionFiltros(); }
   if(viewName === 'facturas'){ renderFacturasView(); }
   if(viewName === 'serviciosmaquila') asegurarServiciosUltrasonido();
+  if(viewName === 'costosfijos' || viewName === 'gastosadicionales') actualizarFiltroEtapaChip(viewName);
   if(viewName.startsWith('dash')){ const et = ETAPAS_PRODUCCION.find(e => 'dash' + e.key.toLowerCase() === viewName); if(et) renderDashEtapa(et.key); }
   if(typeof PLANTA_MODULES !== 'undefined' && PLANTA_MODULES[viewName]) renderPlantaModule(viewName);
 }
@@ -2918,9 +2956,29 @@ document.querySelectorAll('.nav-dropdown-btn').forEach(btn=>{
 });
 document.querySelectorAll('.nav-dropdown-item').forEach(item=>{
   item.addEventListener('click', ()=>{
-    switchView(item.dataset.nav);
+    const nav = item.dataset.nav;
+    if(nav === 'costosfijos' || nav === 'gastosadicionales') plantaEtapaFiltro[nav] = item.dataset.etapaFiltro || null;
+    switchView(nav);
     closeAllNavDropdowns();
   });
+});
+// Chip "Corte / Producción (Taller) / Ultrasonido / Confortadora ✕" que aparece junto al título de
+// Costos Fijos o Gastos Adicionales cuando se entró filtrando por una etapa desde el submenú del nav.
+function actualizarFiltroEtapaChip(viewName){
+  const chip = document.getElementById(viewName + 'FiltroChip');
+  if(!chip) return;
+  const etapa = plantaEtapaFiltro[viewName];
+  if(!etapa){ chip.style.display = 'none'; chip.innerHTML = ''; return; }
+  chip.className = 'filtro-etapa-chip';
+  chip.style.display = 'inline-flex';
+  chip.innerHTML = `${escapeHtml(DASH_ETAPA_LABEL[etapa] || etapa)} <button type="button" data-quitar-filtro-etapa="${viewName}" title="Quitar filtro">✕</button>`;
+}
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-quitar-filtro-etapa]');
+  if(!btn) return;
+  const vn = btn.dataset.quitarFiltroEtapa;
+  plantaEtapaFiltro[vn] = null;
+  switchView(vn);
 });
 document.addEventListener('click', (e)=>{
   if(!e.target.closest('.nav-dropdown')) closeAllNavDropdowns();
@@ -5694,6 +5752,16 @@ const ETAPAS_PRODUCCION = [
 ];
 function normEtapa(e){ return ETAPAS_PRODUCCION.some(x => x.key === e) ? e : 'Taller'; }
 
+// Ultrasonido mide su producción en metros (no en "unidades" como las demás etapas): estas
+// etiquetas se usan en el Dashboard de la etapa, el comprobante y Producción Diaria (cuando
+// está filtrada solo a esa etapa) para que el texto diga "Metros" en vez de "Unidades".
+const ETAPA_UNIDAD_LABEL = { Corte:'Unidades', Taller:'Unidades', Ultrasonido:'Metros', Confortadora:'Unidades' };
+function unidadLabelEtapa(etapa){ return ETAPA_UNIDAD_LABEL[etapa] || 'Unidades'; }
+
+// Filtro por etapa activo (si el usuario entró desde el submenú "Costos Fijos" / "Gastos Adicionales"
+// eligiendo una etapa puntual en vez de "General"); null = sin filtro, muestra todas las etapas.
+const plantaEtapaFiltro = { costosfijos: null, gastosadicionales: null };
+
 const PLANTA_MODULES = {
   despachos:{
     dataKey:'despachos', bodyId:'despachosBody', searchId:'despachosSearch', addBtnId:'btnNuevoDespacho',
@@ -5905,6 +5973,7 @@ const PLANTA_MODULES = {
   costosfijos:{
     dataKey:'plantaCostosFijos', bodyId:'costosfijosBody', searchId:'costosfijosSearch', addBtnId:'btnNuevoCostoFijo',
     title:'costo fijo', titleCap:'Costo Fijo',
+    filterFn: item => !plantaEtapaFiltro.costosfijos || item.etapa === plantaEtapaFiltro.costosfijos,
     fields:[
       {key:'concepto', label:'Concepto', type:'text', required:true, placeholder:'Ej. Arriendo de planta'},
       {key:'categoria', label:'Categoría', type:'select', options:[{value:'Arriendo',label:'Arriendo'},{value:'Servicios',label:'Servicios públicos'},{value:'Nómina administrativa',label:'Nómina administrativa'},{value:'Seguros',label:'Seguros'},{value:'Otro',label:'Otro'}]},
@@ -5923,6 +5992,7 @@ const PLANTA_MODULES = {
   gastosadicionales:{
     dataKey:'plantaGastosAdicionales', bodyId:'gastosadicionalesBody', searchId:'gastosadicionalesSearch', addBtnId:'btnNuevoGastoAdicional',
     title:'gasto adicional', titleCap:'Gasto Adicional',
+    filterFn: item => !plantaEtapaFiltro.gastosadicionales || item.etapa === plantaEtapaFiltro.gastosadicionales,
     fields:[
       {key:'concepto', label:'Concepto', type:'text', required:true, placeholder:'Ej. Reparación de máquina'},
       {key:'categoria', label:'Categoría', type:'select', options:[{value:'Reparaciones',label:'Reparaciones'},{value:'Imprevistos',label:'Imprevistos'},{value:'Compra puntual',label:'Compra puntual'},{value:'Transporte',label:'Transporte'},{value:'Otro',label:'Otro'}]},
@@ -6034,11 +6104,28 @@ function renderPlantaModule(moduleKey){
   }
   if(moduleKey === 'produccion'){
     actualizarProduccionProductoFiltroOptions();
+    actualizarEtiquetasUnidadProduccion();
     renderProduccionServicioDia();
     renderProduccionEtapaDashboard();
     renderProduccionTotales();
     renderProduccionDisponibilidad();
   }
+}
+
+// Cuando Producción Diaria está filtrada a una sola etapa (botones "Solo Corte/Taller/Ultrasonido/
+// Confortadora"), los títulos y encabezados que dicen "Unidades" pasan a decir "Metros" si esa etapa
+// las mide así (por ahora solo Ultrasonido). Con el filtro en "Todos" se queda en "Unidades" porque
+// mezcla etapas con distinta unidad.
+function actualizarEtiquetasUnidadProduccion(){
+  const etapaFiltrada = produccionEtapaFiltro !== 'todos' ? produccionEtapaFiltro : null;
+  const label = etapaFiltrada ? unidadLabelEtapa(etapaFiltrada) : 'Unidades';
+  const labelFabricadas = label === 'Metros' ? 'Metros fabricados' : 'Unidades fabricadas';
+  const set = (id, text) => { const el = document.getElementById(id); if(el) el.textContent = text; };
+  set('produccionKpiUnidadesLabel', labelFabricadas);
+  set('produccionColTotalUnidadesLabel', 'Total ' + label.toLowerCase());
+  set('produccionServicioDiaUnidadesLabel', label);
+  set('produccionUnidadesPorProductoTitulo', labelFabricadas + ' por producto');
+  set('produccionUnidadesPorProductoColLabel', labelFabricadas);
 }
 
 // ---------- Producción Diaria: registros unificados (tipo factura) con desglose ----------
@@ -6601,6 +6688,14 @@ function openPlantaModal(moduleKey, idx){
   const list = getPlantaList(moduleKey);
   const editing = (idx !== undefined && idx !== null && list[idx]);
   const record = editing ? list[idx] : {};
+  // Guardamos el id (no solo la referencia al objeto) porque mientras el modal está abierto
+  // puede llegar una sincronización de Firebase que reemplaza APPDATA entero por uno nuevo:
+  // ahí "record" queda apuntando a un objeto "viejo" que ya no existe en la lista actual, y
+  // buscarlo por referencia (indexOf) fallaría, duplicando el registro en vez de reemplazarlo.
+  const recordId = editing ? record.id : null;
+  const findFreshIndex = (freshList) => recordId != null
+    ? freshList.findIndex(x => x && x.id === recordId)
+    : freshList.indexOf(record);
   const overlay = openModal(`
     <h3>${editing ? 'Editar' : 'Nuevo'} ${mod.titleCap}</h3>
     ${mod.fields.map(f => buildPlantaFieldHtml(f, record[f.key])).join('')}
@@ -6633,8 +6728,8 @@ function openPlantaModal(moduleKey, idx){
       if(!confirm(`¿Eliminar este ${mod.title}?`)) return;
       if(typeof mod.onDelete === 'function') mod.onDelete(record);
       const freshList = getPlantaList(moduleKey);
-      const i = freshList.indexOf(record);
-      if(i > -1) freshList.splice(i, 1); else freshList.splice(idx, 1);
+      const i = findFreshIndex(freshList);
+      if(i > -1) freshList.splice(i, 1);
       await saveAppData(APPDATA);
       overlay.remove();
       renderPlantaModule(moduleKey);
@@ -6658,7 +6753,7 @@ function openPlantaModal(moduleKey, idx){
     // el registro nuevo se pierda por estar apuntando a un arreglo ya viejo/reemplazado.
     const freshList = getPlantaList(moduleKey);
     if(editing){
-      const i = freshList.indexOf(record);
+      const i = findFreshIndex(freshList);
       if(i > -1) freshList[i] = newRecord; else freshList.push(newRecord);
     } else {
       freshList.push(newRecord);
@@ -7474,7 +7569,7 @@ function renderUtilMesResumenChart(facturacionMes, costosFijosMes, costosVariabl
   utilMesResumenChartInst = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Facturación', 'Costos Fijos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad Neta'],
+      labels: ['Facturación', 'Centro de Costos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad Neta'],
       datasets: [{
         data: [facturacionMes, costosFijosMes, costosVariablesMes, gastosAdicionalesMes, utilidadNeta],
         backgroundColor: ['#4C7A52', '#B65B2E', '#9E7B3B', '#7B4B9E', utilidadNeta >= 0 ? '#4C7A52' : '#B65B2E'],
@@ -7572,6 +7667,18 @@ function renderUtilPieCostosFijos(){
     options: { plugins:{ legend:{ position:'bottom' } } }
   });
 }
+
+// Tarjetas "Costos Fijos" y "Gastos Adicionales" del Dashboard de Costos y Utilidades:
+// al hacer clic despliegan hacia abajo su propio desglose por etapa (Corte, Taller, Ultrasonido, Confortadora).
+document.querySelectorAll('.prod-stat-clickable[data-detalle]').forEach(card => {
+  card.addEventListener('click', () => {
+    const detalle = document.getElementById(card.dataset.detalle);
+    if(!detalle) return;
+    const abrir = detalle.style.display === 'none';
+    detalle.style.display = abrir ? '' : 'none';
+    card.classList.toggle('open', abrir);
+  });
+});
 
 // Barra superior desplegable: muestra/oculta el resumen y los filtros para mantener el topbar compacto
 document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
@@ -7722,11 +7829,11 @@ function dashEtapaHtml(e){
         </div>
       </div>
       <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
-        <div class="prod-stat"><div class="num" id="${id('unidades')}">–</div><div class="lbl">Unidades</div></div>
+        <div class="prod-stat"><div class="num" id="${id('unidades')}">–</div><div class="lbl">${escapeHtml(unidadLabelEtapa(k))}</div></div>
         <div class="prod-stat"><div class="num" id="${id('cobro')}">–</div><div class="lbl">Cobro del servicio</div></div>
-        <div class="prod-stat"><div class="num" id="${id('fijos')}">–</div><div class="lbl">Costos fijos de la etapa</div></div>
+        <div class="prod-stat"><div class="num" id="${id('fijos')}">–</div><div class="lbl">Costos fijos</div></div>
         <div class="prod-stat"><div class="num" id="${id('var')}">–</div><div class="lbl">Costos variables</div></div>
-        <div class="prod-stat"><div class="num" id="${id('gastos')}">–</div><div class="lbl">Gastos adicionales de la etapa</div></div>
+        <div class="prod-stat"><div class="num" id="${id('gastos')}">–</div><div class="lbl">Gastos adicionales</div></div>
         <div class="prod-stat"><div class="num" id="${id('neta')}">–</div><div class="lbl">Utilidad</div></div>
       </div>
       <div class="prod-grid" style="margin-top:14px;">
@@ -7739,7 +7846,7 @@ function dashEtapaHtml(e){
           <tbody></tbody>
         </table>
       </div>
-      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y es el ingreso de la etapa; si está en $0, defínelo allí. La utilidad es cobro del servicio − costos fijos − costos variables − gastos adicionales. El costo variable sale de Producción → Productos (costeo). Los costos fijos son los que asignaste a esta etapa en Costos Fijos, prorrateados por los días del periodo consultado. Los gastos adicionales son los que asignaste a esta etapa en Gastos Adicionales y caen dentro del periodo consultado (por su fecha).
+      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y es el ingreso de la etapa; si está en $0, defínelo allí. La utilidad es cobro del servicio − costos fijos − costos variables − gastos adicionales. El costo variable sale de Producción → Productos (costeo). Los costos fijos son los que asignaste a esta etapa en Centro de Costos, prorrateados por los días del periodo consultado. Los gastos adicionales son los que asignaste a esta etapa en Gastos Adicionales y caen dentro del periodo consultado (por su fecha).
         Usa "Mes" para un mes completo o "Desde / Hasta" para un rango de fechas (si llenas fechas, se ignora el mes).</div>
       <div class="prod-table-wrap" style="margin-top:18px;">
         <div class="page-card-header" style="margin-bottom:8px;">
@@ -7811,7 +7918,7 @@ function renderDashEtapa(key){
   if(ch.resumen) ch.resumen.destroy();
   ch.resumen = new Chart(q('chartResumen'), {
     type: 'bar',
-    data: { labels: ['Cobro servicio', 'Costos Fijos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad'],
+    data: { labels: ['Cobro servicio', 'Centro de Costos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad'],
       datasets: [{ data: [d.cobro, d.fijos, d.costoVar, d.gastos, d.utilidad], backgroundColor: ['#6B8CAE', '#B65B2E', '#9E7B3B', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'], borderRadius: 4 }] },
     options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
   });
@@ -7861,7 +7968,7 @@ function abrirComprobanteEtapaModal(key){
         </table>
       </div>
       <div class="factura-doc-totales">
-        <div><span>Unidades totales</span><b>${fmtNum(d.unidades)}</b></div>
+        <div><span>${escapeHtml(unidadLabelEtapa(key))} totales</span><b>${fmtNum(d.unidades)}</b></div>
         <div class="factura-doc-total-final"><span>TOTAL DEL SERVICIO</span><b>${fmt(d.cobro)}</b></div>
       </div>
       <div class="modal-actions no-print">
