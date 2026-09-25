@@ -2660,7 +2660,7 @@ function renderMain(){
       <div class="cd-ph-obs">
         <div class="cd-ph-obs-title">Observaciones del cliente</div>
         <table class="cd-ph-obs-table"><tbody>
-          ${dist.observaciones.map(o => `<tr><td class="cd-ph-obs-date">${o.fecha ? formatObsFecha(o.fecha) : '—'}</td><td>${escapeHtml(o.texto)}</td></tr>`).join('')}
+          ${dist.observaciones.map(o => `<tr><td>${escapeHtml(o.texto)}</td></tr>`).join('')}
         </tbody></table>
       </div>` : ''}
     </div>
@@ -7465,7 +7465,9 @@ function calcularUtilidadMes(y, m, tallerFiltro){
     const agg = sumaEtapa(prodPorProductoEtapa[e.key]);
     const fijos = costeoFijosMensuales(e.key);
     const gastos = costeoGastosAdicionalesMes(y, m, e.key);
-    porEtapa[e.key] = { produccion: produccionPorEtapa[e.key], costo: agg.costo, valor: agg.valor, fijos, gastos, utilidad: agg.valor - agg.costo - fijos - gastos };
+    // Ultrasonido y Confortadora no manejan costos variables propios (igual que en los dashboards por etapa).
+    const costoEtapa = (e.key === 'Ultrasonido' || e.key === 'Confortadora') ? 0 : agg.costo;
+    porEtapa[e.key] = { produccion: produccionPorEtapa[e.key], costo: costoEtapa, valor: agg.valor, fijos, gastos, utilidad: agg.valor - costoEtapa - fijos - gastos };
   });
 
   // Facturación del mes = facturación de PRODUCCIÓN (lo producido × precio de venta), ya no las ventas/pedidos.
@@ -7785,8 +7787,8 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
       precio = c.precioVenta || 0; costoUnit = c.total || 0;
     }
     const precioServicio = precioServ(etapa, nombre);
-    // Corte no maneja costos variables propios: no se calculan ni se suman a nada (ni al total ni a la utilidad).
-    if(etapa === 'Corte'){ costoUnit = 0; }
+    // Corte, Ultrasonido y Confortadora no manejan costos variables propios: no se calculan ni se suman a nada (ni al total ni a la utilidad).
+    if(etapa === 'Corte' || etapa === 'Ultrasonido' || etapa === 'Confortadora'){ costoUnit = 0; }
     return { nombre, cantidad, precio, costoUnit, valor: cantidad * precio, costoTotal: cantidad * costoUnit, precioServicio, cobro: cantidad * precioServicio };
   }).sort((a, b) => (b.cobro + b.valor) - (a.cobro + a.valor));
   const valor = filas.reduce((a, f) => a + f.valor, 0);
@@ -7866,7 +7868,7 @@ function dashEtapaHtml(e){
         <div class="prod-stat"><div class="num" id="${id('unidades')}">–</div><div class="lbl">${escapeHtml(unidadLabelEtapa(k))}</div></div>
         <div class="prod-stat"><div class="num" id="${id('cobro')}">–</div><div class="lbl">Cobro del servicio</div></div>
         <div class="prod-stat"><div class="num" id="${id('fijos')}">–</div><div class="lbl">Costos fijos</div></div>
-        ${k !== 'Corte' ? `<div class="prod-stat"><div class="num" id="${id('var')}">–</div><div class="lbl">Costos variables</div></div>` : ''}
+        ${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? `<div class="prod-stat"><div class="num" id="${id('var')}">–</div><div class="lbl">Costos variables</div></div>` : ''}
         <div class="prod-stat"><div class="num" id="${id('gastos')}">–</div><div class="lbl">Gastos adicionales</div></div>
         <div class="prod-stat"><div class="num" id="${id('neta')}">–</div><div class="lbl">Utilidad</div></div>
       </div>
@@ -7882,11 +7884,11 @@ function dashEtapaHtml(e){
           </select>
         </div>
         <table class="prod-table" id="${id('tabla')}">
-          <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th><th>Precio de venta</th><th>Valor</th>${k !== 'Corte' ? '<th>Costo variable unit.</th><th>Costo variable total</th>' : ''}<th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
+          <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th><th>Precio de venta</th><th>Valor</th>${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? '<th>Costo variable unit.</th><th>Costo variable total</th>' : ''}<th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y es el ingreso de la etapa; si está en $0, defínelo allí. La utilidad es cobro del servicio − costos fijos ${k !== 'Corte' ? '− costos variables ' : ''}− gastos adicionales.${k !== 'Corte' ? ' El costo variable sale de Producción → Productos (costeo).' : ' Corte no maneja costos variables propios.'} Los costos fijos son los que asignaste a esta etapa en Centro de Costos, prorrateados por los días del periodo consultado. Los gastos adicionales son los que asignaste a esta etapa en Gastos Adicionales y caen dentro del periodo consultado (por su fecha).
+      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y es el ingreso de la etapa; si está en $0, defínelo allí. La utilidad es cobro del servicio − costos fijos ${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? '− costos variables ' : ''}− gastos adicionales.${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? ' El costo variable sale de Producción → Productos (costeo).' : ' Esta etapa no maneja costos variables propios.'} Los costos fijos son los que asignaste a esta etapa en Centro de Costos, prorrateados por los días del periodo consultado. Los gastos adicionales son los que asignaste a esta etapa en Gastos Adicionales y caen dentro del periodo consultado (por su fecha).
         Usa "Mes" para un mes completo o "Desde / Hasta" para un rango de fechas (si llenas fechas, se ignora el mes).</div>
       <div class="prod-table-wrap" style="margin-top:18px;">
         <div class="page-card-header" style="margin-bottom:8px;">
@@ -7938,11 +7940,11 @@ function renderDashEtapa(key){
   dashEtapaUltimo[key] = { d, periodoTxt, producto, esServ };
   renderDashEtapaRegistrosTabla(key, regDesde, regHasta, producto);
 
-  const esCorte = key === 'Corte';
+  const sinCostoVariable = key === 'Corte' || key === 'Ultrasonido' || key === 'Confortadora';
   q('unidades').textContent = fmtNum(d.unidades);
   q('cobro').textContent = fmt(d.cobro);
   q('fijos').textContent = fmt(d.fijos);
-  if(!esCorte) q('var').textContent = fmt(d.costoVar);
+  if(!sinCostoVariable) q('var').textContent = fmt(d.costoVar);
   q('gastos').textContent = fmt(d.gastos);
   const neta = q('neta');
   neta.textContent = fmt(d.utilidad);
@@ -7950,19 +7952,19 @@ function renderDashEtapa(key){
   const ordenSel = q('orden');
   const filasTabla = (ordenSel && ordenSel.value === 'asc') ? [...d.filas].reverse() : d.filas;
   const tbody = q('tabla').querySelector('tbody');
-  const colspan = esCorte ? 7 : 9;
+  const colspan = sinCostoVariable ? 7 : 9;
   tbody.innerHTML = filasTabla.length ? filasTabla.map(f => `<tr>
       <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td><td>${f.precio ? fmt(f.precio) : '—'}</td>
-      <td>${f.valor ? fmt(f.valor) : '—'}</td>${esCorte ? '' : `<td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>`}
+      <td>${f.valor ? fmt(f.valor) : '—'}</td>${sinCostoVariable ? '' : `<td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>`}
       <td><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="dashboard" data-etapa="${key}" data-producto="${escapeAttr(f.nombre)}" value="${f.precioServicio || 0}"></td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
       <td>${fmt(f.cobro - f.costoTotal)}</td></tr>`).join('')
     : `<tr><td colspan="${colspan}" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
   if(typeof Chart === 'undefined') return;
   const ch = dashEtapaCharts[key] = dashEtapaCharts[key] || {};
   if(ch.resumen) ch.resumen.destroy();
-  const resumenLabels = esCorte ? ['Cobro servicio', 'Centro de Costos', 'Gastos Adicionales', 'Utilidad'] : ['Cobro servicio', 'Centro de Costos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad'];
-  const resumenData = esCorte ? [d.cobro, d.fijos, d.gastos, d.utilidad] : [d.cobro, d.fijos, d.costoVar, d.gastos, d.utilidad];
-  const resumenColores = esCorte ? ['#6B8CAE', '#B65B2E', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'] : ['#6B8CAE', '#B65B2E', '#9E7B3B', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'];
+  const resumenLabels = sinCostoVariable ? ['Cobro servicio', 'Centro de Costos', 'Gastos Adicionales', 'Utilidad'] : ['Cobro servicio', 'Centro de Costos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad'];
+  const resumenData = sinCostoVariable ? [d.cobro, d.fijos, d.gastos, d.utilidad] : [d.cobro, d.fijos, d.costoVar, d.gastos, d.utilidad];
+  const resumenColores = sinCostoVariable ? ['#6B8CAE', '#B65B2E', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'] : ['#6B8CAE', '#B65B2E', '#9E7B3B', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'];
   ch.resumen = new Chart(q('chartResumen'), {
     type: 'bar',
     data: { labels: resumenLabels,
@@ -8171,6 +8173,20 @@ function enhanceSearchableSelect(selectEl){
 function enhanceAllSearchableSelects(root){
   (root || document).querySelectorAll('select').forEach(enhanceSearchableSelect);
 }
+
+// ================= Scroll horizontal con la rueda del mouse en tablas anchas =================
+// Antes, para moverse a la izquierda/derecha en una tabla ancha había que desplazarse hacia abajo
+// hasta encontrar su barra de scroll horizontal (al fondo del contenedor) y arrastrarla. Con esto,
+// apenas el mouse está sobre una tabla con scroll horizontal, la rueda del mouse la mueve a los
+// lados directamente, sin importar en qué parte de la tabla o de la página se esté.
+document.addEventListener('wheel', (e) => {
+  const wrap = e.target.closest('.table-scroll, .prod-table-wrap');
+  if(!wrap) return;
+  if(wrap.scrollWidth <= wrap.clientWidth) return; // esta tabla no tiene overflow horizontal, no hacer nada especial
+  if(Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // gesto ya horizontal (trackpad), dejar que el navegador lo maneje
+  wrap.scrollLeft += e.deltaY;
+  e.preventDefault();
+}, { passive: false });
 // Activa la búsqueda automáticamente en cualquier <select> nuevo que aparezca después (modales,
 // formularios de "planta", dashboards por etapa, etc.), sin tener que modificar cada función que
 // los genera.
