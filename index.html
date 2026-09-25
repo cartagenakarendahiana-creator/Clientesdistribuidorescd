@@ -984,6 +984,7 @@
           <button class="nav-dropdown-item" data-nav="asignaciones" type="button">Asignaciones</button>
           <button class="nav-dropdown-item" data-nav="ordenesproduccion" type="button">Órdenes de Producción</button>
           <button class="nav-dropdown-item" data-nav="costosfijos" type="button">Costos Fijos</button>
+          <button class="nav-dropdown-item" data-nav="gastosadicionales" type="button">Gastos Adicionales</button>
           <button class="nav-dropdown-item" data-nav="novedades" type="button">Novedades</button>
           <button class="nav-dropdown-item" data-nav="jornadalaboral" type="button">Jornada Laboral</button>
         </div>
@@ -1442,17 +1443,18 @@
             <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
               <div>
                 <h3 style="margin:0;">Utilidad Real del Mes</h3>
-                <div class="sub" style="margin-top:2px;">Facturación de Producción − Costos Fijos − Costos Variables (Producción × Mes × Producto)</div>
+                <div class="sub" style="margin-top:2px;">Facturación de Producción − Costos Fijos − Costos Variables (Producción × Mes × Producto) − Gastos Adicionales</div>
               </div>
               <div class="prod-field">
                 <label for="utilMesSelector">Mes</label>
                 <input type="month" id="utilMesSelector">
               </div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-top:10px;">
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
               <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes (Producción)</div></div>
               <div class="prod-stat"><div class="num" id="utilMesFijos">–</div><div class="lbl">Costos Fijos</div></div>
               <div class="prod-stat"><div class="num" id="utilMesVariables">–</div><div class="lbl">Costos Variables (producción real)</div></div>
+              <div class="prod-stat"><div class="num" id="utilMesGastosAdicionales">–</div><div class="lbl">Gastos Adicionales</div></div>
               <div class="prod-stat"><div class="num" id="utilMesNeta">–</div><div class="lbl">Utilidad Neta</div></div>
             </div>
             <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
@@ -1492,7 +1494,7 @@
                 <div class="prod-chart-box"><canvas id="utilMesCostoEtapaChart"></canvas></div>
               </div>
               <div class="prod-card col-12" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Comparativo por Etapa: Valor de Producción, Costo y Utilidad Estimada</h3>
+                <h3>Comparativo por Etapa: Costo y Utilidad Estimada</h3>
                 <div class="prod-chart-box"><canvas id="utilMesComparativoEtapaChart"></canvas></div>
               </div>
               <div class="prod-card col-12" style="box-shadow:none;border:1px solid var(--line);">
@@ -1833,7 +1835,7 @@
     <div class="page-section">
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>Costos Fijos</h2><div class="sub">Costos estructurales.</div></div>
+          <div><h2>Costos Fijos</h2><div class="sub">Costos estructurales. Cada uno se asigna a una etapa (Corte, Taller, Ultrasonido o Confortadora) y así queda separado en el dashboard de esa etapa.</div></div>
           <button class="global-add-btn no-print" id="btnNuevoCostoFijo">+ Nuevo costo fijo</button>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
@@ -1842,8 +1844,29 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Concepto</th><th>Categoría</th><th class="num">Valor</th><th>Periodicidad</th><th></th></tr></thead>
+            <thead><tr><th>Concepto</th><th>Categoría</th><th>Etapa</th><th class="num">Valor</th><th>Periodicidad</th><th></th></tr></thead>
             <tbody id="costosfijosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewGastosadicionales" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Gastos Adicionales</h2><div class="sub">Gastos extra que no son costo fijo ni costo variable de producción (ej. reparaciones, imprevistos, compras puntuales). Se descuentan del mes en que ocurrieron en el Dashboard de Costos y Utilidades.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoGastoAdicional">+ Nuevo gasto adicional</button>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="gastosadicionalesSearch" placeholder="Buscar concepto, categoría...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Concepto</th><th>Categoría</th><th>Fecha</th><th class="num">Valor</th><th>Observaciones</th><th></th></tr></thead>
+            <tbody id="gastosadicionalesBody"></tbody>
           </table>
         </div>
       </div>
@@ -1931,6 +1954,7 @@ const DEFAULT_APPDATA = {
   despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64), enviadoWhatsapp(bool), observaciones}] — registro de envíos
   facturas:[], // [{id, numero, distId, cliente, fecha, lineas:[{producto,categoria,medida,cantidad,precioUnitario,subtotal}], subtotalGeneral, impuestoPct, impuestoValor, total, observaciones}] — historial de facturas generadas desde un pedido
   plantaCostosFijos:[],      // [{id, concepto, categoria, valorMensual, periodicidad}]
+  plantaGastosAdicionales:[], // [{id, concepto, categoria, fecha, valor, observaciones}]
   plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
   plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
   plantaProductividad:[]     // [{id, operario, operacion, producto, turno, fecha, asignaciones, productividad, estado}] — filas editables del dashboard de Productividad
@@ -2827,7 +2851,7 @@ function switchView(viewName){
     syncPlantaProductosFromInventario();
   }
   ['resumen','despachos','facturas','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
-   'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
+   'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
     if(el) el.style.display = (name === viewName) ? '' : 'none';
@@ -5870,14 +5894,34 @@ const PLANTA_MODULES = {
     fields:[
       {key:'concepto', label:'Concepto', type:'text', required:true, placeholder:'Ej. Arriendo de planta'},
       {key:'categoria', label:'Categoría', type:'select', options:[{value:'Arriendo',label:'Arriendo'},{value:'Servicios',label:'Servicios públicos'},{value:'Nómina administrativa',label:'Nómina administrativa'},{value:'Seguros',label:'Seguros'},{value:'Otro',label:'Otro'}]},
+      {key:'etapa', label:'Etapa', type:'select', required:true, options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
       {key:'valorMensual', label:'Valor', type:'number', placeholder:'Ej. 2500000'},
       {key:'periodicidad', label:'Periodicidad', type:'select', default:'mensual', options:[{value:'mensual',label:'Mensual'},{value:'anual',label:'Anual'}]}
     ],
     columns:[
       {key:'concepto', label:'Concepto'},
       {key:'categoria', label:'Categoría', format:v=>v||'—'},
+      {key:'etapa', label:'Etapa', format:v=>{ const e=ETAPAS_PRODUCCION.find(x=>x.key===v); return e ? e.label : '—'; }},
       {key:'valorMensual', label:'Valor', format:v=>v?fmt(v):'—'},
       {key:'periodicidad', label:'Periodicidad', format:v=>v==='anual'?'Anual':'Mensual'}
+    ]
+  },
+  gastosadicionales:{
+    dataKey:'plantaGastosAdicionales', bodyId:'gastosadicionalesBody', searchId:'gastosadicionalesSearch', addBtnId:'btnNuevoGastoAdicional',
+    title:'gasto adicional', titleCap:'Gasto Adicional',
+    fields:[
+      {key:'concepto', label:'Concepto', type:'text', required:true, placeholder:'Ej. Reparación de máquina'},
+      {key:'categoria', label:'Categoría', type:'select', options:[{value:'Reparaciones',label:'Reparaciones'},{value:'Imprevistos',label:'Imprevistos'},{value:'Compra puntual',label:'Compra puntual'},{value:'Transporte',label:'Transporte'},{value:'Otro',label:'Otro'}]},
+      {key:'fecha', label:'Fecha', type:'date', required:true, default:new Date().toISOString().slice(0,10)},
+      {key:'valor', label:'Valor', type:'number', placeholder:'Ej. 150000'},
+      {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Detalles del gasto'}
+    ],
+    columns:[
+      {key:'concepto', label:'Concepto'},
+      {key:'categoria', label:'Categoría', format:v=>v||'—'},
+      {key:'fecha', label:'Fecha', format:v=>v||'—'},
+      {key:'valor', label:'Valor', format:v=>v?fmt(v):'—'},
+      {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
   },
   novedades:{
@@ -6889,10 +6933,23 @@ function costeoGetProductos(){
   return (APPDATA.plantaProductos || []).filter(p => p.activo !== 'inactivo');
 }
 
-function costeoFijosMensuales(){
+function costeoFijosMensuales(etapa){
   return (APPDATA.plantaCostosFijos || []).reduce((sum, c) => {
+    if(etapa && c.etapa !== etapa) return sum;
     const v = Number(c.valorMensual) || 0;
     return sum + (c.periodicidad === 'anual' ? v / 12 : v);
+  }, 0);
+}
+
+// Gastos adicionales: son puntuales (no recurrentes), así que solo se cuentan los que caen en el
+// mes/año consultado (por su campo "fecha"), a diferencia de los Costos Fijos que se repiten cada mes.
+function costeoGastosAdicionalesMes(y, m){
+  return (APPDATA.plantaGastosAdicionales || []).reduce((sum, g) => {
+    const t = parseFechaToTime(g.fecha);
+    if(t === null) return sum;
+    const d = new Date(t);
+    if(d.getFullYear() !== y || (d.getMonth()+1) !== m) return sum;
+    return sum + (Number(g.valor) || 0);
   }, 0);
 }
 
@@ -7244,20 +7301,20 @@ function calcularUtilidadMes(y, m, tallerFiltro){
     return { costo, valor };
   }
   const produccionTotal = ETAPAS_PRODUCCION.reduce((sum, e) => sum + produccionPorEtapa[e.key], 0);
-  // Los costos fijos no se registran por etapa, así que se prorratean según qué parte de las
-  // unidades produjo cada una este mes — es un estimado, no una asignación contable exacta.
+  // Cada etapa tiene sus propios costos fijos, asignados en "Costos Fijos" (campo Etapa).
   const porEtapa = {};
   ETAPAS_PRODUCCION.forEach(e => {
     const agg = sumaEtapa(prodPorProductoEtapa[e.key]);
-    const fijos = produccionTotal > 0 ? costosFijosMes * (produccionPorEtapa[e.key] / produccionTotal) : 0;
+    const fijos = costeoFijosMensuales(e.key);
     porEtapa[e.key] = { produccion: produccionPorEtapa[e.key], costo: agg.costo, valor: agg.valor, fijos, utilidad: agg.valor - agg.costo - fijos };
   });
 
   // Facturación del mes = facturación de PRODUCCIÓN (lo producido × precio de venta), ya no las ventas/pedidos.
   const facturacionMes = filas.reduce((sum, f) => sum + f.facturacion, 0);
 
-  const utilidadNeta = facturacionMes - costosFijosMes - costosVariablesMes;
-  return { filas, costosVariablesMes, costosFijosMes, facturacionMes, utilidadNeta, produccionTotal, porEtapa };
+  const gastosAdicionalesMes = costeoGastosAdicionalesMes(y, m);
+  const utilidadNeta = facturacionMes - costosFijosMes - costosVariablesMes - gastosAdicionalesMes;
+  return { filas, costosVariablesMes, costosFijosMes, gastosAdicionalesMes, facturacionMes, utilidadNeta, produccionTotal, porEtapa };
 }
 
 function renderUtilidadRealMes(){
@@ -7276,12 +7333,13 @@ function renderUtilidadRealMes(){
     tallerSel.value = talleres.includes(valActual) ? valActual : '';
   }
 
-  const { filas, costosVariablesMes, costosFijosMes, facturacionMes, utilidadNeta, produccionTotal, porEtapa } = calcularUtilidadMes(y, m, tallerFiltro);
+  const { filas, costosVariablesMes, costosFijosMes, gastosAdicionalesMes, facturacionMes, utilidadNeta, produccionTotal, porEtapa } = calcularUtilidadMes(y, m, tallerFiltro);
 
   const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
   setTxt('utilMesFacturacion', fmt(facturacionMes));
   setTxt('utilMesFijos', fmt(costosFijosMes));
   setTxt('utilMesVariables', fmt(costosVariablesMes));
+  setTxt('utilMesGastosAdicionales', fmt(gastosAdicionalesMes));
   ETAPAS_PRODUCCION.forEach(e => {
     const d = porEtapa[e.key];
     setTxt('utilMesProd' + e.key, fmtNum(d.produccion));
@@ -7313,7 +7371,7 @@ function renderUtilidadRealMes(){
     }
   }
 
-  renderUtilMesResumenChart(facturacionMes, costosFijosMes, costosVariablesMes, utilidadNeta);
+  renderUtilMesResumenChart(facturacionMes, costosFijosMes, costosVariablesMes, gastosAdicionalesMes, utilidadNeta);
   renderUtilMesProductoChart(filas);
   renderUtilMesEtapaChart(porEtapa);
   renderUtilMesCostoEtapaChart(porEtapa);
@@ -7348,7 +7406,6 @@ function renderUtilMesComparativoEtapaChart(porEtapa){
     data: {
       labels: ETAPAS_PRODUCCION.map(e => e.label),
       datasets: [
-        { label: 'Valor de producción', data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].valor), backgroundColor: '#6B8CAE', borderRadius: 4 },
         { label: 'Costo variable', data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].costo), backgroundColor: '#B65B2E', borderRadius: 4 },
         { label: 'Utilidad estimada', data: ETAPAS_PRODUCCION.map(e => porEtapa[e.key].utilidad), backgroundColor: '#4C7A52', borderRadius: 4 }
       ]
@@ -7372,17 +7429,17 @@ function renderUtilMesEtapaChart(porEtapa){
   });
 }
 
-function renderUtilMesResumenChart(facturacionMes, costosFijosMes, costosVariablesMes, utilidadNeta){
+function renderUtilMesResumenChart(facturacionMes, costosFijosMes, costosVariablesMes, gastosAdicionalesMes, utilidadNeta){
   const ctx = document.getElementById('utilMesResumenChart');
   if(!ctx || typeof Chart === 'undefined') return;
   if(utilMesResumenChartInst) utilMesResumenChartInst.destroy();
   utilMesResumenChartInst = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Facturación', 'Costos Fijos', 'Costos Variables', 'Utilidad Neta'],
+      labels: ['Facturación', 'Costos Fijos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad Neta'],
       datasets: [{
-        data: [facturacionMes, costosFijosMes, costosVariablesMes, utilidadNeta],
-        backgroundColor: ['#4C7A52', '#B65B2E', '#9E7B3B', utilidadNeta >= 0 ? '#4C7A52' : '#B65B2E'],
+        data: [facturacionMes, costosFijosMes, costosVariablesMes, gastosAdicionalesMes, utilidadNeta],
+        backgroundColor: ['#4C7A52', '#B65B2E', '#9E7B3B', '#7B4B9E', utilidadNeta >= 0 ? '#4C7A52' : '#B65B2E'],
         borderRadius: 4
       }]
     },
@@ -7422,7 +7479,7 @@ function renderUtilTendenciaChart(y, m, tallerFiltro){
       labels: meses.map(x => x.label),
       datasets: [
         { label:'Facturación', data: datos.map(d => d.facturacionMes), borderColor:'#4C7A52', backgroundColor:'#4C7A52', tension:0.25 },
-        { label:'Costos (Fijos + Variables)', data: datos.map(d => d.costosFijosMes + d.costosVariablesMes), borderColor:'#B65B2E', backgroundColor:'#B65B2E', tension:0.25 },
+        { label:'Costos (Fijos + Variables + Adicionales)', data: datos.map(d => d.costosFijosMes + d.costosVariablesMes + d.gastosAdicionalesMes), borderColor:'#B65B2E', backgroundColor:'#B65B2E', tension:0.25 },
         { label:'Utilidad Neta', data: datos.map(d => d.utilidadNeta), borderColor:'#9E7B3B', backgroundColor:'#9E7B3B', tension:0.25 }
       ]
     },
@@ -7488,32 +7545,56 @@ document.getElementById('btnToggleTopbar').addEventListener('click', ()=>{
 });
 
 // ================= Dashboards de Costos y Utilidades POR ETAPA (Corte / Producción-Taller / Ultrasonido / Confortadora) =================
-// Cada etapa tiene su propio dashboard: valor de producción − costos variables − costos fijos (prorrateados) = utilidad.
-// El "cobro del servicio" (unidades × precio de servicio de la etapa, definido en "Precios de servicio") se resta como costo.
+// Cada etapa tiene su propio dashboard: cobro del servicio − costos fijos (prorrateados) − costos variables = utilidad.
+// El "cobro del servicio" (unidades × precio de servicio de la etapa, definido en "Precios de servicio") es el ingreso de la etapa.
 // El valor de producción y el costo variable salen del precio de venta y el costeo de cada producto.
 const DASH_ETAPA_LABEL = { Corte:'Corte', Taller:'Producción (Taller)', Ultrasonido:'Ultrasonido', Confortadora:'Confortadora' };
 const dashEtapaCharts = {};
 const dashEtapaUltimo = {}; // último cálculo mostrado por etapa (para el botón "🧾 Comprobante")
 
+// Dado un rango de tiempo (tD/tH, cualquiera puede ser null = sin límite en ese lado, tomando
+// como referencia la fecha actual), devuelve cada mes que toca ese rango junto con la fracción
+// de días de ese mes que quedan cubiertos — para prorratear un costo fijo mensual por días.
+function mesesEnRangoConFraccion(tD, tH){
+  const ahora = Date.now();
+  const ini = tD !== null ? tD : (tH !== null ? tH : ahora);
+  const fin = tH !== null ? tH : ahora;
+  if(fin < ini) return [];
+  const dIni = new Date(ini), dFin = new Date(fin);
+  const out = [];
+  let y = dIni.getFullYear(), m = dIni.getMonth() + 1;
+  let guard = 0;
+  while((y < dFin.getFullYear() || (y === dFin.getFullYear() && m <= dFin.getMonth() + 1)) && guard < 600){
+    guard++;
+    const diasMes = new Date(y, m, 0).getDate();
+    const inicioMes = new Date(y, m - 1, 1).getTime();
+    const finMes = new Date(y, m - 1, diasMes, 23, 59, 59, 999).getTime();
+    const iniCubierto = Math.max(inicioMes, ini);
+    const finCubierto = Math.min(finMes, fin);
+    if(finCubierto >= iniCubierto){
+      const dias = Math.round((finCubierto - iniCubierto) / 86400000) + 1;
+      out.push({ y, m, fraccion: Math.min(1, dias / diasMes) });
+    }
+    m++; if(m > 12){ m = 1; y++; }
+  }
+  return out;
+}
+
 function calcularUtilidadEtapa(etapa, desde, hasta, producto){
   const tD = desde ? parseFechaToTime(desde) : null;
   const tH = hasta ? parseFechaToTime(hasta) : null;
-  const porProducto = {}, unidadesEtapaMes = {}, totalMes = {};
+  const porProducto = {};
   let unidadesEtapa = 0;
   (APPDATA.plantaProduccionDiaria || []).forEach(r => {
     const t = parseFechaToTime(r.fecha);
     if(t === null) return;
-    const dt = new Date(t);
-    const mk = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0');
-    const cant = Number(r.cantidad) || 0;
-    totalMes[mk] = (totalMes[mk] || 0) + cant;
     if(normEtapa(r.etapa) !== etapa) return;
     if(tD !== null && t < tD) return;
     if(tH !== null && t > tH) return;
     const k = r.producto || '—';
     if(producto && k !== producto) return;
+    const cant = Number(r.cantidad) || 0;
     unidadesEtapa += cant;
-    unidadesEtapaMes[mk] = (unidadesEtapaMes[mk] || 0) + cant;
     porProducto[k] = (porProducto[k] || 0) + cant;
   });
   const precioServ = crearResolvedorPrecioServicio();
@@ -7532,9 +7613,9 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
   const valor = filas.reduce((a, f) => a + f.valor, 0);
   const costoVar = filas.reduce((a, f) => a + f.costoTotal, 0);
   const cobro = filas.reduce((a, f) => a + f.cobro, 0);
-  const fijosMensuales = costeoFijosMensuales();
-  const fijos = Object.keys(unidadesEtapaMes).reduce((a, mk) => a + (totalMes[mk] > 0 ? fijosMensuales * unidadesEtapaMes[mk] / totalMes[mk] : 0), 0);
-  return { filas, valor, costoVar, cobro, fijos, utilidad: valor - costoVar - cobro - fijos, unidades: unidadesEtapa };
+  const fijosMensualesEtapa = costeoFijosMensuales(etapa);
+  const fijos = mesesEnRangoConFraccion(tD, tH).reduce((a, x) => a + fijosMensualesEtapa * x.fraccion, 0);
+  return { filas, valor, costoVar, cobro, fijos, utilidad: cobro - fijos - costoVar, unidades: unidadesEtapa };
 }
 
 function calcularUtilidadEtapaMes(y, m, etapa, producto){
@@ -7588,7 +7669,7 @@ function dashEtapaHtml(e){
       <div class="prod-page-head">
         <div>
           <h2>Dashboard · ${escapeHtml(DASH_ETAPA_LABEL[k])}</h2>
-          <div class="sub">Costos y utilidades de la etapa: valor de producción − costos variables − costos fijos (prorrateados).</div>
+          <div class="sub">Costos y utilidades de la etapa: costos variables − costos fijos propios de esta etapa.</div>
           <div class="sub" id="${id('periodo')}" style="margin-top:2px;font-weight:600;color:var(--ink);"></div>
         </div>
         <div class="prod-filters no-print">
@@ -7603,14 +7684,13 @@ function dashEtapaHtml(e){
       </div>
       <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
         <div class="prod-stat"><div class="num" id="${id('unidades')}">–</div><div class="lbl">Unidades</div></div>
-        <div class="prod-stat"><div class="num" id="${id('valor')}">–</div><div class="lbl">Valor de producción</div></div>
         <div class="prod-stat"><div class="num" id="${id('cobro')}">–</div><div class="lbl">Cobro del servicio</div></div>
-        <div class="prod-stat"><div class="num" id="${id('fijos')}">–</div><div class="lbl">Costos fijos (prorrateo)</div></div>
+        <div class="prod-stat"><div class="num" id="${id('fijos')}">–</div><div class="lbl">Costos fijos de la etapa</div></div>
         <div class="prod-stat"><div class="num" id="${id('var')}">–</div><div class="lbl">Costos variables</div></div>
         <div class="prod-stat"><div class="num" id="${id('neta')}">–</div><div class="lbl">Utilidad</div></div>
       </div>
       <div class="prod-grid" style="margin-top:14px;">
-        <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Valor, Costos, Cobro del servicio y Utilidad del Periodo</h3><div class="prod-chart-box"><canvas id="${id('chartResumen')}"></canvas></div></div>
+        <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Costos, Cobro del servicio y Utilidad del Periodo</h3><div class="prod-chart-box"><canvas id="${id('chartResumen')}"></canvas></div></div>
         <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Tendencia de Utilidad (6 meses hasta el periodo)</h3><div class="prod-chart-box"><canvas id="${id('chartTendencia')}"></canvas></div></div>
       </div>
       <div class="prod-table-wrap" style="margin-top:14px;">
@@ -7619,7 +7699,7 @@ function dashEtapaHtml(e){
           <tbody></tbody>
         </table>
       </div>
-      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y se descuenta como costo; si está en $0, defínelo allí. El precio de venta y el costo variable salen de Producción → Productos (costeo). Los costos fijos se prorratean según las unidades de la etapa.
+      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y es el ingreso de la etapa; si está en $0, defínelo allí. La utilidad es cobro del servicio − costos fijos − costos variables. El costo variable sale de Producción → Productos (costeo). Los costos fijos son los que asignaste a esta etapa en Costos Fijos, prorrateados por los días del periodo consultado.
         Usa "Mes" para un mes completo o "Desde / Hasta" para un rango de fechas (si llenas fechas, se ignora el mes).</div>
       <div class="prod-table-wrap" style="margin-top:18px;">
         <div class="page-card-header" style="margin-bottom:8px;">
@@ -7672,7 +7752,6 @@ function renderDashEtapa(key){
   renderDashEtapaRegistrosTabla(key, regDesde, regHasta, producto);
 
   q('unidades').textContent = fmtNum(d.unidades);
-  q('valor').textContent = fmt(d.valor);
   q('cobro').textContent = fmt(d.cobro);
   q('fijos').textContent = fmt(d.fijos);
   q('var').textContent = fmt(d.costoVar);
@@ -7684,15 +7763,15 @@ function renderDashEtapa(key){
       <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td><td>${f.precio ? fmt(f.precio) : '—'}</td>
       <td>${f.valor ? fmt(f.valor) : '—'}</td><td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>
       <td><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="dashboard" data-etapa="${key}" data-producto="${escapeAttr(f.nombre)}" value="${f.precioServicio || 0}"></td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
-      <td>${fmt(f.valor - f.costoTotal - f.cobro)}</td></tr>`).join('')
+      <td>${fmt(f.cobro - f.costoTotal)}</td></tr>`).join('')
     : `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
   if(typeof Chart === 'undefined') return;
   const ch = dashEtapaCharts[key] = dashEtapaCharts[key] || {};
   if(ch.resumen) ch.resumen.destroy();
   ch.resumen = new Chart(q('chartResumen'), {
     type: 'bar',
-    data: { labels: ['Valor', 'Cobro servicio', 'Costos Fijos', 'Costos Variables', 'Utilidad'],
-      datasets: [{ data: [d.valor, d.cobro, d.fijos, d.costoVar, d.utilidad], backgroundColor: ['#4C7A52', '#6B8CAE', '#B65B2E', '#9E7B3B', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'], borderRadius: 4 }] },
+    data: { labels: ['Cobro servicio', 'Costos Fijos', 'Costos Variables', 'Utilidad'],
+      datasets: [{ data: [d.cobro, d.fijos, d.costoVar, d.utilidad], backgroundColor: ['#6B8CAE', '#B65B2E', '#9E7B3B', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'], borderRadius: 4 }] },
     options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
   });
   const meses = [];
@@ -7705,7 +7784,6 @@ function renderDashEtapa(key){
   ch.tendencia = new Chart(q('chartTendencia'), {
     type: 'line',
     data: { labels: meses.map(x => x.label), datasets: [
-      { label:'Valor', data: datos.map(x => x.valor), borderColor:'#4C7A52', backgroundColor:'#4C7A52', tension:0.25 },
       { label:'Costos (Fijos + Variables + Servicio)', data: datos.map(x => x.fijos + x.costoVar + x.cobro), borderColor:'#B65B2E', backgroundColor:'#B65B2E', tension:0.25 },
       { label:'Utilidad', data: datos.map(x => x.utilidad), borderColor:'#9E7B3B', backgroundColor:'#9E7B3B', tension:0.25 }
     ] },
