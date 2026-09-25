@@ -578,6 +578,28 @@
   .select-search-input:focus{outline:none;border-color:var(--gold);}
   .field select.searchable-select{border-radius:0 0 8px 8px;}
 
+  /* ---- Combo buscable genérico: reemplaza visualmente cualquier <select> del sistema
+     por un campo de texto + lista filtrable (ej. "Seleccionar un cliente"). El <select>
+     original queda oculto pero sigue funcionando igual para el resto del código. ---- */
+  .ssel-wrap{position:relative;display:inline-block;width:100%;min-width:0;}
+  .ssel-native{position:absolute;opacity:0;pointer-events:none;height:1px;width:1px;overflow:hidden;}
+  .ssel-input{
+    width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter';font-size:13px;color:var(--ink);background:var(--white);
+    box-sizing:border-box;cursor:pointer;
+  }
+  .ssel-input:focus{outline:2px solid var(--gold);border-color:var(--gold);cursor:text;}
+  .ssel-list{
+    display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:60;
+    max-height:240px;overflow-y:auto;background:var(--white);border:1px solid var(--line);
+    border-radius:8px;box-shadow:var(--shadow);padding:4px;
+  }
+  .ssel-list.open{display:block;}
+  .ssel-item{padding:8px 10px;font-size:13px;color:var(--ink);border-radius:6px;cursor:pointer;}
+  .ssel-item:hover, .ssel-item.hover{background:var(--gold-pale);}
+  .ssel-item.sel{font-weight:700;color:var(--gold-dark);}
+  .ssel-empty{padding:8px 10px;font-size:13px;color:var(--ink-soft);text-align:center;}
+
   /* ---- Imprimir pedido ---- */
   .print-btn{
     background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:8px;
@@ -1549,6 +1571,12 @@
               </div>
             </div>
             <div class="prod-table-wrap" style="margin-top:14px;">
+              <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+                <select id="utilMesOrden" class="inv-precio-input" style="width:auto;text-align:left;padding:6px 10px;">
+                  <option value="desc">Costo variable total: mayor a menor</option>
+                  <option value="asc">Costo variable total: menor a mayor</option>
+                </select>
+              </div>
               <table class="prod-table" id="utilMesTable">
                 <thead>
                   <tr><th>Producto</th><th>Producción del mes</th><th>Facturación de producción</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
@@ -7494,7 +7522,9 @@ function renderUtilidadRealMes(){
         : 'Sin producción registrada este mes. Crea registros en "Producción Diaria" (o una Orden de Producción con fecha de entrega en este mes) para verlos aquí.';
       body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">${msg}</td></tr>`;
     }else{
-      body.innerHTML = filas.map(f => `<tr>
+      const ordenSel = document.getElementById('utilMesOrden');
+      const filasTabla = (ordenSel && ordenSel.value === 'asc') ? [...filas].reverse() : filas;
+      body.innerHTML = filasTabla.map(f => `<tr>
         <td>${escapeHtml(f.nombre)}</td>
         <td>${fmtNum(f.cantidad)}</td>
         <td>${f.facturacion ? fmt(f.facturacion) : '—'}</td>
@@ -7631,6 +7661,8 @@ function initUtilidadRealMes(){
   }
   const tallerSel = document.getElementById('utilMesTaller');
   if(tallerSel) tallerSel.addEventListener('change', renderUtilidadRealMes);
+  const ordenSel = document.getElementById('utilMesOrden');
+  if(ordenSel) ordenSel.addEventListener('change', renderUtilidadRealMes);
 }
 
 function renderUtilChart(rows){
@@ -7753,6 +7785,8 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
       precio = c.precioVenta || 0; costoUnit = c.total || 0;
     }
     const precioServicio = precioServ(etapa, nombre);
+    // Corte no maneja costos variables propios: no se calculan ni se suman a nada (ni al total ni a la utilidad).
+    if(etapa === 'Corte'){ costoUnit = 0; }
     return { nombre, cantidad, precio, costoUnit, valor: cantidad * precio, costoTotal: cantidad * costoUnit, precioServicio, cobro: cantidad * precioServicio };
   }).sort((a, b) => (b.cobro + b.valor) - (a.cobro + a.valor));
   const valor = filas.reduce((a, f) => a + f.valor, 0);
@@ -7832,7 +7866,7 @@ function dashEtapaHtml(e){
         <div class="prod-stat"><div class="num" id="${id('unidades')}">–</div><div class="lbl">${escapeHtml(unidadLabelEtapa(k))}</div></div>
         <div class="prod-stat"><div class="num" id="${id('cobro')}">–</div><div class="lbl">Cobro del servicio</div></div>
         <div class="prod-stat"><div class="num" id="${id('fijos')}">–</div><div class="lbl">Costos fijos</div></div>
-        <div class="prod-stat"><div class="num" id="${id('var')}">–</div><div class="lbl">Costos variables</div></div>
+        ${k !== 'Corte' ? `<div class="prod-stat"><div class="num" id="${id('var')}">–</div><div class="lbl">Costos variables</div></div>` : ''}
         <div class="prod-stat"><div class="num" id="${id('gastos')}">–</div><div class="lbl">Gastos adicionales</div></div>
         <div class="prod-stat"><div class="num" id="${id('neta')}">–</div><div class="lbl">Utilidad</div></div>
       </div>
@@ -7841,12 +7875,18 @@ function dashEtapaHtml(e){
         <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Tendencia de Utilidad (6 meses hasta el periodo)</h3><div class="prod-chart-box"><canvas id="${id('chartTendencia')}"></canvas></div></div>
       </div>
       <div class="prod-table-wrap" style="margin-top:14px;">
+        <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+          <select id="${id('orden')}" class="inv-precio-input" style="width:auto;text-align:left;padding:6px 10px;">
+            <option value="desc">Cobro del servicio: mayor a menor</option>
+            <option value="asc">Cobro del servicio: menor a mayor</option>
+          </select>
+        </div>
         <table class="prod-table" id="${id('tabla')}">
-          <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th><th>Precio de venta</th><th>Valor</th><th>Costo variable unit.</th><th>Costo variable total</th><th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
+          <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th><th>Precio de venta</th><th>Valor</th>${k !== 'Corte' ? '<th>Costo variable unit.</th><th>Costo variable total</th>' : ''}<th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y es el ingreso de la etapa; si está en $0, defínelo allí. La utilidad es cobro del servicio − costos fijos − costos variables − gastos adicionales. El costo variable sale de Producción → Productos (costeo). Los costos fijos son los que asignaste a esta etapa en Centro de Costos, prorrateados por los días del periodo consultado. Los gastos adicionales son los que asignaste a esta etapa en Gastos Adicionales y caen dentro del periodo consultado (por su fecha).
+      <div class="hint" style="margin-top:8px;">El cobro del servicio sale de "Precios de servicio" (unidades × precio por unidad de la etapa) y es el ingreso de la etapa; si está en $0, defínelo allí. La utilidad es cobro del servicio − costos fijos ${k !== 'Corte' ? '− costos variables ' : ''}− gastos adicionales.${k !== 'Corte' ? ' El costo variable sale de Producción → Productos (costeo).' : ' Corte no maneja costos variables propios.'} Los costos fijos son los que asignaste a esta etapa en Centro de Costos, prorrateados por los días del periodo consultado. Los gastos adicionales son los que asignaste a esta etapa en Gastos Adicionales y caen dentro del periodo consultado (por su fecha).
         Usa "Mes" para un mes completo o "Desde / Hasta" para un rango de fechas (si llenas fechas, se ignora el mes).</div>
       <div class="prod-table-wrap" style="margin-top:18px;">
         <div class="page-card-header" style="margin-bottom:8px;">
@@ -7898,28 +7938,35 @@ function renderDashEtapa(key){
   dashEtapaUltimo[key] = { d, periodoTxt, producto, esServ };
   renderDashEtapaRegistrosTabla(key, regDesde, regHasta, producto);
 
+  const esCorte = key === 'Corte';
   q('unidades').textContent = fmtNum(d.unidades);
   q('cobro').textContent = fmt(d.cobro);
   q('fijos').textContent = fmt(d.fijos);
-  q('var').textContent = fmt(d.costoVar);
+  if(!esCorte) q('var').textContent = fmt(d.costoVar);
   q('gastos').textContent = fmt(d.gastos);
   const neta = q('neta');
   neta.textContent = fmt(d.utilidad);
   neta.style.color = d.utilidad >= 0 ? '#4C7A52' : '#B65B2E';
+  const ordenSel = q('orden');
+  const filasTabla = (ordenSel && ordenSel.value === 'asc') ? [...d.filas].reverse() : d.filas;
   const tbody = q('tabla').querySelector('tbody');
-  tbody.innerHTML = d.filas.length ? d.filas.map(f => `<tr>
+  const colspan = esCorte ? 7 : 9;
+  tbody.innerHTML = filasTabla.length ? filasTabla.map(f => `<tr>
       <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td><td>${f.precio ? fmt(f.precio) : '—'}</td>
-      <td>${f.valor ? fmt(f.valor) : '—'}</td><td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>
+      <td>${f.valor ? fmt(f.valor) : '—'}</td>${esCorte ? '' : `<td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>`}
       <td><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="dashboard" data-etapa="${key}" data-producto="${escapeAttr(f.nombre)}" value="${f.precioServicio || 0}"></td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
       <td>${fmt(f.cobro - f.costoTotal)}</td></tr>`).join('')
-    : `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
+    : `<tr><td colspan="${colspan}" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
   if(typeof Chart === 'undefined') return;
   const ch = dashEtapaCharts[key] = dashEtapaCharts[key] || {};
   if(ch.resumen) ch.resumen.destroy();
+  const resumenLabels = esCorte ? ['Cobro servicio', 'Centro de Costos', 'Gastos Adicionales', 'Utilidad'] : ['Cobro servicio', 'Centro de Costos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad'];
+  const resumenData = esCorte ? [d.cobro, d.fijos, d.gastos, d.utilidad] : [d.cobro, d.fijos, d.costoVar, d.gastos, d.utilidad];
+  const resumenColores = esCorte ? ['#6B8CAE', '#B65B2E', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'] : ['#6B8CAE', '#B65B2E', '#9E7B3B', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'];
   ch.resumen = new Chart(q('chartResumen'), {
     type: 'bar',
-    data: { labels: ['Cobro servicio', 'Centro de Costos', 'Costos Variables', 'Gastos Adicionales', 'Utilidad'],
-      datasets: [{ data: [d.cobro, d.fijos, d.costoVar, d.gastos, d.utilidad], backgroundColor: ['#6B8CAE', '#B65B2E', '#9E7B3B', '#8C6DAA', d.utilidad >= 0 ? '#4C7A52' : '#B65B2E'], borderRadius: 4 }] },
+    data: { labels: resumenLabels,
+      datasets: [{ data: resumenData, backgroundColor: resumenColores, borderRadius: 4 }] },
     options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
   });
   const meses = [];
@@ -8004,6 +8051,7 @@ function abrirComprobanteEtapaModal(key){
     el('mes').addEventListener('change', () => { if(el('mes').value){ el('desde').value = ''; el('hasta').value = ''; } rr(); });
     ['desde', 'hasta'].forEach(f => el(f).addEventListener('change', () => { if(el('desde').value || el('hasta').value) el('mes').value = ''; rr(); }));
     el('producto').addEventListener('change', rr);
+    el('orden').addEventListener('change', rr);
     el('limpiar').addEventListener('click', () => { el('mes').value = ''; el('desde').value = ''; el('hasta').value = ''; el('producto').value = ''; rr(); });
     el('factura').addEventListener('click', () => abrirComprobanteEtapaModal(e.key));
     el('nuevo').addEventListener('click', () => openProduccionModal(undefined, e.key));
@@ -8050,7 +8098,92 @@ document.addEventListener('change', async (e) => {
   }
 });
 
+// ================= Selects buscables (todos los desplegables del sistema) =================
+// Convierte cualquier <select> (Cliente, Producto, Vendedor, Operario, filtros, etc.) en un
+// combo con campo de texto + lista filtrable en tiempo real, tipo "Escribe para buscar...".
+// El <select> original se conserva oculto en el DOM: todo el código que ya lee o escribe su
+// .value / dispara su evento "change" sigue funcionando exactamente igual, sin tocarlo.
+function enhanceSearchableSelect(selectEl){
+  if(!selectEl || selectEl.dataset.sselDone === '1') return;
+  if(selectEl.multiple) return;
+  if(selectEl.classList.contains('searchable-select')) return; // el selector de Producto ya trae su propio buscador
+  selectEl.dataset.sselDone = '1';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ssel-wrap';
+  selectEl.parentNode.insertBefore(wrap, selectEl);
+  wrap.appendChild(selectEl);
+  selectEl.classList.add('ssel-native');
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'ssel-input';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  if(selectEl.id) input.setAttribute('aria-label', selectEl.id);
+  wrap.appendChild(input);
+
+  const list = document.createElement('div');
+  list.className = 'ssel-list';
+  wrap.appendChild(list);
+
+  const labelForCurrent = () => { const o = selectEl.options[selectEl.selectedIndex]; return o ? o.textContent : ''; };
+  const syncInput = () => { if(document.activeElement !== input) input.value = labelForCurrent(); };
+  syncInput();
+
+  const closeList = () => { list.classList.remove('open'); list.innerHTML = ''; };
+  const openList = (term) => {
+    const t = (term || '').trim().toLowerCase();
+    const opts = [...selectEl.options].filter(o => !t || o.textContent.toLowerCase().includes(t));
+    list.innerHTML = opts.length
+      ? opts.map(o => `<div class="ssel-item${o.selected ? ' sel' : ''}" data-value="${escapeAttr(o.value)}">${escapeHtml(o.textContent || '(vacío)')}</div>`).join('')
+      : `<div class="ssel-empty">Sin resultados</div>`;
+    list.classList.add('open');
+  };
+  const pick = (value) => {
+    selectEl.value = value;
+    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+    input.value = labelForCurrent();
+    closeList();
+  };
+
+  input.addEventListener('focus', () => { input.select(); openList(''); });
+  input.addEventListener('input', () => openList(input.value));
+  input.addEventListener('blur', () => setTimeout(() => { closeList(); syncInput(); }, 150));
+  list.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.ssel-item');
+    if(!item || item.dataset.value === undefined) return;
+    e.preventDefault();
+    pick(item.dataset.value);
+  });
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){ closeList(); syncInput(); input.blur(); return; }
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      const first = list.querySelector('.ssel-item');
+      if(first && first.dataset.value !== undefined) pick(first.dataset.value);
+      input.blur();
+    }
+  });
+  selectEl.addEventListener('change', syncInput);
+  new MutationObserver(syncInput).observe(selectEl, { childList: true });
+}
+function enhanceAllSearchableSelects(root){
+  (root || document).querySelectorAll('select').forEach(enhanceSearchableSelect);
+}
+// Activa la búsqueda automáticamente en cualquier <select> nuevo que aparezca después (modales,
+// formularios de "planta", dashboards por etapa, etc.), sin tener que modificar cada función que
+// los genera.
+new MutationObserver(muts => {
+  muts.forEach(m => m.addedNodes.forEach(node => {
+    if(node.nodeType !== 1) return;
+    if(node.tagName === 'SELECT') enhanceSearchableSelect(node);
+    else if(node.querySelectorAll) node.querySelectorAll('select').forEach(enhanceSearchableSelect);
+  }));
+}).observe(document.body, { childList: true, subtree: true });
+
 (async function init(){
+  enhanceAllSearchableSelects(document);
   await firebaseReadyPromise;
   let sesionActiva = false;
   try{ sesionActiva = localStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
