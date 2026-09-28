@@ -969,6 +969,7 @@
           <button class="nav-dropdown-item active" data-nav="resumen" type="button">Resumen</button>
           <button class="nav-dropdown-item" data-nav="despachos" type="button">Despachos</button>
           <button class="nav-dropdown-item" data-nav="facturas" type="button">Facturas</button>
+          <button class="nav-dropdown-item" data-nav="ventassiigo" type="button">Ventas Siigo</button>
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
           <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Clientes</button>
@@ -1289,6 +1290,86 @@
           <div class="product-search-results" id="invPdSearchResults" style="display:none;"></div>
         </div>
         <div id="invPdResultZone"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewVentassiigo" class="view-section prod-view" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="prod-page-head">
+          <div>
+            <h2>Ventas Siigo</h2>
+            <div class="sub">Facturas de venta reales tomadas de Siigo, por centro de costo y en total. <span id="siigoEstado"></span></div>
+          </div>
+          <div class="prod-filters">
+            <div class="prod-field">
+              <label for="siigoCentro">Centro de costo</label>
+              <select id="siigoCentro"><option value="global">Todos (global)</option></select>
+            </div>
+            <div class="prod-field">
+              <label for="siigoDesde">Desde</label>
+              <input type="date" id="siigoDesde">
+            </div>
+            <div class="prod-field">
+              <label for="siigoHasta">Hasta</label>
+              <input type="date" id="siigoHasta">
+            </div>
+            <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="hoy">Hoy</button>
+            <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="semana">Semana</button>
+            <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="mes">Mes</button>
+            <button class="prod-btn prod-btn-primary" type="button" id="siigoAplicarBtn">Aplicar</button>
+          </div>
+        </div>
+
+        <div id="siigoVacio" class="prod-card" style="display:none;margin-bottom:18px;"></div>
+
+        <div class="prod-grid" id="siigoContenido">
+          <div class="prod-card col-12">
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
+              <div class="prod-stat"><div class="num" id="siigoKpiVentas">–</div><div class="lbl">Ventas del período</div></div>
+              <div class="prod-stat"><div class="num" id="siigoKpiFacturas">–</div><div class="lbl">Facturas</div></div>
+              <div class="prod-stat"><div class="num" id="siigoKpiUnidades">–</div><div class="lbl">Unidades vendidas</div></div>
+              <div class="prod-stat"><div class="num" id="siigoKpiTicket">–</div><div class="lbl">Valor promedio por factura</div></div>
+              <div class="prod-stat"><div class="num" id="siigoKpiPromDia">–</div><div class="lbl">Promedio por día</div></div>
+            </div>
+          </div>
+
+          <div class="prod-card col-12">
+            <h3>Ventas por día</h3>
+            <div class="prod-chart-box"><canvas id="siigoChartDias"></canvas></div>
+          </div>
+
+          <div class="prod-card col-12">
+            <h3>Ventas por centro de costo</h3>
+            <div class="prod-table-wrap">
+              <table class="prod-table">
+                <thead><tr><th>Centro de costo</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">% del total</th><th style="text-align:right;">Facturas</th><th style="text-align:right;">Unidades</th></tr></thead>
+                <tbody id="siigoCentrosBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="prod-card col-6">
+            <h3>Mejores clientes</h3>
+            <div class="prod-table-wrap">
+              <table class="prod-table">
+                <thead><tr><th>#</th><th>Cliente</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">Facturas</th></tr></thead>
+                <tbody id="siigoClientesBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="prod-card col-6">
+            <h3>Productos más vendidos</h3>
+            <div class="prod-table-wrap">
+              <table class="prod-table">
+                <thead><tr><th>#</th><th>Producto</th><th style="text-align:right;">Unidades</th><th style="text-align:right;">Ventas</th></tr></thead>
+                <tbody id="siigoProductosBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2927,7 +3008,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','despachos','facturas','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','despachos','facturas','ventassiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -2953,6 +3034,7 @@ function switchView(viewName){
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
   if(viewName === 'produccion'){ initProduccionEtapaDashboard(); initProduccionFiltros(); }
   if(viewName === 'facturas'){ renderFacturasView(); }
+  if(viewName === 'ventassiigo') renderVentasSiigoView();
   if(viewName === 'serviciosmaquila') asegurarServiciosUltrasonido();
   if(viewName === 'costosfijos' || viewName === 'gastosadicionales') actualizarFiltroEtapaChip(viewName);
   if(viewName.startsWith('dash')){ const et = ETAPAS_PRODUCCION.find(e => 'dash' + e.key.toLowerCase() === viewName); if(et) renderDashEtapa(et.key); }
@@ -8205,6 +8287,213 @@ new MutationObserver(muts => {
   try{ sesionActiva = localStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
   if(sesionActiva) showApp();
 })();
+
+// ---------- Ventas Siigo ----------
+// Muestra lo que la función en la nube (carpeta functions/) sincroniza desde Siigo al nodo `siigo/`
+// de Firebase. Solo lee: esta vista nunca escribe en Firebase.
+const SIIGO_TOP = 10;
+let siigoChartDias = null;
+let siigoCentros = null;          // catálogo de centros de costo (se carga una vez)
+let siigoDatos = null;            // { desde, hasta, dias: { 'AAAA-MM-DD': resumenDelDia } }
+let siigoPeticion = 0;            // descarta respuestas viejas si se cambia el filtro rápido
+const siigoNombresClientes = {};
+
+const siigoClave = v => String(v ?? '').trim().replace(/[.#$[\]/]/g, '_') || 'sin_dato';
+
+function siigoFechaLocal(d){
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function siigoRango(tipo){
+  const hoy = new Date();
+  const hasta = siigoFechaLocal(hoy);
+  if(tipo === 'hoy') return [hasta, hasta];
+  if(tipo === 'semana'){
+    const lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+    return [siigoFechaLocal(lunes), hasta];
+  }
+  return [hasta.slice(0, 8) + '01', hasta];
+}
+
+function siigoFechasEntre(desde, hasta){
+  const out = [];
+  const d = new Date(desde + 'T00:00:00Z');
+  const fin = new Date(hasta + 'T00:00:00Z');
+  while(d <= fin && out.length < 1000){
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}
+
+function siigoNombreCentro(clave){
+  if(clave === 'global') return 'Todos (global)';
+  if(clave === 'sin_centro') return 'Sin centro de costo';
+  const c = siigoCentros && siigoCentros[clave];
+  return c ? (c.nombre || c.codigo || clave) : clave;
+}
+
+// Suma los resúmenes diarios de un centro (o 'global') en el rango.
+function siigoAgregar(dias, fechas, centro){
+  const total = { ventas: 0, facturas: 0, unidades: 0, porDia: [], clientes: {}, productos: {} };
+  fechas.forEach(f => {
+    const nodo = (dias[f] || {})[centro] || {};
+    total.ventas += Number(nodo.ventas) || 0;
+    total.facturas += Number(nodo.facturas) || 0;
+    total.unidades += Number(nodo.unidades) || 0;
+    total.porDia.push(Number(nodo.ventas) || 0);
+    Object.entries(nodo.clientes || {}).forEach(([k, c]) => {
+      const t = total.clientes[k] ||= { nit: c.nit || k, valor: 0, facturas: 0 };
+      t.valor += Number(c.valor) || 0;
+      t.facturas += Number(c.facturas) || 0;
+    });
+    Object.entries(nodo.productos || {}).forEach(([k, p]) => {
+      const t = total.productos[k] ||= { codigo: p.codigo || '', descripcion: p.descripcion || '', cantidad: 0, valor: 0 };
+      t.cantidad += Number(p.cantidad) || 0;
+      t.valor += Number(p.valor) || 0;
+      if(!t.descripcion && p.descripcion) t.descripcion = p.descripcion;
+    });
+  });
+  return total;
+}
+
+function siigoMostrarVacio(html){
+  const vacio = document.getElementById('siigoVacio');
+  vacio.style.display = html ? '' : 'none';
+  vacio.innerHTML = html || '';
+  document.getElementById('siigoContenido').style.display = html ? 'none' : '';
+}
+
+function siigoLlenarSelectCentros(dias){
+  const sel = document.getElementById('siigoCentro');
+  const actual = sel.value || 'global';
+  const claves = new Set(Object.keys(siigoCentros || {}));
+  Object.values(dias).forEach(d => Object.keys(d || {}).forEach(k => { if(k !== 'global') claves.add(k); }));
+  const ordenadas = [...claves].sort((a, b) => siigoNombreCentro(a).localeCompare(siigoNombreCentro(b), 'es'));
+  sel.innerHTML = ['global', ...ordenadas].map(k => `<option value="${escapeHtml(k)}">${escapeHtml(siigoNombreCentro(k))}</option>`).join('');
+  sel.value = claves.has(actual) || actual === 'global' ? actual : 'global';
+}
+
+async function renderVentasSiigoView(){
+  const desdeEl = document.getElementById('siigoDesde');
+  const hastaEl = document.getElementById('siigoHasta');
+  if(!desdeEl.value || !hastaEl.value){
+    const [d, h] = siigoRango('mes');
+    desdeEl.value = d; hastaEl.value = h;
+  }
+  const desde = desdeEl.value, hasta = hastaEl.value;
+  if(desde > hasta){ siigoMostrarVacio('La fecha "Desde" no puede ser posterior a "Hasta".'); return; }
+  if(!dataRef){ siigoMostrarVacio('No hay conexión con Firebase.'); return; }
+
+  const miPeticion = ++siigoPeticion;
+  siigoMostrarVacio('Cargando ventas de Siigo…');
+  const db = firebase.database();
+  let resumenSnap, estadoSnap, centrosSnap;
+  try{
+    [resumenSnap, estadoSnap, centrosSnap] = await Promise.all([
+      db.ref('siigo/resumenDiario').orderByKey().startAt(desde).endAt(hasta).once('value'),
+      db.ref('siigo/estado').once('value'),
+      siigoCentros ? Promise.resolve(null) : db.ref('siigo/catalogos/centrosCosto').once('value'),
+    ]);
+  }catch(e){
+    console.error('siigo read error', e);
+    if(miPeticion === siigoPeticion){
+      siigoMostrarVacio('No se pudieron leer los datos de Siigo en Firebase' +
+        (e && e.code === 'PERMISSION_DENIED' ? ': las reglas de la base de datos no permiten leer el nodo <b>siigo</b>.' : '.'));
+    }
+    return;
+  }
+  if(miPeticion !== siigoPeticion) return;
+  if(centrosSnap) siigoCentros = centrosSnap.val() || {};
+
+  const estado = estadoSnap.val();
+  const estadoEl = document.getElementById('siigoEstado');
+  if(estado && estado.ultimaSincronizacion){
+    const cuando = new Date(estado.ultimaSincronizacion).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    const err = estado.ultimoError;
+    estadoEl.innerHTML = 'Última sincronización: ' + escapeHtml(cuando) +
+      (err ? ` <span style="color:#B42318;">Último error (${escapeHtml(new Date(err.fecha).toLocaleString('es-CO'))}): ${escapeHtml(err.mensaje || '')}</span>` : '');
+  }else{
+    estadoEl.textContent = '';
+    siigoMostrarVacio('<b>Aún no llegan datos de Siigo.</b> Falta activar la sincronización automática en Firebase ' +
+      '(los pasos están en <code>functions/README.md</code>). Cuando corra por primera vez, las ventas aparecerán aquí.' +
+      (estado && estado.ultimoError ? `<br><span style="color:#B42318;">Último error: ${escapeHtml(estado.ultimoError.mensaje || '')}</span>` : ''));
+    return;
+  }
+
+  siigoDatos = { desde, hasta, dias: resumenSnap.val() || {} };
+  siigoLlenarSelectCentros(siigoDatos.dias);
+  siigoMostrarVacio('');
+  await siigoPintar();
+}
+
+async function siigoPintar(){
+  if(!siigoDatos) return;
+  const { desde, hasta, dias } = siigoDatos;
+  const centro = document.getElementById('siigoCentro').value || 'global';
+  const fechas = siigoFechasEntre(desde, hasta);
+  const t = siigoAgregar(dias, fechas, centro);
+
+  document.getElementById('siigoKpiVentas').textContent = fmt(t.ventas);
+  document.getElementById('siigoKpiFacturas').textContent = fmtNum(t.facturas);
+  document.getElementById('siigoKpiUnidades').textContent = fmtNum(t.unidades);
+  document.getElementById('siigoKpiTicket').textContent = t.facturas ? fmt(t.ventas / t.facturas) : '–';
+  document.getElementById('siigoKpiPromDia').textContent = fechas.length ? fmt(t.ventas / fechas.length) : '–';
+
+  // Por centro de costo (siempre todos, para comparar), ordenado por ventas.
+  const global = siigoAgregar(dias, fechas, 'global');
+  const claves = new Set();
+  Object.values(dias).forEach(d => Object.keys(d || {}).forEach(k => { if(k !== 'global') claves.add(k); }));
+  const filasCentros = [...claves].map(k => ({ k, ...siigoAgregar(dias, fechas, k) })).sort((a, b) => b.ventas - a.ventas);
+  const pct = v => global.ventas ? (v / global.ventas * 100).toFixed(1).replace('.', ',') + '%' : '–';
+  document.getElementById('siigoCentrosBody').innerHTML = filasCentros.length
+    ? filasCentros.map(r => `<tr${r.k === centro ? ' style="background:var(--gold-pale);"' : ''}><td>${escapeHtml(siigoNombreCentro(r.k))}</td><td style="text-align:right;">${fmt(r.ventas)}</td><td style="text-align:right;">${pct(r.ventas)}</td><td style="text-align:right;">${fmtNum(r.facturas)}</td><td style="text-align:right;">${fmtNum(r.unidades)}</td></tr>`).join('') +
+      `<tr style="font-weight:700;"><td>Total global</td><td style="text-align:right;">${fmt(global.ventas)}</td><td style="text-align:right;">${global.ventas ? '100%' : '–'}</td><td style="text-align:right;">${fmtNum(global.facturas)}</td><td style="text-align:right;">${fmtNum(global.unidades)}</td></tr>`
+    : '<tr><td colspan="5" style="color:var(--ink-soft);">Sin ventas en el período.</td></tr>';
+
+  const topProductos = Object.values(t.productos).sort((a, b) => b.valor - a.valor).slice(0, SIIGO_TOP);
+  document.getElementById('siigoProductosBody').innerHTML = topProductos.length
+    ? topProductos.map((p, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(p.descripcion || p.codigo)}${p.codigo && p.descripcion ? ` <span style="color:var(--ink-soft);font-size:11px;">${escapeHtml(p.codigo)}</span>` : ''}</td><td style="text-align:right;">${fmtNum(p.cantidad)}</td><td style="text-align:right;">${fmt(p.valor)}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="color:var(--ink-soft);">Sin ventas en el período.</td></tr>';
+
+  const topClientes = Object.values(t.clientes).sort((a, b) => b.valor - a.valor).slice(0, SIIGO_TOP);
+  const pintarClientes = () => {
+    document.getElementById('siigoClientesBody').innerHTML = topClientes.length
+      ? topClientes.map((c, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(siigoNombresClientes[c.nit] || ('NIT ' + c.nit))}</td><td style="text-align:right;">${fmt(c.valor)}</td><td style="text-align:right;">${fmtNum(c.facturas)}</td></tr>`).join('')
+      : '<tr><td colspan="4" style="color:var(--ink-soft);">Sin ventas en el período.</td></tr>';
+  };
+  pintarClientes();
+
+  if(siigoChartDias) siigoChartDias.destroy();
+  if(typeof Chart !== 'undefined'){
+    siigoChartDias = new Chart(document.getElementById('siigoChartDias'), {
+      type: 'bar',
+      data: { labels: fechas.map(f => f.slice(8, 10) + '/' + f.slice(5, 7)), datasets: [{ label: 'Ventas', data: t.porDia, backgroundColor: '#9E7B3B', borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) } } },
+        scales: { y: { ticks: { callback: v => fmt(v) }, grid: { color: '#F0EAD9' } }, x: { grid: { display: false } } } }
+    });
+  }
+
+  // Nombres de los clientes del top: se piden a Siigo/Firebase solo los que faltan.
+  const faltan = topClientes.filter(c => !(c.nit in siigoNombresClientes));
+  if(faltan.length){
+    const db = firebase.database();
+    await Promise.all(faltan.map(c => db.ref('siigo/catalogos/clientes/' + siigoClave(c.nit)).once('value')
+      .then(s => { const v = s.val(); siigoNombresClientes[c.nit] = (v && v.nombre) || ('NIT ' + c.nit); })
+      .catch(() => { siigoNombresClientes[c.nit] = 'NIT ' + c.nit; })));
+    pintarClientes();
+  }
+}
+
+document.getElementById('siigoAplicarBtn').addEventListener('click', () => renderVentasSiigoView());
+document.getElementById('siigoCentro').addEventListener('change', () => siigoPintar());
+document.querySelectorAll('[data-siigo-rango]').forEach(btn => btn.addEventListener('click', () => {
+  const [d, h] = siigoRango(btn.dataset.siigoRango);
+  document.getElementById('siigoDesde').value = d;
+  document.getElementById('siigoHasta').value = h;
+  renderVentasSiigoView();
+}));
 </script>
 </body>
 </html>
