@@ -972,7 +972,7 @@
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
           <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Clientes</button>
           <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario · Precios de venta</button>
-          <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button">Precios de servicio</button>
+          <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button">Precios de servicio (sugeridos)</button>
         </div>
       </div>
       <div class="nav-dropdown" id="navDropdownProduccion">
@@ -1736,7 +1736,7 @@
     <div class="page-section">
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>Precios de servicio</h2><div class="sub">Lo que cobra cada etapa (Corte, Taller, Ultrasonido, Confortadora) por cada unidad producida. Un precio por producto o familia, por ejemplo: Taller · Sábanas · $3.000. Es el precio que se propone al crear un registro nuevo en Producción Diaria; cada registro guarda su propio precio, así que cambiarlo aquí NO modifica los registros ya guardados (el precio de un registro se cambia en su desglose). Es una lista aparte de los precios de venta.</div></div>
+          <div><h2>Precios de servicio sugeridos</h2><div class="sub">Lo que cobra cada etapa (Corte, Taller, Ultrasonido, Confortadora) por cada unidad producida. Un precio por producto o familia, por ejemplo: Taller · Sábanas · $3.000. Son solo SUGERENCIAS: al agregar producción en Producción Diaria, el precio aparece marcado como "sugerido" y lo puedes cambiar para ese producto en ese registro. Cambiarlo aquí NO modifica ningún registro ya guardado (el precio de un registro se cambia en su desglose o al editarlo). Es una lista aparte de los precios de venta.</div></div>
           <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
@@ -6546,7 +6546,7 @@ function renderProduccionRegistros(body, term){
   body.innerHTML = lista.map(g => {
     const detalle = g.lineas.map(l => {
       const cant = Number(l.cantidad) || 0, precio = precioServicioDeFila(precioDe, g.etapa, l);
-      return { producto: l.producto, cant, precio, sub: cant * precio };
+      return { id: l.id || '', producto: l.producto, cant, precio, sub: cant * precio };
     });
     const total = detalle.reduce((a, l) => a + l.cant, 0);
     const valor = detalle.reduce((a, l) => a + l.sub, 0);
@@ -6571,7 +6571,7 @@ function renderProduccionRegistros(body, term){
         <td colspan="7" style="padding:8px 14px 12px 40px;">
           <table style="width:100%;">
             <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio del servicio</th><th class="num">Subtotal</th></tr></thead>
-            <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num"><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="produccion" data-grupo="${k}" data-etapa="${escapeAttr(g.etapa)}" data-producto="${escapeAttr(l.producto || '')}" value="${l.precio || 0}"></td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
+            <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num"><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="produccion" data-grupo="${k}" data-fila="${escapeAttr(l.id)}" data-etapa="${escapeAttr(g.etapa)}" data-producto="${escapeAttr(l.producto || '')}" value="${l.precio || 0}"></td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
               <tr><td style="font-weight:700;">Total</td><td class="num" style="font-weight:700;">${fmtNum(total)}</td><td></td><td class="num" style="font-weight:700;">${fmt(valor)}</td></tr>
             </tbody>
           </table>
@@ -7108,14 +7108,24 @@ function openProduccionModal(groupKey, defaultEtapa){
     if(sel && !ops.some(o => String(o.value) === String(sel))) ops = [...ops, {value:sel, label:sel}];
     return ops.map(o => `<option value="${escapeAttr(o.value)}" ${String(o.value)===String(sel||'')?'selected':''}>${escapeHtml(o.label)}</option>`).join('');
   };
-  const precioValor = (prod) => prod ? precioDe(etapaActual, prod) : '';
-  const filaHtml = (prod, cant, precioOverride) => `
+  // "Precios de servicio" es solo una SUGERENCIA: se precarga en la fila marcada como "sugerido" y
+  // la puedes cambiar libremente. El precio que quede en cada fila es el de ESE producto en ESTE
+  // registro; no cambia la lista ni otros registros, y la lista no cambia este registro después.
+  const precioValor = (prod) => { const v = prod ? precioDe(etapaActual, prod) : 0; return v > 0 ? v : ''; };
+  const filaHtml = (prod, cant, precioPropio) => {
+    const propio = precioPropio !== undefined;
+    const valor = propio ? precioPropio : precioValor(prod);
+    return `
     <div class="prod-linea" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
       <select class="pl-producto" style="flex:1;min-width:0;">${optsHtml(prod)}</select>
       <input type="number" class="pl-cantidad" min="0" placeholder="Cant." value="${escapeAttr(cant ?? '')}" style="width:90px;">
-      <input type="number" class="pl-precio" min="0" step="1" placeholder="$" title="Precio del servicio — puedes editarlo aquí, se guarda al Guardar" value="${escapeAttr(precioOverride !== undefined ? precioOverride : precioValor(prod))}" style="width:92px;flex-shrink:0;">
+      <span style="width:104px;flex-shrink:0;display:flex;flex-direction:column;align-items:stretch;">
+        <input type="number" class="pl-precio" min="0" step="1" placeholder="$ precio" data-editado="${propio ? '1' : ''}" title="Precio del servicio de este producto en este registro. El valor sugerido lo puedes cambiar." value="${escapeAttr(valor)}" style="width:100%;">
+        <small class="pl-sugerido" style="font-size:10.5px;color:var(--ink-soft);text-align:right;${!propio && valor !== '' ? '' : 'display:none;'}">sugerido</small>
+      </span>
       <button type="button" class="icon-btn icon-delete pl-quitar" title="Quitar">✕</button>
     </div>`;
+  };
   const overlay = openModal(`
     <h3>${editing ? 'Editar' : 'Nuevo'} Registro de Producción</h3>
     <div class="field"><label>Fecha *</label><input type="date" id="pp_fecha" value="${escapeAttr(record.fecha || hoyStr)}"></div>
@@ -7126,9 +7136,10 @@ function openProduccionModal(groupKey, defaultEtapa){
     </div>
     <div class="field"><label>Productos y cantidades *</label>
       <div style="display:flex;gap:8px;font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:4px;">
-        <span style="flex:1;">PRODUCTO</span><span style="width:90px;">CANTIDAD</span><span style="width:92px;text-align:right;">PRECIO SERVICIO</span><span style="width:28px;"></span>
+        <span style="flex:1;">PRODUCTO</span><span style="width:90px;">CANTIDAD</span><span style="width:104px;text-align:right;">PRECIO SERVICIO</span><span style="width:28px;"></span>
       </div>
       <div id="pp_lineas">${editing ? lineasGrupo.map(o => filaHtml(o.it.producto, o.it.cantidad, tienePrecioPropio(o.it) ? Number(o.it.precioServicio) : undefined)).join('') : filaHtml('', '')}</div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">El precio marcado como <em>sugerido</em> viene de "Precios de servicio"; cámbialo si hoy es distinto. Puedes repetir un producto con otro precio.</div>
       <button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>
     </div>
     <div class="field"><label>Observaciones</label>
@@ -7141,10 +7152,15 @@ function openProduccionModal(groupKey, defaultEtapa){
     </div>
   `);
   const lineasBox = overlay.querySelector('#pp_lineas');
-  const actualizarPrecioFila = (linea) => {
+  const actualizarPrecioFila = (linea, forzar) => {
     const sel = linea.querySelector('.pl-producto');
     const inp = linea.querySelector('.pl-precio');
-    if(sel && inp) inp.value = precioValor(sel.value);
+    const tag = linea.querySelector('.pl-sugerido');
+    if(!sel || !inp) return;
+    if(inp.dataset.editado === '1' && !forzar) return; // lo escribiste tú: no se pisa
+    inp.dataset.editado = '';
+    inp.value = precioValor(sel.value);
+    if(tag) tag.style.display = inp.value !== '' ? '' : 'none';
   };
   // Filas del registro en la lista ACTUAL (por id / registroId, no por referencia al objeto: si llega
   // una sincronización con el modal abierto, las referencias viejas ya no están en la lista y el
@@ -7170,7 +7186,13 @@ function openProduccionModal(groupKey, defaultEtapa){
     });
     lineasBox.addEventListener('change', (e)=>{
       if(!e.target.classList.contains('pl-producto')) return;
-      actualizarPrecioFila(e.target.closest('.prod-linea'));
+      actualizarPrecioFila(e.target.closest('.prod-linea'), true); // otro producto: nueva sugerencia
+    });
+    lineasBox.addEventListener('input', (e)=>{
+      if(!e.target.classList.contains('pl-precio')) return;
+      e.target.dataset.editado = '1';
+      const tag = e.target.closest('.prod-linea').querySelector('.pl-sugerido');
+      if(tag) tag.style.display = 'none';
     });
     lineasBox.addEventListener('click', (e)=>{
       const btn = e.target.closest('.pl-quitar');
@@ -7199,11 +7221,10 @@ function openProduccionModal(groupKey, defaultEtapa){
     const etapa = normEtapa(overlay.querySelector('#pp_etapa').value);
     const obs = overlay.querySelector('#pp_obs').value;
     if(!fecha){ showToast('Completa el campo "Fecha"'); overlay.querySelector('#pp_fecha').focus(); return; }
-    // Junta las filas válidas; si un producto se repite, suma sus cantidades (el precio de la
-    // última fila de ese producto es el que queda). El precio se guarda SOLO en este registro:
-    // no cambia la lista "Precios de servicio" ni los demás registros de producción.
-    const porProducto = new Map();
-    const precioPorProducto = new Map();
+    // Cada fila guarda el precio que tiene escrito (el sugerido o el que pusiste), SOLO para este
+    // registro. Si un producto se repite con el MISMO precio se suman las cantidades; con precios
+    // distintos quedan como filas separadas.
+    const lineas = []; // {prod, cant, precio}
     let hayIncompleta = false;
     lineasBox.querySelectorAll('.prod-linea').forEach(row => {
       const prod = row.querySelector('.pl-producto').value;
@@ -7212,41 +7233,39 @@ function openProduccionModal(groupKey, defaultEtapa){
       if(!prod && cantRaw === '') return; // fila vacía: se ignora
       const cant = Number(cantRaw);
       if(!prod || cantRaw === '' || !(cant > 0)){ hayIncompleta = true; return; }
-      porProducto.set(prod, (porProducto.get(prod) || 0) + cant);
-      if(precioRaw !== '') precioPorProducto.set(prod, Number(precioRaw) || 0);
+      const precio = Math.max(0, Number(precioRaw) || 0);
+      const igual = lineas.find(l => l.prod === prod && l.precio === precio);
+      if(igual) igual.cant += cant; else lineas.push({ prod, cant, precio });
     });
     if(hayIncompleta){ showToast('Cada fila necesita un producto y una cantidad mayor a 0'); return; }
-    if(!porProducto.size){ showToast('Agrega al menos un producto con su cantidad'); return; }
-    // Un precio 0 no se guarda como precio propio: así, cuando definas el precio en "Precios de
-    // servicio", estos registros lo toman (antes quedaban en $0 para siempre).
-    const precioFinal = (prod) => { const v = precioPorProducto.has(prod) ? precioPorProducto.get(prod) : precioDe(etapa, prod); return v > 0 ? v : null; };
+    if(!lineas.length){ showToast('Agrega al menos un producto con su cantidad'); return; }
     const freshList = getPlantaList('produccion');
     if(editing){
       // Reemplaza todas las filas del registro por las nuevas (conserva id/registroId de las que siguen igual)
       const registroId = record.registroId || ('r' + Date.now() + Math.random().toString(36).slice(2,6));
-      const previas = new Map();
-      lineasGrupo.forEach(o => { if(!previas.has(o.it.producto)) previas.set(o.it.producto, o.it); });
+      const previas = lineasGrupo.map(o => o.it); // se reutilizan sus ids (una por fila, por producto)
       const idxs = idxsGrupo(freshList);
       const posInsercion = idxs.length ? idxs[0] : freshList.length;
       idxs.slice().reverse().forEach(i => freshList.splice(i, 1));
-      const filasNuevas = [...porProducto.entries()].map(([prod, cant], n) => {
-        const previa = previas.get(prod) || {};
-        const fila = {...previa, id: previa.id || ('p' + Date.now() + n + Math.random().toString(36).slice(2,7)), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precioFinal(prod), observaciones: obs};
+      const filasNuevas = lineas.map(({prod, cant, precio}, n) => {
+        const pi = previas.findIndex(x => x && x.producto === prod);
+        const previa = pi > -1 ? previas.splice(pi, 1)[0] : {};
+        const fila = {...previa, id: previa.id || ('p' + Date.now() + n + Math.random().toString(36).slice(2,7)), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precio, observaciones: obs};
         delete fila.taller;
         return fila;
       });
       freshList.splice(posInsercion, 0, ...filasNuevas);
     } else {
       const registroId = 'r' + Date.now() + Math.random().toString(36).slice(2,6);
-      [...porProducto.entries()].forEach(([prod, cant], n) => {
-        freshList.push({ id: 'p' + Date.now() + n + Math.random().toString(36).slice(2,7), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precioFinal(prod), observaciones: obs });
+      lineas.forEach(({prod, cant, precio}, n) => {
+        freshList.push({ id: 'p' + Date.now() + n + Math.random().toString(36).slice(2,7), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precio, observaciones: obs });
       });
     }
     await saveAppData(APPDATA);
     overlay.remove();
     renderPlantaModule('produccion');
     refrescarDashboardsEtapaVisibles();
-    showToast(editing ? 'Registro actualizado' : `Registro guardado: ${porProducto.size} producto${porProducto.size>1?'s':''}`);
+    showToast(editing ? 'Registro actualizado' : `Registro guardado: ${lineas.length} producto${lineas.length>1?'s':''}`);
   });
 }
 
@@ -8387,12 +8406,15 @@ document.addEventListener('change', async (e) => {
     // Solo cambia el precio de ESTE registro (y de ese producto dentro de él); los demás
     // registros y la lista "Precios de servicio" quedan igual.
     const grupo = inp.dataset.grupo;
+    const fila = inp.dataset.fila;
     const producto = inp.dataset.producto;
     if(!grupo || !producto) return;
     const list = getPlantaList('produccion');
     let n = 0;
     list.forEach((it, i) => {
-      if(produccionGrupoKey(it, i) === grupo && it.producto === producto){ it.precioServicio = nuevoPrecio > 0 ? nuevoPrecio : null; n++; }
+      // Por id de la fila: si el mismo producto está dos veces con precios distintos, cada una se cambia sola.
+      const esEsta = fila ? (it && it.id === fila) : (produccionGrupoKey(it, i) === grupo && it.producto === producto);
+      if(esEsta){ it.precioServicio = nuevoPrecio; n++; }
     });
     if(!n) return;
     await saveAppData(APPDATA);
