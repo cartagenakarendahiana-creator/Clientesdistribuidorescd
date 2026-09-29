@@ -221,8 +221,47 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
   }
 }
 
+// Carga del HISTÓRICO sin tener que correr nada a mano: en cada corrida se trae uno o más meses
+// hacia atrás (empezando por el mes actual), hasta encontrar 3 meses seguidos sin facturas o
+// llegar a HISTORICO_LIMITE. El avance queda en `siigo/historico`.
+const HISTORICO_LIMITE = '2018-01-01';
+const MESES_VACIOS_PARA_TERMINAR = 3;
+
+async function avanzarHistorico({ client, db, tiempoMaxMs = 240000, log = console.log, hoy = hoyColombia() }) {
+  const t0 = Date.now();
+  const ref = db.ref('siigo/historico');
+  let h = (await ref.once('value')).val() || {};
+  const inicioMesSiguiente = sumarDias(`${hoy.slice(0, 7)}-01`, 32).slice(0, 7) + '-01';
+  let meses = 0;
+  while (!h.completo && Date.now() - t0 < tiempoMaxMs && meses < 6) {
+    const base = h.cargadoDesde || inicioMesSiguiente; // primer día del último mes ya cargado
+    const finMes = sumarDias(base, -1);
+    const iniMes = `${finMes.slice(0, 7)}-01`;
+    if (iniMes < HISTORICO_LIMITE) {
+      h = { ...h, completo: true };
+      await ref.set(h);
+      break;
+    }
+    const r = await sincronizar({ client, db, desde: iniMes, hasta: finMes, log });
+    const vacios = r.facturas ? 0 : (Number(h.mesesVacios) || 0) + 1;
+    h = {
+      cargadoDesde: iniMes,
+      mesesVacios: vacios,
+      completo: vacios >= MESES_VACIOS_PARA_TERMINAR,
+      facturas: (Number(h.facturas) || 0) + r.facturas,
+      actualizado: new Date().toISOString(),
+    };
+    await ref.set(h);
+    log(`Siigo histórico: ${iniMes.slice(0, 7)} cargado (${r.facturas} facturas).`);
+    meses++;
+  }
+  return h;
+}
+
+
 module.exports = {
   sincronizar,
+  avanzarHistorico,
   normalizarFactura,
   construirDia,
   rangoFechas,

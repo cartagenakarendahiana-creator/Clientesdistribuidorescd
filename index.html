@@ -1298,7 +1298,7 @@
         <div class="prod-page-head">
           <div>
             <h2>Ventas Siigo</h2>
-            <div class="sub">Facturas de venta reales tomadas de Siigo, por centro de costo y en total. <span id="siigoEstado"></span></div>
+            <div class="sub">Facturas de venta reales tomadas de Siigo, por centro de costo y en total. <span id="siigoEstado"></span> <span id="siigoHistorico"></span></div>
           </div>
           <div class="prod-filters">
             <div class="prod-field">
@@ -1370,8 +1370,9 @@
           </div>
 
           <div class="prod-card col-6">
-            <h3>Mejores clientes</h3>
-            <div class="prod-table-wrap">
+            <h3 id="siigoClientesTitulo">Clientes</h3>
+            <input type="search" id="siigoClientesBuscar" placeholder="Buscar cliente o NIT…" style="width:100%;margin-bottom:8px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;">
+            <div class="prod-table-wrap" style="max-height:460px;overflow-y:auto;">
               <table class="prod-table">
                 <thead><tr><th>#</th><th>Cliente</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">Facturas</th></tr></thead>
                 <tbody id="siigoClientesBody"></tbody>
@@ -1380,11 +1381,23 @@
           </div>
 
           <div class="prod-card col-6">
-            <h3>Productos más vendidos</h3>
-            <div class="prod-table-wrap">
+            <h3 id="siigoProductosTitulo">Productos vendidos</h3>
+            <input type="search" id="siigoProductosBuscar" placeholder="Buscar producto o código…" style="width:100%;margin-bottom:8px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;">
+            <div class="prod-table-wrap" style="max-height:460px;overflow-y:auto;">
               <table class="prod-table">
                 <thead><tr><th>#</th><th>Producto</th><th style="text-align:right;">Unidades</th><th style="text-align:right;">Ventas</th></tr></thead>
                 <tbody id="siigoProductosBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="prod-card col-12">
+            <h3 id="siigoFacturasTitulo">Facturas del período</h3>
+            <input type="search" id="siigoFacturasBuscar" placeholder="Buscar por número, cliente, NIT o producto…" style="width:100%;margin-bottom:8px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;">
+            <div class="prod-table-wrap" style="max-height:560px;overflow-y:auto;">
+              <table class="prod-table">
+                <thead><tr><th>Fecha</th><th>Factura</th><th>Cliente</th><th>Centro de costo</th><th>Vendedor</th><th style="text-align:right;">Unidades</th><th style="text-align:right;">Total</th><th style="text-align:right;">Saldo</th><th>Estado</th></tr></thead>
+                <tbody id="siigoFacturasBody"></tbody>
               </table>
             </div>
           </div>
@@ -8542,7 +8555,9 @@ new MutationObserver(muts => {
 // ---------- Ventas Siigo ----------
 // Muestra lo que la función en la nube (carpeta functions/) sincroniza desde Siigo al nodo `siigo/`
 // de Firebase. Solo lee: esta vista nunca escribe en Firebase.
-const SIIGO_TOP = 10;
+const SIIGO_MAX_FILAS = 2000;     // tope de filas dibujadas por tabla (usa el buscador para el resto)
+let siigoClientesCat = null;      // catálogo completo de clientes de Siigo (nit → {nombre}), se carga una vez
+let siigoFacturas = [];           // facturas del período elegido (de siigo/facturasDia)
 let siigoChartDias = null;
 let siigoCentros = null;          // catálogo de centros de costo (se carga una vez)
 let siigoVendedores = null;       // catálogo de vendedores (se carga una vez)
@@ -8652,13 +8667,16 @@ async function renderVentasSiigoView(){
   const [inicioMes, hoy] = siigoRango('mes');
   const leerDesde = [desde, inicioSemana, inicioMes].sort()[0];
   const leerHasta = [hasta, hoy].sort()[1];
-  let resumenSnap, estadoSnap, centrosSnap, vendedoresSnap;
+  let resumenSnap, estadoSnap, centrosSnap, vendedoresSnap, clientesSnap, facturasSnap, historicoSnap;
   try{
-    [resumenSnap, estadoSnap, centrosSnap, vendedoresSnap] = await Promise.all([
+    [resumenSnap, estadoSnap, centrosSnap, vendedoresSnap, clientesSnap, facturasSnap, historicoSnap] = await Promise.all([
       db.ref('siigo/resumenDiario').orderByKey().startAt(leerDesde).endAt(leerHasta).once('value'),
       db.ref('siigo/estado').once('value'),
       siigoCentros ? Promise.resolve(null) : db.ref('siigo/catalogos/centrosCosto').once('value'),
       siigoVendedores ? Promise.resolve(null) : db.ref('siigo/catalogos/vendedores').once('value'),
+      siigoClientesCat ? Promise.resolve(null) : db.ref('siigo/catalogos/clientes').once('value'),
+      db.ref('siigo/facturasDia').orderByKey().startAt(desde).endAt(hasta).once('value'),
+      db.ref('siigo/historico').once('value'),
     ]);
   }catch(e){
     console.error('siigo read error', e);
@@ -8671,6 +8689,19 @@ async function renderVentasSiigoView(){
   if(miPeticion !== siigoPeticion) return;
   if(centrosSnap) siigoCentros = centrosSnap.val() || {};
   if(vendedoresSnap) siigoVendedores = vendedoresSnap.val() || {};
+  if(clientesSnap) siigoClientesCat = clientesSnap.val() || {};
+  siigoFacturas = [];
+  Object.entries(facturasSnap.val() || {}).forEach(([fecha, porId]) => {
+    Object.values(porId || {}).forEach(f => { if(f) siigoFacturas.push({ ...f, fecha: f.fecha || fecha }); });
+  });
+  siigoFacturas.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || String(b.numero || '').localeCompare(String(a.numero || ''), 'es', { numeric: true }));
+  const hist = historicoSnap.val();
+  const histEl = document.getElementById('siigoHistorico');
+  if(histEl){
+    histEl.innerHTML = !hist ? '<span style="color:#B65B2E;">El histórico (meses anteriores) todavía no se ha cargado: se carga solo después de publicar la nueva versión de la función.</span>'
+      : hist.completo ? `Histórico completo${hist.cargadoDesde ? ' (desde ' + escapeHtml(hist.cargadoDesde.slice(0, 7)) + ')' : ''}.`
+      : `<span style="color:#B65B2E;">Cargando histórico: ya está desde ${escapeHtml((hist.cargadoDesde || '').slice(0, 7))}; los meses anteriores irán apareciendo.</span>`;
+  }
 
   const estado = estadoSnap.val();
   const estadoEl = document.getElementById('siigoEstado');
@@ -8731,25 +8762,20 @@ async function siigoPintar(){
       `<tr style="font-weight:700;"><td>Total global</td><td style="text-align:right;">${fmt(global.ventas)}</td><td style="text-align:right;">${global.ventas ? '100%' : '–'}</td><td style="text-align:right;">${fmtNum(global.facturas)}</td><td style="text-align:right;">${fmtNum(global.unidades)}</td></tr>`
     : '<tr><td colspan="5" style="color:var(--ink-soft);">Sin ventas en el período.</td></tr>';
 
-  const nombreVendedor = v => { const c = siigoVendedores && v.id != null && siigoVendedores[siigoClave(v.id)]; return c && c.nombre ? c.nombre : (v.id != null ? 'Vendedor ' + v.id : 'Sin vendedor'); };
+  const nombreVendedor = v => siigoNombreVendedor(v.id);
   const filasVend = Object.values(t.vendedores).sort((a, b) => b.valor - a.valor);
   const pctVend = v => t.ventas ? (v / t.ventas * 100).toFixed(1).replace('.', ',') + '%' : '–';
   document.getElementById('siigoVendedoresBody').innerHTML = filasVend.length
     ? filasVend.map((v, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(nombreVendedor(v))}</td><td style="text-align:right;">${fmt(v.valor)}</td><td style="text-align:right;">${pctVend(v.valor)}</td><td style="text-align:right;">${fmtNum(v.facturas)}</td></tr>`).join('')
     : '<tr><td colspan="5" style="color:var(--ink-soft);">Sin ventas en el período (o aún no se ha vuelto a sincronizar con la versión que registra vendedores).</td></tr>';
 
-  const topProductos = Object.values(t.productos).sort((a, b) => b.valor - a.valor).slice(0, SIIGO_TOP);
-  document.getElementById('siigoProductosBody').innerHTML = topProductos.length
-    ? topProductos.map((p, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(p.descripcion || p.codigo)}${p.codigo && p.descripcion ? ` <span style="color:var(--ink-soft);font-size:11px;">${escapeHtml(p.codigo)}</span>` : ''}</td><td style="text-align:right;">${fmtNum(p.cantidad)}</td><td style="text-align:right;">${fmt(p.valor)}</td></tr>`).join('')
-    : '<tr><td colspan="4" style="color:var(--ink-soft);">Sin ventas en el período.</td></tr>';
-
-  const topClientes = Object.values(t.clientes).sort((a, b) => b.valor - a.valor).slice(0, SIIGO_TOP);
-  const pintarClientes = () => {
-    document.getElementById('siigoClientesBody').innerHTML = topClientes.length
-      ? topClientes.map((c, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(siigoNombresClientes[c.nit] || ('NIT ' + c.nit))}</td><td style="text-align:right;">${fmt(c.valor)}</td><td style="text-align:right;">${fmtNum(c.facturas)}</td></tr>`).join('')
-      : '<tr><td colspan="4" style="color:var(--ink-soft);">Sin ventas en el período.</td></tr>';
-  };
+  siigoProductosTodos = Object.values(t.productos).sort((a, b) => b.valor - a.valor);
+  siigoClientesTodos = Object.values(t.clientes).sort((a, b) => b.valor - a.valor);
+  const topClientes = siigoClientesTodos;
+  const pintarClientes = () => siigoPintarClientes();
+  siigoPintarProductos();
   pintarClientes();
+  siigoPintarFacturas();
 
   if(siigoChartDias) siigoChartDias.destroy();
   if(typeof Chart !== 'undefined'){
@@ -8761,8 +8787,8 @@ async function siigoPintar(){
     });
   }
 
-  // Nombres de los clientes del top: se piden a Siigo/Firebase solo los que faltan.
-  const faltan = topClientes.filter(c => !(c.nit in siigoNombresClientes));
+  // Nombres que no están en el catálogo completo: se piden uno por uno (máx. 50).
+  const faltan = topClientes.filter(c => !(c.nit in siigoNombresClientes) && !siigoNombreCliente(c.nit, true)).slice(0, 50);
   if(faltan.length){
     const db = firebase.database();
     await Promise.all(faltan.map(c => db.ref('siigo/catalogos/clientes/' + siigoClave(c.nit)).once('value')
@@ -8770,8 +8796,60 @@ async function siigoPintar(){
       .catch(() => { siigoNombresClientes[c.nit] = 'NIT ' + c.nit; })));
     if(tok !== siigoPintarTok) return; // mientras tanto se cambió el centro de costo: no pintar datos viejos
     pintarClientes();
+    siigoPintarFacturas();
   }
 }
+
+let siigoProductosTodos = [], siigoClientesTodos = [];
+function siigoNombreCliente(nit, soloCatalogo){
+  const c = siigoClientesCat && siigoClientesCat[siigoClave(nit)];
+  if(c && c.nombre) return c.nombre;
+  if(soloCatalogo) return '';
+  return siigoNombresClientes[nit] || ('NIT ' + nit);
+}
+function siigoNombreVendedor(id){
+  const c = siigoVendedores && id != null && siigoVendedores[siigoClave(id)];
+  return c && c.nombre ? c.nombre : (id != null ? 'Vendedor ' + id : 'Sin vendedor');
+}
+function siigoCoincide(texto, q){ return !q || normalizeText(texto).includes(q); }
+function siigoPintarProductos(){
+  const q = normalizeText(document.getElementById('siigoProductosBuscar').value || '');
+  const filas = siigoProductosTodos.map((p, i) => ({ p, i })).filter(({p}) => siigoCoincide((p.descripcion || '') + ' ' + (p.codigo || ''), q));
+  document.getElementById('siigoProductosTitulo').textContent = `Productos vendidos (${fmtNum(siigoProductosTodos.length)})`;
+  document.getElementById('siigoProductosBody').innerHTML = filas.length
+    ? filas.slice(0, SIIGO_MAX_FILAS).map(({p, i}) => `<tr><td>${i + 1}</td><td>${escapeHtml(p.descripcion || p.codigo)}${p.codigo && p.descripcion ? ` <span style="color:var(--ink-soft);font-size:11px;">${escapeHtml(p.codigo)}</span>` : ''}</td><td style="text-align:right;">${fmtNum(p.cantidad)}</td><td style="text-align:right;">${fmt(p.valor)}</td></tr>`).join('')
+    : `<tr><td colspan="4" style="color:var(--ink-soft);">${siigoProductosTodos.length ? 'Sin resultados para tu búsqueda.' : 'Sin ventas en el período.'}</td></tr>`;
+}
+function siigoPintarClientes(){
+  const q = normalizeText(document.getElementById('siigoClientesBuscar').value || '');
+  const filas = siigoClientesTodos.map((c, i) => ({ c, i })).filter(({c}) => siigoCoincide(siigoNombreCliente(c.nit) + ' ' + c.nit, q));
+  document.getElementById('siigoClientesTitulo').textContent = `Clientes (${fmtNum(siigoClientesTodos.length)})`;
+  document.getElementById('siigoClientesBody').innerHTML = filas.length
+    ? filas.slice(0, SIIGO_MAX_FILAS).map(({c, i}) => `<tr><td>${i + 1}</td><td>${escapeHtml(siigoNombreCliente(c.nit))}</td><td style="text-align:right;">${fmt(c.valor)}</td><td style="text-align:right;">${fmtNum(c.facturas)}</td></tr>`).join('')
+    : `<tr><td colspan="4" style="color:var(--ink-soft);">${siigoClientesTodos.length ? 'Sin resultados para tu búsqueda.' : 'Sin ventas en el período.'}</td></tr>`;
+}
+// Todas las facturas del período (y del centro de costo elegido), con buscador.
+function siigoPintarFacturas(){
+  const body = document.getElementById('siigoFacturasBody');
+  if(!body) return;
+  const centro = document.getElementById('siigoCentro').value || 'global';
+  const claveCentroDe = f => (f.centroCosto === undefined || f.centroCosto === null || f.centroCosto === '') ? 'sin_centro' : 'cc_' + siigoClave(f.centroCosto);
+  const q = normalizeText(document.getElementById('siigoFacturasBuscar').value || '');
+  const delCentro = siigoFacturas.filter(f => centro === 'global' || claveCentroDe(f) === centro);
+  const filas = delCentro.filter(f => !q || siigoCoincide([f.numero, f.clienteNit, siigoNombreCliente(f.clienteNit), ...(f.items || []).map(it => (it.descripcion || '') + ' ' + (it.codigo || ''))].join(' '), q));
+  const validas = delCentro.filter(f => !f.anulada);
+  document.getElementById('siigoFacturasTitulo').textContent = `Facturas del período (${fmtNum(validas.length)}${delCentro.length !== validas.length ? ' + ' + fmtNum(delCentro.length - validas.length) + ' anuladas' : ''})`;
+  body.innerHTML = filas.length
+    ? filas.slice(0, SIIGO_MAX_FILAS).map(f => {
+        const unidades = (f.items || []).reduce((a, it) => a + (Number(it.cantidad) || 0), 0);
+        const estado = f.anulada ? '<span style="color:#B42318;">Anulada</span>' : (Number(f.saldo) > 0 ? '<span style="color:#B65B2E;">Con saldo</span>' : 'Pagada');
+        return `<tr${f.anulada ? ' style="opacity:.55;"' : ''}><td>${escapeHtml(f.fecha || '')}</td><td>${escapeHtml(f.numero || f.id || '')}</td><td>${escapeHtml(siigoNombreCliente(f.clienteNit))}</td><td>${escapeHtml(siigoNombreCentro(claveCentroDe(f)))}</td><td>${escapeHtml(siigoNombreVendedor(f.vendedor))}</td><td style="text-align:right;">${fmtNum(unidades)}</td><td style="text-align:right;">${fmt(Number(f.total) || 0)}</td><td style="text-align:right;">${Number(f.saldo) ? fmt(Number(f.saldo)) : '—'}</td><td>${estado}</td></tr>`;
+      }).join('') + (filas.length > SIIGO_MAX_FILAS ? `<tr><td colspan="9" style="color:var(--ink-soft);">Se muestran ${fmtNum(SIIGO_MAX_FILAS)} de ${fmtNum(filas.length)}. Usa el buscador o un período más corto para ver el resto.</td></tr>` : '')
+    : `<tr><td colspan="9" style="color:var(--ink-soft);">${delCentro.length ? 'Sin resultados para tu búsqueda.' : 'Sin facturas en el período.'}</td></tr>`;
+}
+document.getElementById('siigoProductosBuscar').addEventListener('input', siigoPintarProductos);
+document.getElementById('siigoClientesBuscar').addEventListener('input', siigoPintarClientes);
+document.getElementById('siigoFacturasBuscar').addEventListener('input', siigoPintarFacturas);
 
 document.getElementById('siigoAplicarBtn').addEventListener('click', () => renderVentasSiigoView());
 document.getElementById('siigoSincronizarBtn').addEventListener('click', async (e) => {

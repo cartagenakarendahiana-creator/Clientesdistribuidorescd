@@ -10,7 +10,7 @@ const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { SiigoClient } = require('./siigo');
-const { sincronizar, hoyColombia, sumarDias } = require('./sync');
+const { sincronizar, avanzarHistorico: avanzarHistoricoCon, hoyColombia, sumarDias } = require('./sync');
 
 admin.initializeApp();
 
@@ -27,12 +27,19 @@ const SECRETOS = [SIIGO_USERNAME, SIIGO_ACCESS_KEY, SIIGO_PARTNER_ID];
 // Espera mínima entre dos sincronizaciones pedidas con el botón de la app.
 const ESPERA_MANUAL_MS = 60 * 1000;
 
-function sincronizarUltimosDias() {
-  const client = new SiigoClient({
+function nuevoCliente() {
+  return new SiigoClient({
     username: SIIGO_USERNAME.value(),
     accessKey: SIIGO_ACCESS_KEY.value(),
     partnerId: SIIGO_PARTNER_ID.value(),
   });
+}
+
+function avanzarHistorico({ client = nuevoCliente(), tiempoMaxMs } = {}) {
+  return avanzarHistoricoCon({ client, db: admin.database(), tiempoMaxMs });
+}
+
+function sincronizarUltimosDias(client = nuevoCliente()) {
   const hasta = hoyColombia();
   return sincronizar({ client, db: admin.database(), desde: sumarDias(hasta, -DIAS_ATRAS), hasta });
 }
@@ -47,14 +54,20 @@ exports.sincronizarSiigo = onSchedule(
     retryCount: 1,
   },
   async () => {
-    await sincronizarUltimosDias();
+    const client = nuevoCliente();
+    await sincronizarUltimosDias(client);
+    try {
+      await avanzarHistorico({ client, tiempoMaxMs: 300000 });
+    } catch (err) {
+      console.error('Siigo histórico:', err); // no afecta la sincronización del día
+    }
   }
 );
 
 // Botón "Sincronizar ahora" de la sección Ventas Siigo. No recibe datos: solo dispara la misma
 // sincronización de los últimos días, como máximo una vez por minuto.
 exports.sincronizarSiigoAhora = onRequest(
-  { cors: true, secrets: SECRETOS, timeoutSeconds: 300, maxInstances: 1 },
+  { cors: true, secrets: SECRETOS, timeoutSeconds: 540, maxInstances: 1 },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).json({ ok: false, mensaje: 'Usa POST.' });
@@ -67,8 +80,16 @@ exports.sincronizarSiigoAhora = onRequest(
       return;
     }
     try {
-      const r = await sincronizarUltimosDias();
-      res.json({ ok: true, mensaje: `${r.facturas} facturas sincronizadas.`, ...r });
+      const client = nuevoCliente();
+      const r = await sincronizarUltimosDias(client);
+      let h = null;
+      try {
+        h = await avanzarHistorico({ client, tiempoMaxMs: 150000 });
+      } catch (err) {
+        console.error('Siigo histórico:', err);
+      }
+      const extra = h && !h.completo && h.cargadoDesde ? ` Histórico cargado desde ${h.cargadoDesde.slice(0, 7)}; sigue cargando.` : '';
+      res.json({ ok: true, mensaje: `${r.facturas} facturas sincronizadas.${extra}`, ...r });
     } catch (err) {
       console.error(err);
       res.status(500).json({ ok: false, mensaje: String(err.message || err) });

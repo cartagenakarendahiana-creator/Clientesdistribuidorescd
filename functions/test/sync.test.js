@@ -1,12 +1,18 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { SiigoClient } = require('../siigo');
-const { sincronizar, normalizarFactura, construirDia, hoyColombia } = require('../sync');
+const { sincronizar, avanzarHistorico, normalizarFactura, construirDia, hoyColombia } = require('../sync');
 
 // Base de datos falsa con la misma forma que firebase-admin (ref/once/update).
 function dbFalsa() {
   const datos = {};
   const ref = (ruta = '') => ({
+    set: async (v) => {
+      const partes = ruta.split('/').filter(Boolean);
+      let o = datos;
+      for (const p of partes.slice(0, -1)) o = o[p] ||= {};
+      o[partes.at(-1)] = v;
+    },
     once: async () => ({ val: () => ruta.split('/').filter(Boolean).reduce((o, k) => (o ? o[k] : undefined), datos) ?? null }),
     update: async (cambios) => {
       for (const [k, v] of Object.entries(cambios)) {
@@ -171,4 +177,34 @@ test('cuenta facturas con fecha anterior a su creación y mueve las que cambian 
   assert.equal(r['2026-09-28'].global.ventas, 50);
   assert.deepEqual(Object.keys(db.datos.siigo.facturasDia['2026-09-20']).sort(), ['x', 'z']);
   assert.equal(db.datos.siigo.facturasIndice.y, '2026-09-28');
+});
+
+test('avanzarHistorico carga mes a mes hacia atrás y termina tras 3 meses sin facturas', async () => {
+  const db = dbFalsa();
+  // Solo hay facturas creadas en agosto y septiembre de 2026.
+  const fetchImpl = fetchFalso({
+    '/auth': { access_token: 't', expires_in: 3600 },
+    '/v1/cost-centers': [],
+    '/v1/users': { results: [], pagination: { total_results: 0 } },
+    '/v1/customers': { results: [], pagination: { total_results: 0 } },
+    '/v1/products': { results: [], pagination: { total_results: 0 } },
+    '/v1/invoices': (q) => {
+      const ini = q.get('date_start');
+      const res = ini === '2026-09-01' ? [factura('s1', '2026-09-10', 1, 100, [])]
+        : ini === '2026-08-01' ? [factura('a1', '2026-08-05', 1, 50, []), factura('a2', '2026-08-20', 1, 70, [])] : [];
+      return { results: res, pagination: { total_results: res.length } };
+    },
+  });
+  const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'p', fetchImpl });
+  const h = await avanzarHistorico({ client, db, hoy: '2026-09-29', log: () => {} });
+  const meses = fetchImpl.llamadas.filter((l) => l.ruta === '/v1/invoices').map((l) => l.params.date_start);
+  assert.deepEqual(meses, ['2026-09-01', '2026-08-01', '2026-07-01', '2026-06-01', '2026-05-01']);
+  assert.equal(h.completo, true);
+  assert.equal(h.facturas, 3);
+  assert.equal(h.cargadoDesde, '2026-05-01');
+  assert.ok(db.datos.siigo.facturasDia['2026-08-20'].a2);
+  // Ya completo: no vuelve a pedir nada.
+  const antes = fetchImpl.llamadas.length;
+  await avanzarHistorico({ client, db, hoy: '2026-09-29', log: () => {} });
+  assert.equal(fetchImpl.llamadas.length, antes);
 });
