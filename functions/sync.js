@@ -94,7 +94,7 @@ function agregarA(nodo, factura) {
   cli.facturas += 1;
   cli.valor = redondear(cli.valor + factura.total);
 
-  for (const it of factura.items) {
+  for (const it of factura.items || []) { // Firebase no guarda arreglos vacíos
     nodo.unidades = redondear(num(nodo.unidades) + it.cantidad);
     const p = (nodo.productos[claveSegura(it.codigo || it.descripcion)] ||= {
       codigo: it.codigo,
@@ -208,7 +208,8 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
       rango: { desde, hasta },
       facturas: traidas.length,
       diasActualizados: afectadas.size,
-      catalogosHasta: inicio.slice(0, 10),
+      // Fecha de Colombia (no UTC) y un día de traslape, para no saltarse clientes/productos creados esa noche.
+      catalogosHasta: sumarDias(hoyColombia(new Date(inicio)), -1),
       ultimoError: null,
     };
     await db.ref().update(updates);

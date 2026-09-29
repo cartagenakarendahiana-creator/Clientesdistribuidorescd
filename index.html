@@ -2178,7 +2178,7 @@ function initFirebaseSync(){
       firebaseReady = true;
       firebaseReadyResolve();
     }else if(appRendered){
-      renderAll();
+      programarRenderAll();
     }
   }, (err)=>{
     console.error('firebase sync error', err);
@@ -2186,6 +2186,26 @@ function initFirebaseSync(){
     if(!firebaseReady){ firebaseReady = true; firebaseReadyResolve(); }
   });
 }
+// Redibujar toda la app justo entre el "mousedown" y el "click" hacía que el botón pulsado
+// desapareciera (el clic se perdía: había que hacer clic dos veces), y redibujar mientras alguien
+// escribe le borraba lo que estaba escribiendo. Se espera a que suelte el botón / salga del campo.
+let punteroAbajo = false, renderPendiente = false;
+function escribiendoFueraDeModal(){
+  const a = document.activeElement;
+  return !!(a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|file)$/i.test(a.type))) && !a.closest('.modal-overlay'));
+}
+function programarRenderAll(){
+  if(punteroAbajo || escribiendoFueraDeModal()){ renderPendiente = true; return; }
+  renderPendiente = false;
+  renderAll();
+}
+function renderSiPendiente(){
+  if(renderPendiente) setTimeout(programarRenderAll, 0);
+}
+document.addEventListener('pointerdown', () => { punteroAbajo = true; }, true);
+document.addEventListener('pointerup', () => { punteroAbajo = false; renderSiPendiente(); }, true);
+document.addEventListener('pointercancel', () => { punteroAbajo = false; renderSiPendiente(); }, true);
+document.addEventListener('focusout', () => setTimeout(renderSiPendiente, 0), true);
 initFirebaseSync();
 
 // Firebase Realtime Database rechaza CUALQUIER escritura si en cualquier parte del objeto hay
@@ -2236,12 +2256,13 @@ function sanitizeForFirebase(val){
 // otro celular/computador/pestaña guardaba con datos viejos, borraba lo que otra persona acababa
 // de ingresar ("se guarda y luego desaparece").
 let estadoServidorJson = {};
+let estadoServidor = {};
 function recordarEstadoServidor(raw){
   estadoServidorJson = {};
-  if(raw && typeof raw === 'object'){
-    for(const k in raw) estadoServidorJson[k] = JSON.stringify(raw[k]);
-  }
+  estadoServidor = (raw && typeof raw === 'object') ? raw : {};
+  for(const k in estadoServidor) estadoServidorJson[k] = JSON.stringify(estadoServidor[k]);
 }
+const esMapa = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 function mostrarErrorGuardado(msg){
   let el = document.getElementById('errorGuardadoBanner');
   if(!el){
@@ -2266,7 +2287,18 @@ async function saveAppData(data){
     const cambios = {};
     new Set([...Object.keys(enc), ...Object.keys(estadoServidorJson)]).forEach(k => {
       const v = enc[k] === undefined ? null : enc[k];
-      if(JSON.stringify(v) !== (estadoServidorJson[k] ?? 'null')) cambios[k] = v;
+      if(JSON.stringify(v) === (estadoServidorJson[k] ?? 'null')) return;
+      const srv = estadoServidor[k];
+      if(esMapa(v) && esMapa(srv)){
+        // Secciones tipo mapa (entregas por cliente, observaciones, overrides…): se envía solo el
+        // cliente/clave que cambió, así dos equipos editando clientes distintos no se pisan.
+        new Set([...Object.keys(v), ...Object.keys(srv)]).forEach(sub => {
+          const nv = v[sub] === undefined ? null : v[sub];
+          if(JSON.stringify(nv) !== JSON.stringify(srv[sub] === undefined ? null : srv[sub])) cambios[k + '/' + sub] = nv;
+        });
+      } else {
+        cambios[k] = v;
+      }
     });
     if(!Object.keys(cambios).length){ showToast('Guardado'); return; }
     // Sin internet Firebase deja el cambio en cola y la promesa no termina hasta reconectar:
@@ -2298,6 +2330,12 @@ function showToast(msg, ms){
   t._timer = setTimeout(()=>t.classList.remove('show'), ms || 1400);
 }
 
+// Fecha de HOY en hora local (YYYY-MM-DD). toISOString() da la fecha UTC: en Colombia, desde
+// las 7 p. m. devolvía la fecha de MAÑANA.
+function fechaLocalISO(d){
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
 const fmtNum = n => Math.round(n).toLocaleString('es-CO');
 
@@ -2543,9 +2581,12 @@ function getOrderLines(distId){
   // Cada línea extra lleva un id fijo (uid). Antes la clave de "entregado" era su posición en la lista,
   // y al borrar una línea todas las siguientes (de cualquier cliente) heredaban la entrega equivocada.
   // Las líneas antiguas conservan como uid su posición original, así sus entregas guardadas siguen valiendo.
+  let uidNuevo = false;
   APPDATA.extras.forEach((ex, i) => {
-    if(ex.uid === undefined || ex.uid === null) ex.uid = APPDATA.extrasUidsV2 ? newExtraUid() : String(i);
+    if(ex.uid === undefined || ex.uid === null){ ex.uid = APPDATA.extrasUidsV2 ? newExtraUid() : String(i); uidNuevo = true; }
   });
+  // Si no se guardara, en cada sincronización la línea recibiría un uid distinto y perdería su "entregado".
+  if(uidNuevo && dataRef) setTimeout(() => saveAppData(APPDATA), 0);
   APPDATA.extrasUidsV2 = true;
   APPDATA.extras.forEach((ex, i) => {
     if(ex.distId === distId){
@@ -2562,8 +2603,14 @@ function newExtraUid(){
   return 'u' + Date.now().toString(36) + (++_extraUidSeq).toString(36) + Math.random().toString(36).slice(2, 5);
 }
 /** Borra una línea agregada a mano y su entrega guardada, sin afectar a las demás líneas. */
+// Posición ACTUAL de una línea agregada, buscada por su uid (la posición guardada al abrir la
+// ventana puede haber cambiado si otro equipo agregó/borró líneas mientras tanto).
+function indiceExtraActual(line){
+  return (APPDATA.extras || []).findIndex(e => e && ('extra-' + e.uid) === line.key);
+}
 function deleteExtraLine(distId, line){
-  APPDATA.extras.splice(line.extraIdx, 1);
+  const i = indiceExtraActual(line);
+  if(i > -1) APPDATA.extras.splice(i, 1);
   if(APPDATA.entregas && APPDATA.entregas[distId]) delete APPDATA.entregas[distId][line.key];
 }
 
@@ -3232,7 +3279,7 @@ function prodRenderTable(){
         <button class="icon-btn icon-delete" data-prod-delete="${idx}" title="Eliminar">🗑</button>
       </td>
     </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:22px 10px;">${all.length ? 'No hay filas para estos filtros' : 'Todavía no hay filas. Usa "+ Nueva fila" para crear la primera.'}</td></tr>`;
-  prodUpdateSummaries(filtered.length ? filtered.map(x=>x.r) : all);
+  prodUpdateSummaries(filtered.map(x=>x.r));
 }
 
 function prodUpdateSummaries(rows){
@@ -3310,7 +3357,7 @@ function prodRenderDiasChart(){
   prodChartDias = new Chart(document.getElementById('prodChartDias'), {
     type:'line',
     data:{ labels:dias, datasets:[{ label:'Asignaciones', data:sums, borderColor:'#7C5F2C', backgroundColor:'rgba(158,123,59,.15)', fill:true, tension:.35, pointRadius:0 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ grid:{color:'#F0EAD9'} } }
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ grid:{color:'#F0EAD9'} } } }
   });
 }
 
@@ -3408,7 +3455,9 @@ function openProdRowModal(idx){
   if(editing){
     overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
       if(!confirm('¿Eliminar esta fila?')) return;
-      rows.splice(idx,1);
+      const cur = getProdDetalle();
+      const i = r.id ? cur.findIndex(x => x && x.id === r.id) : cur.indexOf(r);
+      if(i > -1) cur.splice(i, 1);
       await saveAppData(APPDATA);
       overlay.remove();
       prodRefreshAll();
@@ -3432,7 +3481,14 @@ function openProdRowModal(idx){
       productividad: Math.max(0, Math.min(100, Number(productividadVal))),
       estado: overlay.querySelector('#prInpEstado').value
     };
-    if(editing){ rows[idx] = newRow; } else { rows.push(newRow); }
+    // Se busca la lista ACTUAL (si llegó una sincronización con el modal abierto, "rows" ya es vieja
+    // y lo guardado ahí se perdía).
+    const cur = getProdDetalle();
+    if(editing){
+      const i = r.id ? cur.findIndex(x => x && x.id === r.id) : cur.indexOf(r);
+      if(i < 0){ showToast('Esa fila ya no existe (se borró en otro equipo)'); overlay.remove(); prodRefreshAll(); return; }
+      cur[i] = newRow;
+    } else { cur.push(newRow); }
     await saveAppData(APPDATA);
     overlay.remove();
     prodRefreshAll();
@@ -3862,7 +3918,7 @@ function cdDescargarRespaldo(){
     const blob = new Blob([JSON.stringify(APPDATA)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'respaldo-casa-dorada-' + new Date().toISOString().slice(0,10) + '.json';
+    a.download = 'respaldo-casa-dorada-' + fechaLocalISO() + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }catch(e){ console.warn('No se pudo generar el respaldo', e); }
@@ -3932,7 +3988,10 @@ function openUnificarDuplicadosModal(){
     if(!elegidos.length) return;
     btnOk.disabled = true;
     if(overlay.querySelector('#dupBackup').checked) cdDescargarRespaldo();
-    elegidos.forEach(g => cdUnificarGrupo(g, g.mode));
+    // Se recalculan los grupos al confirmar: si mientras la ventana estaba abierta otro equipo ya
+    // unificó o cambió algo, no se vuelve a sumar lo mismo dos veces.
+    const vivos = new Map(cdFindDuplicateClients().map(x => [x.key, x]));
+    elegidos.forEach(g => { const f = vivos.get(g.key); if(f) cdUnificarGrupo({...f}, g.mode); });
     await saveAppData(APPDATA);
     overlay.remove();
     renderAll();
@@ -4337,6 +4396,9 @@ function cdPrintPage(){
 window.addEventListener('beforeprint', () => {
   if(!document.body.classList.contains('printing-modal')) cdPreparePagePrint();
 });
+window.addEventListener('afterprint', () => {
+  if(!document.body.classList.contains('printing-modal')) cdCleanupPagePrint();
+});
 
 /** Prepara un modal para imprimir: encabezado con logo (si no tiene el suyo) y columnas de acciones fuera. */
 function cdPrepareModalPrint(overlay){
@@ -4390,16 +4452,21 @@ function printModal(overlay){
 // ---------- Facturación: generar factura desde un pedido, verla/imprimirla y consultar el historial ----------
 
 /** Siguiente número consecutivo de factura (empieza en 1). */
+// Usa un consecutivo que solo sube (facturaSeq): antes era "el mayor + 1" y al borrar la última
+// factura el siguiente número se repetía.
 function siguienteNumeroFactura(){
   const facturas = APPDATA.facturas || [];
-  return facturas.reduce((max, f) => Math.max(max, f.numero || 0), 0) + 1;
+  const maxActual = facturas.reduce((max, f) => Math.max(max, Number(f && f.numero) || 0), 0);
+  const n = Math.max(Number(APPDATA.facturaSeq) || 0, maxActual) + 1;
+  APPDATA.facturaSeq = n;
+  return n;
 }
 
 /** Calcula subtotal, impuesto y total a partir de un arreglo de líneas {cantidad, precioUnitario, subtotal}. */
 function calcularTotalesFactura(lineas, impuestoPct){
-  const subtotalGeneral = lineas.reduce((s, l) => s + l.subtotal, 0);
+  const subtotalGeneral = Math.round(lineas.reduce((s, l) => s + (Number(l.subtotal) || 0), 0));
   const pct = Number(impuestoPct) || 0;
-  const impuestoValor = subtotalGeneral * (pct / 100);
+  const impuestoValor = Math.round(subtotalGeneral * (pct / 100));
   const total = subtotalGeneral + impuestoValor;
   return { subtotalGeneral, impuestoPct: pct, impuestoValor, total };
 }
@@ -4414,7 +4481,7 @@ async function guardarFactura({ dist, lineas, fecha, impuestoPct, observaciones,
     numero: facturaExistente ? facturaExistente.numero : siguienteNumeroFactura(),
     distId: facturaExistente ? facturaExistente.distId : (dist ? dist.id : null),
     cliente: facturaExistente ? facturaExistente.cliente : (dist ? dist.nombre : ''),
-    fecha: fecha || new Date().toISOString().slice(0, 10),
+    fecha: fecha || fechaLocalISO(),
     lineas,
     subtotalGeneral,
     impuestoPct: pct,
@@ -4571,7 +4638,7 @@ function abrirGenerarFacturaModal(dist){
     showToast('Este pedido no tiene productos todavía — agrega al menos uno antes de facturar.');
     return;
   }
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = fechaLocalISO();
   const invMap = new Map(calcularInventarioProduccion().map(x => [x.producto, x]));
   const overlay = openModal(`
     <h3>Generar factura para ${escapeHtml(dist.nombre)}</h3>
@@ -4912,7 +4979,9 @@ function openEditLineModal(distId, line){
     const precio = parseFloat(precioEl.value) || 0;
     if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); return; }
     if(line.origen==='extra'){
-      APPDATA.extras[line.extraIdx] = {...APPDATA.extras[line.extraIdx], productoIdx, cantidad, precio};
+      const i = indiceExtraActual(line);
+      if(i < 0){ showToast('Esa línea ya no existe (se borró en otro equipo)'); overlay.remove(); renderAll(); return; }
+      APPDATA.extras[i] = {...APPDATA.extras[i], productoIdx, cantidad, precio};
     }else{
       if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
       if(!APPDATA.catalogOverrides[distId]) APPDATA.catalogOverrides[distId] = {};
@@ -4977,6 +5046,7 @@ function openNewProductModal(){
     });
     listEl.querySelectorAll('button[data-del]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
+        if(!confirm('¿Eliminar este producto? También se quitará de los pedidos de clientes que lo tengan.')) return;
         deleteCustomProduct(parseInt(btn.dataset.del));
         await saveAppData(APPDATA);
         paint();
@@ -5069,7 +5139,7 @@ function deleteCustomProduct(idx){
       Object.keys(ovs).forEach(key=>{
         const ov = ovs[key];
         if(ov && typeof ov.productoIdx === 'number'){
-          if(ov.productoIdx === deletedGlobalIdx){ delete ovs[key]; }
+          if(ov.productoIdx === deletedGlobalIdx){ ovs[key] = {eliminado:true}; } // antes volvía al producto original
           else if(ov.productoIdx > deletedGlobalIdx){ ov.productoIdx -= 1; }
         }
       });
@@ -5250,8 +5320,7 @@ function openProductDebtFilter(){
 
   input.addEventListener('input', ()=> showMatches(input.value));
   input.addEventListener('focus', ()=> { if(input.value.trim()) showMatches(input.value); });
-  document.addEventListener('click', function outsideClick(e){
-    if(!overlay.contains(e.target)) return;
+  overlay.addEventListener('click', (e)=>{
     if(!resultsBox.contains(e.target) && e.target !== input) resultsBox.style.display='none';
   });
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
@@ -6018,7 +6087,7 @@ const PLANTA_MODULES = {
         const color = pct >= 15 ? '#B65B2E' : (pct >= 8 ? 'var(--gold-dark)' : '#4C7A52');
         return `<span style="font-weight:700;color:${color};">${pct.toFixed(1)}%</span>`;
       }},
-      {key:'guiaFoto', label:'Guía', html:true, format:v=>v ? `<img src="${v}" class="guia-thumb" data-guia-view alt="Guía">` : '<span style="color:var(--ink-soft);font-size:12px;">Sin foto</span>'},
+      {key:'guiaFoto', label:'Guía', html:true, format:v=>v ? `<img src="${escapeAttr(v)}" class="guia-thumb" data-guia-view alt="Guía">` : '<span style="color:var(--ink-soft);font-size:12px;">Sin foto</span>'},
       {key:'enviadoWhatsapp', label:'WhatsApp', html:true, format:v=> v ? `<span class="badge saldado">✓ Enviado</span>` : `<span class="badge debe">Pendiente</span>`},
       {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
@@ -6061,7 +6130,7 @@ const PLANTA_MODULES = {
     onSave:(rec, prevRec)=>{
       if(prevRec && Array.isArray(prevRec.materiales) && prevRec.materiales.length){
         const prevComputado = costeoMaterialPorProducto(prevRec);
-        if(Number(rec.costoMaterial) !== prevComputado){
+        if(Number(rec.costoMaterial) !== Number(prevRec.costoMaterial) && Number(rec.costoMaterial) !== prevComputado){
           delete rec.materiales;
           showToast('Se quitó el desglose de insumos: ahora manda el costo material manual');
         }
@@ -6217,7 +6286,7 @@ const PLANTA_MODULES = {
       {key:'concepto', label:'Concepto', type:'text', required:true, placeholder:'Ej. Reparación de máquina'},
       {key:'categoria', label:'Categoría', type:'select', options:[{value:'Reparaciones',label:'Reparaciones'},{value:'Imprevistos',label:'Imprevistos'},{value:'Compra puntual',label:'Compra puntual'},{value:'Transporte',label:'Transporte'},{value:'Otro',label:'Otro'}]},
       {key:'etapa', label:'Etapa', type:'select', required:true, options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
-      {key:'fecha', label:'Fecha', type:'date', required:true, default:new Date().toISOString().slice(0,10)},
+      {key:'fecha', label:'Fecha', type:'date', required:true, default:()=>fechaLocalISO()},
       {key:'valor', label:'Valor', type:'number', placeholder:'Ej. 150000'},
       {key:'observaciones', label:'Observaciones', type:'textarea', placeholder:'Detalles del gasto'}
     ],
@@ -6673,7 +6742,7 @@ function renderProduccionDisponibilidad(){
 /** true si el registro pasa el filtro de etapa (Corte/Taller/Todos), el rango de fechas
  * (Desde/Hasta) y el producto seleccionado en la vista de Producción Diaria. */
 function produccionPasaFiltros(item){
-  if(produccionEtapaFiltro !== 'todos' && (item.etapa || 'Taller') !== produccionEtapaFiltro) return false;
+  if(produccionEtapaFiltro !== 'todos' && normEtapa(item.etapa) !== produccionEtapaFiltro) return false;
   const desdeEl = document.getElementById('produccionFechaDesde');
   const hastaEl = document.getElementById('produccionFechaHasta');
   const productoEl = document.getElementById('produccionProductoFiltro');
@@ -6717,7 +6786,7 @@ function renderProduccionTotales(){
   const kpiRegistros = document.getElementById('produccionKpiRegistros');
   const kpiUnidades = document.getElementById('produccionKpiUnidades');
   const kpiProductos = document.getElementById('produccionKpiProductos');
-  if(kpiRegistros) kpiRegistros.textContent = fmtNum(registros.length);
+  if(kpiRegistros) kpiRegistros.textContent = fmtNum(new Set((APPDATA.plantaProduccionDiaria || []).map((r, i) => produccionPasaFiltros(r) ? produccionGrupoKey(r, i) : null).filter(Boolean)).size);
   if(kpiUnidades) kpiUnidades.textContent = fmtNum(totalUnidades);
   if(kpiProductos) kpiProductos.textContent = fmtNum(Object.keys(porProducto).length);
 
@@ -6769,7 +6838,7 @@ function initProduccionEtapaDashboard(){
   if(desdeInput && hastaInput){
     const hoy = new Date();
     const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    const fmtFecha = d => d.toISOString().slice(0, 10);
+    const fmtFecha = d => fechaLocalISO(d);
     desdeInput.value = fmtFecha(primerDiaMes);
     hastaInput.value = fmtFecha(hoy);
     desdeInput.addEventListener('change', renderProduccionEtapaDashboard);
@@ -6835,7 +6904,8 @@ function renderProduccionEtapaDashboard(){
 
 
 function buildPlantaFieldHtml(f, currentValue){
-  const val = (currentValue !== undefined && currentValue !== null) ? currentValue : (f.default !== undefined ? f.default : '');
+  const def = typeof f.default === 'function' ? f.default() : f.default;
+  const val = (currentValue !== undefined && currentValue !== null) ? currentValue : (def !== undefined ? def : '');
   if(f.type === 'select'){
     const opts = typeof f.options === 'function' ? f.options() : (f.options || []);
     return `<div class="field"><label>${escapeHtml(f.label)}${f.required?' *':''}</label>
@@ -6861,7 +6931,7 @@ function buildPlantaFieldHtml(f, currentValue){
       <input type="file" accept="image/*" capture="environment" id="pf_${f.key}_file" class="img-field-input">
       <input type="hidden" id="pf_${f.key}" value="${escapeAttr(val)}">
       <div class="img-field-preview" id="pf_${f.key}_preview">
-        ${val ? `<img src="${val}" alt="Vista previa"><button type="button" class="img-field-remove" data-remove-img="${f.key}">✕ Quitar foto</button>` : `<span class="img-field-empty">Sin foto todavía — toca para tomar o subir una</span>`}
+        ${val ? `<img src="${escapeAttr(val)}" alt="Vista previa"><button type="button" class="img-field-remove" data-remove-img="${f.key}">✕ Quitar foto</button>` : `<span class="img-field-empty">Sin foto todavía — toca para tomar o subir una</span>`}
       </div>
     </div>`;
   }
@@ -6938,9 +7008,10 @@ function openPlantaModal(moduleKey, idx){
   // ahí "record" queda apuntando a un objeto "viejo" que ya no existe en la lista actual, y
   // buscarlo por referencia (indexOf) fallaría, duplicando el registro en vez de reemplazarlo.
   const recordId = editing ? record.id : null;
+  const recordSnap = editing ? JSON.stringify(record) : null; // registros viejos sin id: se buscan por contenido
   const findFreshIndex = (freshList) => recordId != null
     ? freshList.findIndex(x => x && x.id === recordId)
-    : freshList.indexOf(record);
+    : freshList.findIndex(x => x === record || JSON.stringify(x) === recordSnap);
   const overlay = openModal(`
     <h3>${editing ? 'Editar' : 'Nuevo'} ${mod.titleCap}</h3>
     ${mod.fields.map(f => buildPlantaFieldHtml(f, record[f.key])).join('')}
@@ -6999,7 +7070,8 @@ function openPlantaModal(moduleKey, idx){
     const freshList = getPlantaList(moduleKey);
     if(editing){
       const i = findFreshIndex(freshList);
-      if(i > -1) freshList[i] = newRecord; else freshList.push(newRecord);
+      if(i < 0){ showToast('Este registro fue eliminado en otro equipo; no se guardó.', 5000); overlay.remove(); renderPlantaModule(moduleKey); return; }
+      freshList[i] = newRecord;
     } else {
       freshList.push(newRecord);
     }
@@ -7074,6 +7146,11 @@ function openProduccionModal(groupKey, defaultEtapa){
     const inp = linea.querySelector('.pl-precio');
     if(sel && inp) inp.value = precioValor(sel.value);
   };
+  // Filas del registro en la lista ACTUAL (por id / registroId, no por referencia al objeto: si llega
+  // una sincronización con el modal abierto, las referencias viejas ya no están en la lista y el
+  // registro se duplicaba al guardar o no se borraba al eliminar).
+  const idsGrupo = new Set(lineasGrupo.map(o => o.it.id).filter(Boolean));
+  const idxsGrupo = (l) => l.map((it, i) => (it && ((it.id && idsGrupo.has(it.id)) || produccionGrupoKey(it, i) === groupKey)) ? i : -1).filter(i => i > -1);
   overlay.querySelector('#pp_etapa').addEventListener('change', (e)=>{
     etapaActual = normEtapa(e.target.value);
     const validas = opcionesPara(etapaActual);
@@ -7110,7 +7187,7 @@ function openProduccionModal(groupKey, defaultEtapa){
     overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
       if(!confirm('¿Eliminar este registro de producción completo?')) return;
       const freshList = getPlantaList('produccion');
-      lineasGrupo.map(o => freshList.indexOf(o.it)).filter(i => i > -1).sort((a,b) => b-a).forEach(i => freshList.splice(i, 1));
+      idxsGrupo(freshList).sort((a,b) => b-a).forEach(i => freshList.splice(i, 1));
       await saveAppData(APPDATA);
       overlay.remove();
       renderPlantaModule('produccion');
@@ -7140,14 +7217,16 @@ function openProduccionModal(groupKey, defaultEtapa){
     });
     if(hayIncompleta){ showToast('Cada fila necesita un producto y una cantidad mayor a 0'); return; }
     if(!porProducto.size){ showToast('Agrega al menos un producto con su cantidad'); return; }
-    const precioFinal = (prod) => precioPorProducto.has(prod) ? precioPorProducto.get(prod) : precioDe(etapa, prod);
+    // Un precio 0 no se guarda como precio propio: así, cuando definas el precio en "Precios de
+    // servicio", estos registros lo toman (antes quedaban en $0 para siempre).
+    const precioFinal = (prod) => { const v = precioPorProducto.has(prod) ? precioPorProducto.get(prod) : precioDe(etapa, prod); return v > 0 ? v : null; };
     const freshList = getPlantaList('produccion');
     if(editing){
       // Reemplaza todas las filas del registro por las nuevas (conserva id/registroId de las que siguen igual)
       const registroId = record.registroId || ('r' + Date.now() + Math.random().toString(36).slice(2,6));
       const previas = new Map();
       lineasGrupo.forEach(o => { if(!previas.has(o.it.producto)) previas.set(o.it.producto, o.it); });
-      const idxs = lineasGrupo.map(o => freshList.indexOf(o.it)).filter(i => i > -1).sort((a,b) => a-b);
+      const idxs = idxsGrupo(freshList);
       const posInsercion = idxs.length ? idxs[0] : freshList.length;
       idxs.slice().reverse().forEach(i => freshList.splice(i, 1));
       const filasNuevas = [...porProducto.entries()].map(([prod, cant], n) => {
@@ -7491,8 +7570,10 @@ function openMaterialesModal(productId){
       const costoUnitario = Number(rowEl.querySelector('.mat-costo').value) || 0;
       if(insumo || cantidad || costoUnitario) nuevos.push({ insumo, cantidad, costoUnitario });
     });
-    prod.materiales = nuevos;
-    prod.costoMaterial = costeoMaterialPorProducto(prod);
+    const prodActual = (APPDATA.plantaProductos || []).find(p => p.id === productId);
+    if(!prodActual){ showToast('Ese producto ya no existe'); overlay.remove(); return; }
+    prodActual.materiales = nuevos;
+    prodActual.costoMaterial = costeoMaterialPorProducto(prodActual);
     await saveAppData(APPDATA);
     overlay.remove();
     renderCostosProductosView();
@@ -7620,9 +7701,10 @@ function calcularUtilidadMes(y, m, tallerFiltro){
     produccionPorEtapa[etapa] += cant;
   });
   if(!tallerFiltro){
+    const conDiaria = new Set(Object.keys(prodPorProducto));
     (APPDATA.plantaOrdenes || []).forEach(o => {
       const key = o.producto || '—';
-      if(prodPorProducto[key]) return; // ya tiene datos de Producción Diaria, no se duplica
+      if(conDiaria.has(key)) return; // ya tiene datos de Producción Diaria, no se duplica (antes también saltaba la 2.ª orden del mismo producto)
       const t = parseFechaToTime(o.fechaEntrega || o.fechaInicio);
       if(t === null) return;
       const d = new Date(t);
@@ -7934,9 +8016,10 @@ const dashEtapaUltimo = {}; // último cálculo mostrado por etapa (para el bot�
 // Dado un rango de tiempo (tD/tH, cualquiera puede ser null = sin límite en ese lado, tomando
 // como referencia la fecha actual), devuelve cada mes que toca ese rango junto con la fracción
 // de días de ese mes que quedan cubiertos — para prorratear un costo fijo mensual por días.
-function mesesEnRangoConFraccion(tD, tH){
+function mesesEnRangoConFraccion(tD, tH, iniSinDesde){
   const ahora = Date.now();
-  const ini = tD !== null ? tD : (tH !== null ? tH : ahora);
+  // Sin "Desde" se cuenta desde el primer registro (antes se tomaba solo 1 día y la utilidad salía inflada).
+  const ini = tD !== null ? tD : (iniSinDesde != null ? iniSinDesde : (tH !== null ? tH : ahora));
   const fin = tH !== null ? tH : ahora;
   if(fin < ini) return [];
   const dIni = new Date(ini), dFin = new Date(fin);
@@ -7951,7 +8034,7 @@ function mesesEnRangoConFraccion(tD, tH){
     const iniCubierto = Math.max(inicioMes, ini);
     const finCubierto = Math.min(finMes, fin);
     if(finCubierto >= iniCubierto){
-      const dias = Math.round((finCubierto - iniCubierto) / 86400000) + 1;
+      const dias = Math.floor((finCubierto - iniCubierto) / 86400000) + 1;
       out.push({ y, m, fraccion: Math.min(1, dias / diasMes) });
     }
     m++; if(m > 12){ m = 1; y++; }
@@ -7999,7 +8082,15 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
   const costoVar = filas.reduce((a, f) => a + f.costoTotal, 0);
   const cobro = filas.reduce((a, f) => a + f.cobro, 0);
   const fijosMensualesEtapa = costeoFijosMensuales(etapa);
-  const fijos = mesesEnRangoConFraccion(tD, tH).reduce((a, x) => a + fijosMensualesEtapa * x.fraccion, 0);
+  let primerRegistro = null;
+  if(tD === null){
+    (APPDATA.plantaProduccionDiaria || []).forEach(r => {
+      if(normEtapa(r.etapa) !== etapa) return;
+      const t = parseFechaToTime(r.fecha);
+      if(t !== null && (primerRegistro === null || t < primerRegistro)) primerRegistro = t;
+    });
+  }
+  const fijos = mesesEnRangoConFraccion(tD, tH, primerRegistro).reduce((a, x) => a + fijosMensualesEtapa * x.fraccion, 0);
   const gastos = costeoGastosAdicionalesRango(desde, hasta, etapa);
   return { filas, valor, costoVar, cobro, fijos, gastos, utilidad: cobro - fijos - costoVar - gastos, unidades: unidadesEtapa };
 }
@@ -8185,7 +8276,7 @@ function renderDashEtapa(key){
   ch.tendencia = new Chart(q('chartTendencia'), {
     type: 'line',
     data: { labels: meses.map(x => x.label), datasets: [
-      { label:'Costos (Fijos + Variables + Gastos + Servicio)', data: datos.map(x => x.fijos + x.costoVar + x.gastos + x.cobro), borderColor:'#B65B2E', backgroundColor:'#B65B2E', tension:0.25 },
+      { label:'Costos (Fijos + Variables + Gastos)', data: datos.map(x => x.fijos + x.costoVar + x.gastos), borderColor:'#B65B2E', backgroundColor:'#B65B2E', tension:0.25 },
       { label:'Utilidad', data: datos.map(x => x.utilidad), borderColor:'#9E7B3B', backgroundColor:'#9E7B3B', tension:0.25 }
     ] },
     options: { plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:false } } }
@@ -8301,7 +8392,7 @@ document.addEventListener('change', async (e) => {
     const list = getPlantaList('produccion');
     let n = 0;
     list.forEach((it, i) => {
-      if(produccionGrupoKey(it, i) === grupo && it.producto === producto){ it.precioServicio = nuevoPrecio; n++; }
+      if(produccionGrupoKey(it, i) === grupo && it.producto === producto){ it.precioServicio = nuevoPrecio > 0 ? nuevoPrecio : null; n++; }
     });
     if(!n) return;
     await saveAppData(APPDATA);
@@ -8380,6 +8471,13 @@ function enhanceSearchableSelect(selectEl){
   });
   selectEl.addEventListener('change', syncInput);
   new MutationObserver(syncInput).observe(selectEl, { childList: true });
+  // Si el código cambia select.value / selectedIndex directamente (sin evento "change"), el texto
+  // visible también se actualiza.
+  ['value', 'selectedIndex'].forEach(prop => {
+    const d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, prop);
+    if(!d || !d.set) return;
+    Object.defineProperty(selectEl, prop, { configurable: true, get(){ return d.get.call(this); }, set(v){ d.set.call(this, v); syncInput(); } });
+  });
 }
 function enhanceAllSearchableSelects(root){
   (root || document).querySelectorAll('select').forEach(enhanceSearchableSelect);
@@ -8395,6 +8493,8 @@ document.addEventListener('wheel', (e) => {
   if(!wrap) return;
   if(wrap.scrollWidth <= wrap.clientWidth) return; // esta tabla no tiene overflow horizontal, no hacer nada especial
   if(Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // gesto ya horizontal (trackpad), dejar que el navegador lo maneje
+  const max = wrap.scrollWidth - wrap.clientWidth;
+  if((e.deltaY > 0 && wrap.scrollLeft >= max - 1) || (e.deltaY < 0 && wrap.scrollLeft <= 0)) return; // en el borde: deja bajar/subir la página
   wrap.scrollLeft += e.deltaY;
   e.preventDefault();
 }, { passive: false });
@@ -8573,8 +8673,10 @@ async function renderVentasSiigoView(){
   await siigoPintar();
 }
 
+let siigoPintarTok = 0;
 async function siigoPintar(){
   if(!siigoDatos) return;
+  const tok = ++siigoPintarTok;
   const { desde, hasta, dias } = siigoDatos;
   const centro = document.getElementById('siigoCentro').value || 'global';
   const fechas = siigoFechasEntre(desde, hasta);
@@ -8644,6 +8746,7 @@ async function siigoPintar(){
     await Promise.all(faltan.map(c => db.ref('siigo/catalogos/clientes/' + siigoClave(c.nit)).once('value')
       .then(s => { const v = s.val(); siigoNombresClientes[c.nit] = (v && v.nombre) || ('NIT ' + c.nit); })
       .catch(() => { siigoNombresClientes[c.nit] = 'NIT ' + c.nit; })));
+    if(tok !== siigoPintarTok) return; // mientras tanto se cambió el centro de costo: no pintar datos viejos
     pintarClientes();
   }
 }
