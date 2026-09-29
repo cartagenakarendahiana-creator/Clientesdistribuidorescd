@@ -2172,7 +2172,9 @@ function initFirebaseSync(){
     return;
   }
   dataRef.on('value', (snap)=>{
-    const val = decodeFirebaseKeys(snap.val());
+    const raw = snap.val();
+    recordarEstadoServidor(raw);
+    const val = decodeFirebaseKeys(raw);
     APPDATA = val ? {...structuredClone(DEFAULT_APPDATA), ...val} : structuredClone(DEFAULT_APPDATA);
     if(!firebaseReady){
       firebaseReady = true;
@@ -2231,6 +2233,29 @@ function sanitizeForFirebase(val){
   return val;
 }
 
+// Lo último que se sabe que hay en el servidor, por sección (clientes, facturas, producción...).
+// Al guardar solo se envían las secciones que cambiaron: antes se reescribía TODA la base, y si
+// otro celular/computador/pestaña guardaba con datos viejos, borraba lo que otra persona acababa
+// de ingresar ("se guarda y luego desaparece").
+let estadoServidorJson = {};
+function recordarEstadoServidor(raw){
+  estadoServidorJson = {};
+  if(raw && typeof raw === 'object'){
+    for(const k in raw) estadoServidorJson[k] = JSON.stringify(raw[k]);
+  }
+}
+function mostrarErrorGuardado(msg){
+  let el = document.getElementById('errorGuardadoBanner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'errorGuardadoBanner';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#B65B2E;color:#fff;padding:12px 44px 12px 16px;font:600 14px Inter,sans-serif;line-height:1.4;box-shadow:0 2px 8px rgba(0,0,0,.25);';
+    el.innerHTML = '<span></span><button type="button" style="position:absolute;right:10px;top:8px;background:none;border:0;color:#fff;font-size:20px;cursor:pointer;" title="Cerrar">✕</button>';
+    el.querySelector('button').addEventListener('click', ()=> el.remove());
+    document.body.appendChild(el);
+  }
+  el.querySelector('span').textContent = msg;
+}
 let guardadosEnCurso = 0;
 async function saveAppData(data){
   if(!dataRef){
@@ -2239,16 +2264,28 @@ async function saveAppData(data){
   }
   guardadosEnCurso++;
   try{
+    const enc = sanitizeForFirebase(data);
+    const cambios = {};
+    new Set([...Object.keys(enc), ...Object.keys(estadoServidorJson)]).forEach(k => {
+      const v = enc[k] === undefined ? null : enc[k];
+      if(JSON.stringify(v) !== (estadoServidorJson[k] ?? 'null')) cambios[k] = v;
+    });
+    if(!Object.keys(cambios).length){ showToast('Guardado'); return; }
     // Sin internet Firebase deja el cambio en cola y la promesa no termina hasta reconectar:
     // no dejamos la ventana bloqueada, avisamos que se enviará al volver la conexión.
     let enCola = false;
     const espera = new Promise(res => setTimeout(() => { enCola = true; res(); }, 8000));
-    await Promise.race([dataRef.set(sanitizeForFirebase(data)), espera]);
+    await Promise.race([dataRef.update(cambios), espera]);
     if(enCola) showToast('Sin confirmación del servidor: se guardará al volver la conexión. No recargues la página.', 6000);
     else showToast('Guardado');
   }catch(e){
     console.error('firebase save error', e);
-    showToast('No se pudo guardar: ' + (e && e.message ? e.message : 'revisa la consola (F12)'), 8000);
+    const txt = String((e && (e.code || e.message)) || '');
+    if(/permission/i.test(txt)){
+      mostrarErrorGuardado('⚠️ Firebase NO está dejando guardar (permiso denegado). Lo que ingreses se borrará solo. Hay que actualizar las "Reglas" de Realtime Database en la consola de Firebase (proyecto pedidos-nuevo).');
+    }else{
+      mostrarErrorGuardado('⚠️ No se pudo guardar: ' + (e && e.message ? e.message : 'revisa la consola (F12)'));
+    }
   }finally{
     guardadosEnCurso--;
   }
