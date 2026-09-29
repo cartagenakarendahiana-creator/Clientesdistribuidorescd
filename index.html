@@ -1738,7 +1738,7 @@
     <div class="page-section">
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>Precios de servicio</h2><div class="sub">Lo que cobra cada etapa (Corte, Taller, Ultrasonido, Confortadora) por cada unidad producida. Un precio por producto o familia, por ejemplo: Taller · Sábanas · $3.000. Producción Diaria lo usa para calcular cuánto te cobra el servicio por lo producido. Es una lista aparte de los precios de venta.</div></div>
+          <div><h2>Precios de servicio</h2><div class="sub">Lo que cobra cada etapa (Corte, Taller, Ultrasonido, Confortadora) por cada unidad producida. Un precio por producto o familia, por ejemplo: Taller · Sábanas · $3.000. Es el precio que se propone al crear un registro nuevo en Producción Diaria; cada registro guarda su propio precio, así que cambiarlo aquí NO modifica los registros ya guardados (el precio de un registro se cambia en su desglose). Es una lista aparte de los precios de venta.</div></div>
           <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
@@ -2210,17 +2210,21 @@ function sanitizeForFirebase(val){
   return val;
 }
 
+let guardadosEnCurso = 0;
 async function saveAppData(data){
   if(!dataRef){
     showToast('Firebase no está configurado todavía');
     return;
   }
+  guardadosEnCurso++;
   try{
     await dataRef.set(sanitizeForFirebase(data));
     showToast('Guardado');
   }catch(e){
     console.error('firebase save error', e);
     showToast('No se pudo guardar: ' + (e && e.message ? e.message : 'revisa la consola (F12)'));
+  }finally{
+    guardadosEnCurso--;
   }
 }
 let APPDATA = structuredClone(DEFAULT_APPDATA);
@@ -4107,6 +4111,30 @@ function openModal(innerHtml){
   return overlay;
 }
 
+// Evita registros duplicados por doble clic en "Guardar" de cualquier ventana: mientras el primer
+// clic se está guardando, los clics siguientes se ignoran. El botón se vuelve a habilitar cuando
+// terminó de guardar (o enseguida si faltaba un dato y la ventana sigue abierta).
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.modal-overlay #btnConfirm');
+  if(!btn) return;
+  if(btn.dataset.guardando === '1'){
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    return;
+  }
+  btn.dataset.guardando = '1';
+  setTimeout(()=>{ if(btn.dataset.guardando === '1') btn.disabled = true; }, 0);
+  const inicio = Date.now();
+  const timer = setInterval(()=>{
+    if(!document.body.contains(btn)){ clearInterval(timer); return; }
+    if(guardadosEnCurso === 0 && Date.now() - inicio >= 600){
+      clearInterval(timer);
+      btn.dataset.guardando = '';
+      btn.disabled = false;
+    }
+  }, 150);
+}, true);
+
 // Ver en grande la foto de una guía de despacho (o cualquier otra miniatura marcada data-guia-view)
 function openImageLightbox(src){
   const overlay = openModal(`<div class="lightbox-modal"><img src="${src}" alt="Foto ampliada"></div>`);
@@ -5797,7 +5825,7 @@ function injectPrintButtons(){
 function showApp(){
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('appRoot').style.display = '';
-  if(!appRendered){ syncPlantaProductosFromInventario(); renderAll(); injectPrintButtons(); appRendered = true; }
+  if(!appRendered){ syncPlantaProductosFromInventario(); congelarPreciosServicioProduccion(); renderAll(); injectPrintButtons(); appRendered = true; }
 }
 
 const SESSION_KEY = 'casaDoradaSesionActiva';
@@ -6330,6 +6358,31 @@ function crearResolvedorPrecioServicio(){
     return r;
   };
 }
+// Precio de servicio de UNA fila de Producción Diaria. Cada registro guarda su propio precio
+// (campo precioServicio) para que cambiar el precio de un registro, o el de la lista "Precios de
+// servicio", NO cambie los valores de los demás registros ya guardados. Solo si la fila todavía
+// no tiene precio propio se toma el de la lista.
+function tienePrecioPropio(r){
+  return r && r.precioServicio !== undefined && r.precioServicio !== null && r.precioServicio !== '' && isFinite(Number(r.precioServicio));
+}
+function precioServicioDeFila(precioDe, etapa, r){
+  return tienePrecioPropio(r) ? Number(r.precioServicio) : precioDe(etapa, r.producto);
+}
+// Una sola vez: a los registros viejos que no tienen precio propio les deja guardado el precio
+// que tienen hoy en "Precios de servicio", así un cambio futuro en la lista no los modifica.
+// Los que todavía no tienen precio (0) se dejan sin congelar para que tomen el precio cuando lo definas.
+function congelarPreciosServicioProduccion(){
+  if(!firebaseReady || !dataRef) return;
+  const lista = APPDATA.plantaProduccionDiaria || [];
+  const precioDe = crearResolvedorPrecioServicio();
+  let cambio = false;
+  lista.forEach(r => {
+    if(!r || tienePrecioPropio(r)) return;
+    const precio = precioDe(normEtapa(r.etapa), r.producto);
+    if(precio > 0){ r.precioServicio = precio; cambio = true; }
+  });
+  if(cambio) saveAppData(APPDATA);
+}
 function produccionGrupoKey(item, idx){ return item.registroId || item.id || ('idx' + idx); }
 
 // Vuelve a dibujar cualquier Dashboard · Etapa que esté visible en este momento (tabla, gráficos
@@ -6362,7 +6415,7 @@ function renderProduccionRegistros(body, term){
   const precioDe = crearResolvedorPrecioServicio();
   body.innerHTML = lista.map(g => {
     const detalle = g.lineas.map(l => {
-      const cant = Number(l.cantidad) || 0, precio = precioDe(g.etapa, l.producto);
+      const cant = Number(l.cantidad) || 0, precio = precioServicioDeFila(precioDe, g.etapa, l);
       return { producto: l.producto, cant, precio, sub: cant * precio };
     });
     const total = detalle.reduce((a, l) => a + l.cant, 0);
@@ -6388,7 +6441,7 @@ function renderProduccionRegistros(body, term){
         <td colspan="7" style="padding:8px 14px 12px 40px;">
           <table style="width:100%;">
             <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio del servicio</th><th class="num">Subtotal</th></tr></thead>
-            <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num"><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="produccion" data-etapa="${escapeAttr(g.etapa)}" data-producto="${escapeAttr(l.producto || '')}" value="${l.precio || 0}"></td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
+            <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num"><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="produccion" data-grupo="${k}" data-etapa="${escapeAttr(g.etapa)}" data-producto="${escapeAttr(l.producto || '')}" value="${l.precio || 0}"></td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
               <tr><td style="font-weight:700;">Total</td><td class="num" style="font-weight:700;">${fmtNum(total)}</td><td></td><td class="num" style="font-weight:700;">${fmt(valor)}</td></tr>
             </tbody>
           </table>
@@ -6408,7 +6461,7 @@ function calcularDetalleGrupoProduccion(groupKey){
   const obs = lineas[0].observaciones || '';
   const precioDe = crearResolvedorPrecioServicio();
   const detalle = lineas.map(l => {
-    const cant = Number(l.cantidad) || 0, precio = precioDe(etapa, l.producto);
+    const cant = Number(l.cantidad) || 0, precio = precioServicioDeFila(precioDe, etapa, l);
     return { producto: l.producto, cant, precio, sub: cant * precio };
   });
   const total = detalle.reduce((a, l) => a + l.cant, 0);
@@ -6480,7 +6533,7 @@ function renderProduccionServicioDia(){
     const k = (r.fecha || '') + '|' + etapa;
     if(!dias.has(k)) dias.set(k, { fecha: r.fecha || '', etapa, unidades: 0, valor: 0, faltan: false });
     const g = dias.get(k);
-    const cant = Number(r.cantidad) || 0, precio = precioDe(etapa, r.producto);
+    const cant = Number(r.cantidad) || 0, precio = precioServicioDeFila(precioDe, etapa, r);
     g.unidades += cant; g.valor += cant * precio;
     if(!precio) g.faltan = true;
   });
@@ -6896,22 +6949,6 @@ function openPlantaModal(moduleKey, idx){
   });
 }
 
-function actualizarPrecioServicioParaProducto(etapa, producto, precio){
-  // Guarda/actualiza el precio de servicio de ESE producto específico para esa etapa (no toca
-  // entradas "de familia" que compartan varios productos, para no cambiarles el precio a todos
-  // por editar uno solo). Si no existe una entrada exacta producto+etapa, crea una nueva.
-  if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
-  const lista = APPDATA.plantaServiciosMaquila;
-  const nom = normalizeText(producto);
-  let entry = lista.find(x => x.etapa === etapa && normalizeText(x.servicio) === nom);
-  if(!entry) entry = lista.find(x => !x.etapa && normalizeText(x.servicio) === nom);
-  if(entry){
-    entry.precio = precio;
-  } else {
-    lista.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2,6), etapa, servicio: producto, precio });
-  }
-}
-
 // Modal de Producción Diaria: UNA fecha + UNA etapa (Corte, Taller, Ultrasonido o Confortadora) para todo el registro, y varias
 // filas de producto + cantidad. Al guardar se crea una fila de producción por producto (todas comparten
 // registroId), así los dashboards, la disponibilidad y la utilidad del mes siguen leyendo el mismo formato.
@@ -6958,7 +6995,7 @@ function openProduccionModal(groupKey, defaultEtapa){
       <div style="display:flex;gap:8px;font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:4px;">
         <span style="flex:1;">PRODUCTO</span><span style="width:90px;">CANTIDAD</span><span style="width:92px;text-align:right;">PRECIO SERVICIO</span><span style="width:28px;"></span>
       </div>
-      <div id="pp_lineas">${editing ? lineasGrupo.map(o => filaHtml(o.it.producto, o.it.cantidad)).join('') : filaHtml('', '')}</div>
+      <div id="pp_lineas">${editing ? lineasGrupo.map(o => filaHtml(o.it.producto, o.it.cantidad, tienePrecioPropio(o.it) ? Number(o.it.precioServicio) : undefined)).join('') : filaHtml('', '')}</div>
       <button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>
     </div>
     <div class="field"><label>Observaciones</label>
@@ -7025,9 +7062,8 @@ function openProduccionModal(groupKey, defaultEtapa){
     const obs = overlay.querySelector('#pp_obs').value;
     if(!fecha){ showToast('Completa el campo "Fecha"'); overlay.querySelector('#pp_fecha').focus(); return; }
     // Junta las filas válidas; si un producto se repite, suma sus cantidades (el precio de la
-    // última fila de ese producto es el que queda). El precio de cada fila se guarda como el
-    // precio de servicio de ese producto para esta etapa (si lo editaste, queda editado de aquí
-    // en adelante también en "Precios de servicio").
+    // última fila de ese producto es el que queda). El precio se guarda SOLO en este registro:
+    // no cambia la lista "Precios de servicio" ni los demás registros de producción.
     const porProducto = new Map();
     const precioPorProducto = new Map();
     let hayIncompleta = false;
@@ -7043,7 +7079,7 @@ function openProduccionModal(groupKey, defaultEtapa){
     });
     if(hayIncompleta){ showToast('Cada fila necesita un producto y una cantidad mayor a 0'); return; }
     if(!porProducto.size){ showToast('Agrega al menos un producto con su cantidad'); return; }
-    precioPorProducto.forEach((precio, prod) => actualizarPrecioServicioParaProducto(etapa, prod, precio));
+    const precioFinal = (prod) => precioPorProducto.has(prod) ? precioPorProducto.get(prod) : precioDe(etapa, prod);
     const freshList = getPlantaList('produccion');
     if(editing){
       // Reemplaza todas las filas del registro por las nuevas (conserva id/registroId de las que siguen igual)
@@ -7055,7 +7091,7 @@ function openProduccionModal(groupKey, defaultEtapa){
       idxs.slice().reverse().forEach(i => freshList.splice(i, 1));
       const filasNuevas = [...porProducto.entries()].map(([prod, cant], n) => {
         const previa = previas.get(prod) || {};
-        const fila = {...previa, id: previa.id || ('p' + Date.now() + n + Math.random().toString(36).slice(2,7)), registroId, fecha, etapa, producto: prod, cantidad: cant, observaciones: obs};
+        const fila = {...previa, id: previa.id || ('p' + Date.now() + n + Math.random().toString(36).slice(2,7)), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precioFinal(prod), observaciones: obs};
         delete fila.taller;
         return fila;
       });
@@ -7063,7 +7099,7 @@ function openProduccionModal(groupKey, defaultEtapa){
     } else {
       const registroId = 'r' + Date.now() + Math.random().toString(36).slice(2,6);
       [...porProducto.entries()].forEach(([prod, cant], n) => {
-        freshList.push({ id: 'p' + Date.now() + n + Math.random().toString(36).slice(2,7), registroId, fecha, etapa, producto: prod, cantidad: cant, observaciones: obs });
+        freshList.push({ id: 'p' + Date.now() + n + Math.random().toString(36).slice(2,7), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precioFinal(prod), observaciones: obs });
       });
     }
     await saveAppData(APPDATA);
@@ -7866,6 +7902,8 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
   const tD = desde ? parseFechaToTime(desde) : null;
   const tH = hasta ? parseFechaToTime(hasta) : null;
   const porProducto = {};
+  const cobroPorProducto = {}; // suma de cantidad × precio propio de cada registro
+  const precioServ = crearResolvedorPrecioServicio();
   let unidadesEtapa = 0;
   (APPDATA.plantaProduccionDiaria || []).forEach(r => {
     const t = parseFechaToTime(r.fecha);
@@ -7878,8 +7916,8 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
     const cant = Number(r.cantidad) || 0;
     unidadesEtapa += cant;
     porProducto[k] = (porProducto[k] || 0) + cant;
+    cobroPorProducto[k] = (cobroPorProducto[k] || 0) + cant * precioServicioDeFila(precioServ, etapa, r);
   });
-  const precioServ = crearResolvedorPrecioServicio();
   const productos = costeoGetProductos();
   const filas = Object.keys(porProducto).map(nombre => {
     const cantidad = porProducto[nombre];
@@ -7889,10 +7927,12 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
       const c = costeoCalcularProducto(prod);
       precio = c.precioVenta || 0; costoUnit = c.total || 0;
     }
-    const precioServicio = precioServ(etapa, nombre);
+    // Cada registro guarda su propio precio: aquí se muestra el promedio del periodo (cobro ÷ cantidad).
+    const cobroProd = cobroPorProducto[nombre] || 0;
+    const precioServicio = cantidad ? cobroProd / cantidad : 0;
     // Corte, Ultrasonido y Confortadora no manejan costos variables propios: no se calculan ni se suman a nada (ni al total ni a la utilidad).
     if(etapa === 'Corte' || etapa === 'Ultrasonido' || etapa === 'Confortadora'){ costoUnit = 0; }
-    return { nombre, cantidad, precio, costoUnit, valor: cantidad * precio, costoTotal: cantidad * costoUnit, precioServicio, cobro: cantidad * precioServicio };
+    return { nombre, cantidad, precio, costoUnit, valor: cantidad * precio, costoTotal: cantidad * costoUnit, precioServicio, cobro: cobroProd };
   }).sort((a, b) => (b.cobro + b.valor) - (a.cobro + a.valor));
   const valor = filas.reduce((a, f) => a + f.valor, 0);
   const costoVar = filas.reduce((a, f) => a + f.costoTotal, 0);
@@ -8059,7 +8099,7 @@ function renderDashEtapa(key){
   tbody.innerHTML = filasTabla.length ? filasTabla.map(f => `<tr>
       <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td><td>${f.precio ? fmt(f.precio) : '—'}</td>
       <td>${f.valor ? fmt(f.valor) : '—'}</td>${sinCostoVariable ? '' : `<td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>`}
-      <td><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="dashboard" data-etapa="${key}" data-producto="${escapeAttr(f.nombre)}" value="${f.precioServicio || 0}"></td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
+      <td title="Promedio del periodo. Cada registro tiene su propio precio: cámbialo en el desglose del registro en Producción Diaria.">${f.precioServicio ? fmt(f.precioServicio) : '—'}</td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
       <td>${fmt(f.cobro - f.costoTotal)}</td></tr>`).join('')
     : `<tr><td colspan="${colspan}" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
   if(typeof Chart === 'undefined') return;
@@ -8175,9 +8215,9 @@ function abrirComprobanteEtapaModal(key){
   });
 })();
 
-// Permite editar el "precio de servicio" directamente en cualquier tabla donde aparezca
-// (catálogo de Precios de servicio, desglose de un registro de Producción Diaria ya guardado,
-// o el Dashboard por etapa), aunque ya esté guardado. El cambio se guarda de inmediato.
+// Permite editar el "precio de servicio" directamente: en el catálogo de Precios de servicio
+// (precio por defecto para los registros NUEVOS) o en el desglose de un registro de Producción
+// Diaria ya guardado (cambia solo ese registro). El cambio se guarda de inmediato.
 document.addEventListener('change', async (e) => {
   const inp = e.target.closest('.precio-servicio-edit');
   if(!inp) return;
@@ -8191,15 +8231,22 @@ document.addEventListener('change', async (e) => {
     await saveAppData(APPDATA);
     renderPlantaModule('serviciosmaquila');
     showToast('Precio de servicio actualizado.');
-  } else if(ctx === 'produccion' || ctx === 'dashboard'){
-    const etapa = inp.dataset.etapa;
+  } else if(ctx === 'produccion'){
+    // Solo cambia el precio de ESTE registro (y de ese producto dentro de él); los demás
+    // registros y la lista "Precios de servicio" quedan igual.
+    const grupo = inp.dataset.grupo;
     const producto = inp.dataset.producto;
-    if(!producto) return;
-    actualizarPrecioServicioParaProducto(etapa, producto, nuevoPrecio);
+    if(!grupo || !producto) return;
+    const list = getPlantaList('produccion');
+    let n = 0;
+    list.forEach((it, i) => {
+      if(produccionGrupoKey(it, i) === grupo && it.producto === producto){ it.precioServicio = nuevoPrecio; n++; }
+    });
+    if(!n) return;
     await saveAppData(APPDATA);
-    if(ctx === 'produccion') renderPlantaModule('produccion');
-    else renderDashEtapa(etapa);
-    showToast('Precio de servicio actualizado.');
+    renderPlantaModule('produccion');
+    refrescarDashboardsEtapaVisibles();
+    showToast('Precio actualizado solo en este registro.');
   }
 });
 
