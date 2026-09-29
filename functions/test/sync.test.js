@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { SiigoClient } = require('../siigo');
-const { sincronizar, normalizarFactura, construirResumen, hoyColombia } = require('../sync');
+const { sincronizar, normalizarFactura, construirDia, hoyColombia } = require('../sync');
 
 // Base de datos falsa con la misma forma que firebase-admin (ref/once/update).
 function dbFalsa() {
@@ -51,22 +51,22 @@ test('normalizarFactura toma cantidades, valores y cliente', () => {
   assert.equal(f.anulada, false);
 });
 
-test('construirResumen separa por centro de costo, suma global e ignora anuladas', () => {
+test('construirDia separa por centro de costo, suma global, vendedores e ignora anuladas', () => {
   const fs = [
     factura('a', '2026-09-01', 12, 100, [{ code: 'P.1', quantity: 2, price: 50, total: 100 }]),
     factura('b', '2026-09-01', 13, 50, [{ code: 'P.1', quantity: 1, price: 50, total: 50 }]),
     factura('c', '2026-09-01', 12, 999, [{ code: 'X', quantity: 9, price: 111 }], { annulled: true }),
-    factura('d', '2026-09-02', null, 30, [{ code: 'Y', quantity: 3, price: 10 }]),
+    factura('d', '2026-09-01', null, 30, [{ code: 'Y', quantity: 3, price: 10 }], { seller: undefined }),
   ].map(normalizarFactura);
-  const r = construirResumen(fs, ['2026-09-01', '2026-09-02', '2026-09-03']);
-  assert.equal(r['2026-09-01'].global.ventas, 150);
-  assert.equal(r['2026-09-01'].global.unidades, 3);
-  assert.equal(r['2026-09-01'].cc_12.ventas, 100);
-  assert.equal(r['2026-09-01'].cc_13.facturas, 1);
-  assert.equal(r['2026-09-01'].global.productos.P_1.cantidad, 3); // clave sin punto
-  assert.equal(r['2026-09-02'].sin_centro.unidades, 3);
-  assert.equal(r['2026-09-02'].sin_centro.productos.Y.valor, 30);
-  assert.equal(r['2026-09-03'].global.ventas, 0); // día sin ventas queda en cero
+  const d = construirDia(fs);
+  assert.equal(d.global.ventas, 180);
+  assert.equal(d.global.unidades, 6);
+  assert.equal(d.cc_12.ventas, 100);
+  assert.equal(d.cc_13.facturas, 1);
+  assert.equal(d.global.productos.P_1.cantidad, 3); // clave sin punto
+  assert.equal(d.sin_centro.productos.Y.valor, 30);
+  assert.equal(d.global.vendedores['7'].valor, 150);
+  assert.equal(d.global.vendedores.sin_vendedor.facturas, 1);
 });
 
 test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', async () => {
@@ -83,6 +83,7 @@ test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', asyn
   const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'CasaDorada', fetchImpl });
   const db = dbFalsa();
   db.datos.casaDoradaDatos = { intacto: true };
+  db.datos.siigo = { facturas: { viejo: { id: 'viejo' } } }; // formato anterior
 
   const res = await sincronizar({ client, db, desde: '2026-09-01', hasta: '2026-09-02', log: () => {} });
 
@@ -90,11 +91,14 @@ test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', asyn
   const inv = fetchImpl.llamadas.filter((l) => l.ruta === '/v1/invoices');
   assert.deepEqual(inv.map((l) => l.params.page), ['1', '2']);
   assert.equal(inv[0].params.date_start, '2026-09-01');
+  assert.equal(inv[0].params.date_end, '2026-09-04'); // margen para lo creado hoy (hora UTC)
   assert.ok(fetchImpl.llamadas.every((l) => l.headers['Partner-Id'] === 'CasaDorada'));
   assert.equal(fetchImpl.llamadas.filter((l) => l.ruta === '/auth').length, 1); // token reutilizado
 
   const s = db.datos.siigo;
-  assert.equal(Object.keys(s.facturas).length, 101);
+  assert.equal(Object.keys(s.facturasDia['2026-09-01']).length, 100);
+  assert.equal(s.facturas, null); // se borra el formato anterior
+  assert.equal(s.facturasIndice['p2-0'], '2026-09-02');
   assert.equal(s.resumenDiario['2026-09-01'].cc_12.ventas, 1000);
   assert.equal(s.resumenDiario['2026-09-02'].cc_13.unidades, 2);
   assert.equal(s.catalogos.centrosCosto.cc_12.nombre, 'Corte');
@@ -137,4 +141,34 @@ test('registra el error en siigo/estado si Siigo falla', async () => {
 test('hoyColombia usa UTC-5', () => {
   assert.equal(hoyColombia(new Date('2026-09-28T03:00:00Z')), '2026-09-27');
   assert.equal(hoyColombia(new Date('2026-09-28T06:00:00Z')), '2026-09-28');
+});
+
+test('cuenta facturas con fecha anterior a su creación y mueve las que cambian de fecha', async () => {
+  let lote = [];
+  const fetchImpl = fetchFalso({
+    '/auth': { access_token: 'tok', expires_in: 86400 },
+    '/v1/cost-centers': [],
+    '/v1/users': [],
+    '/v1/customers': { pagination: { total_results: 0 }, results: [] },
+    '/v1/products': { pagination: { total_results: 0 }, results: [] },
+    '/v1/invoices': () => ({ pagination: { total_results: lote.length }, results: lote }),
+  });
+  const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'p', fetchImpl });
+  const db = dbFalsa();
+  const item = [{ code: 'A', quantity: 1, price: 10 }];
+
+  // Día 1: dos facturas del 20 de septiembre.
+  lote = [factura('x', '2026-09-20', 12, 100, item), factura('y', '2026-09-20', 12, 50, item)];
+  await sincronizar({ client, db, desde: '2026-09-17', hasta: '2026-09-20', log: () => {} });
+  assert.equal(db.datos.siigo.resumenDiario['2026-09-20'].global.ventas, 150);
+
+  // Días después: se crea hoy una factura con fecha 20 (fuera de la ventana) y a 'y' le cambian la fecha.
+  lote = [factura('z', '2026-09-20', 13, 30, item), factura('y', '2026-09-28', 12, 50, item)];
+  await sincronizar({ client, db, desde: '2026-09-25', hasta: '2026-09-28', log: () => {} });
+  const r = db.datos.siigo.resumenDiario;
+  assert.equal(r['2026-09-20'].global.ventas, 130); // x + z, sin y
+  assert.equal(r['2026-09-20'].cc_13.ventas, 30);
+  assert.equal(r['2026-09-28'].global.ventas, 50);
+  assert.deepEqual(Object.keys(db.datos.siigo.facturasDia['2026-09-20']).sort(), ['x', 'z']);
+  assert.equal(db.datos.siigo.facturasIndice.y, '2026-09-28');
 });

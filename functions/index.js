@@ -6,6 +6,7 @@
 //   firebase functions:secrets:set SIIGO_PARTNER_ID
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { SiigoClient } = require('./siigo');
@@ -21,22 +22,56 @@ const SIIGO_PARTNER_ID = defineSecret('SIIGO_PARTNER_ID');
 // elaboradas con fecha anterior o editadas después.
 const DIAS_ATRAS = 3;
 
-// Cada 2 horas entre 6 a.m. y 8 p.m. (hora Colombia): el avance del día se ve casi en tiempo real.
+const SECRETOS = [SIIGO_USERNAME, SIIGO_ACCESS_KEY, SIIGO_PARTNER_ID];
+
+// Espera mínima entre dos sincronizaciones pedidas con el botón de la app.
+const ESPERA_MANUAL_MS = 60 * 1000;
+
+function sincronizarUltimosDias() {
+  const client = new SiigoClient({
+    username: SIIGO_USERNAME.value(),
+    accessKey: SIIGO_ACCESS_KEY.value(),
+    partnerId: SIIGO_PARTNER_ID.value(),
+  });
+  const hasta = hoyColombia();
+  return sincronizar({ client, db: admin.database(), desde: sumarDias(hasta, -DIAS_ATRAS), hasta });
+}
+
+// Cada 30 minutos entre 6:00 a.m. y 9:30 p.m. (hora Colombia): las ventas del día se ven casi al momento.
 exports.sincronizarSiigo = onSchedule(
   {
-    schedule: '0 6-20/2 * * *',
+    schedule: '*/30 6-21 * * *',
     timeZone: 'America/Bogota',
-    secrets: [SIIGO_USERNAME, SIIGO_ACCESS_KEY, SIIGO_PARTNER_ID],
+    secrets: SECRETOS,
     timeoutSeconds: 540,
     retryCount: 1,
   },
   async () => {
-    const client = new SiigoClient({
-      username: SIIGO_USERNAME.value(),
-      accessKey: SIIGO_ACCESS_KEY.value(),
-      partnerId: SIIGO_PARTNER_ID.value(),
-    });
-    const hasta = hoyColombia();
-    await sincronizar({ client, db: admin.database(), desde: sumarDias(hasta, -DIAS_ATRAS), hasta });
+    await sincronizarUltimosDias();
+  }
+);
+
+// Botón "Sincronizar ahora" de la sección Ventas Siigo. No recibe datos: solo dispara la misma
+// sincronización de los últimos días, como máximo una vez por minuto.
+exports.sincronizarSiigoAhora = onRequest(
+  { cors: true, secrets: SECRETOS, timeoutSeconds: 300, maxInstances: 1 },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ ok: false, mensaje: 'Usa POST.' });
+      return;
+    }
+    const estado = (await admin.database().ref('siigo/estado').once('value')).val() || {};
+    const ultima = Date.parse(estado.ultimaSincronizacion || '') || 0;
+    if (Date.now() - ultima < ESPERA_MANUAL_MS) {
+      res.json({ ok: true, mensaje: 'Ya se sincronizó hace menos de un minuto.' });
+      return;
+    }
+    try {
+      const r = await sincronizarUltimosDias();
+      res.json({ ok: true, mensaje: `${r.facturas} facturas sincronizadas.`, ...r });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ ok: false, mensaje: String(err.message || err) });
+    }
   }
 );

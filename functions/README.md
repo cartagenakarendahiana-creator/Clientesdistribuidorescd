@@ -3,17 +3,23 @@
 Función en la nube que lee las facturas de venta de Siigo y las guarda en Firebase,
 listas para los tableros de metas, rankings y el informe diario con IA.
 
-Corre sola **cada 2 horas entre 6 a.m. y 8 p.m. (hora Colombia)** y vuelve a leer los
-últimos 3 días para recoger facturas elaboradas con fecha anterior o editadas.
+Corre sola **cada 30 minutos entre 6:00 a.m. y 9:30 p.m. (hora Colombia)** y vuelve a leer
+las facturas creadas en los últimos 3 días. También se puede disparar con el botón
+**"Sincronizar ahora"** de la sección *Clientes → Ventas Siigo* (máximo una vez por minuto).
+
+> El filtro de fechas de la API de Siigo usa la fecha y hora de **creación** de la factura.
+> Por eso se piden facturas con 2 días de margen y cada día se resume por la **fecha del documento**,
+> incluyendo facturas elaboradas después con fecha anterior.
 
 ## Qué guarda en Firebase (nodo `siigo/`, aparte de los datos de la app)
 
 | Ruta | Contenido |
 |---|---|
-| `siigo/facturas/{id}` | Número, fecha, NIT del cliente, centro de costo, vendedor, total, saldo, ítems |
+| `siigo/facturasDia/{AAAA-MM-DD}/{id}` | Facturas por fecha: número, NIT del cliente, centro de costo, vendedor, total, saldo, ítems |
+| `siigo/facturasIndice/{id}` | Fecha en la que quedó guardada cada factura |
 | `siigo/resumenDiario/{AAAA-MM-DD}/global` | Ventas, # facturas y unidades del día (todos los centros) |
 | `siigo/resumenDiario/{AAAA-MM-DD}/cc_{id}` | Lo mismo por centro de costo (`sin_centro` si la factura no tiene) |
-| `.../productos/{código}` y `.../clientes/{nit}` | Cantidad y valor por producto y por cliente, dentro de cada día y centro |
+| `.../productos/{código}`, `.../clientes/{nit}`, `.../vendedores/{id}` | Cantidad y valor por producto, cliente y vendedor, dentro de cada día y centro |
 | `siigo/catalogos/...` | Centros de costo, vendedores, clientes y productos de Siigo |
 | `siigo/estado` | Última sincronización y último error |
 
@@ -35,6 +41,14 @@ firebase functions:secrets:set SIIGO_PARTNER_ID    # Partner-Id registrado ante 
 
 firebase deploy --only functions
 ```
+
+Se publican dos funciones: `sincronizarSiigo` (automática) y `sincronizarSiigoAhora` (botón de la app).
+
+### Al actualizar desde la primera versión
+
+La primera versión dejaba por fuera lo facturado el mismo día. Después de volver a publicar
+(`firebase deploy --only functions`), **vuelve a cargar el histórico** con el comando de abajo
+para que los días anteriores queden recalculados con la corrección.
 
 ### Cargar el histórico
 

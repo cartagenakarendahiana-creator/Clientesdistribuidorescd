@@ -1319,6 +1319,7 @@
             <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="semana">Semana</button>
             <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="mes">Mes</button>
             <button class="prod-btn prod-btn-primary" type="button" id="siigoAplicarBtn">Aplicar</button>
+            <button class="prod-btn prod-btn-outline" type="button" id="siigoSincronizarBtn" title="Trae ya mismo las facturas nuevas de Siigo">↻ Sincronizar ahora</button>
           </div>
         </div>
 
@@ -1326,6 +1327,16 @@
 
         <div class="prod-grid" id="siigoContenido">
           <div class="prod-card col-12">
+            <h3 id="siigoCortesTitulo">Avance</h3>
+            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+              <div class="prod-stat"><div class="num" id="siigoHoyVentas">–</div><div class="lbl" id="siigoHoyLbl">Hoy</div></div>
+              <div class="prod-stat"><div class="num" id="siigoSemanaVentas">–</div><div class="lbl" id="siigoSemanaLbl">Esta semana</div></div>
+              <div class="prod-stat"><div class="num" id="siigoMesVentas">–</div><div class="lbl" id="siigoMesLbl">Este mes</div></div>
+            </div>
+          </div>
+
+          <div class="prod-card col-12">
+            <h3 id="siigoPeriodoTitulo">Período seleccionado</h3>
             <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
               <div class="prod-stat"><div class="num" id="siigoKpiVentas">–</div><div class="lbl">Ventas del período</div></div>
               <div class="prod-stat"><div class="num" id="siigoKpiFacturas">–</div><div class="lbl">Facturas</div></div>
@@ -1346,6 +1357,16 @@
               <table class="prod-table">
                 <thead><tr><th>Centro de costo</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">% del total</th><th style="text-align:right;">Facturas</th><th style="text-align:right;">Unidades</th></tr></thead>
                 <tbody id="siigoCentrosBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="prod-card col-12">
+            <h3>Ventas por vendedor</h3>
+            <div class="prod-table-wrap">
+              <table class="prod-table">
+                <thead><tr><th>#</th><th>Vendedor</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">% del total</th><th style="text-align:right;">Facturas</th></tr></thead>
+                <tbody id="siigoVendedoresBody"></tbody>
               </table>
             </div>
           </div>
@@ -8294,6 +8315,8 @@ new MutationObserver(muts => {
 const SIIGO_TOP = 10;
 let siigoChartDias = null;
 let siigoCentros = null;          // catálogo de centros de costo (se carga una vez)
+let siigoVendedores = null;       // catálogo de vendedores (se carga una vez)
+const SIIGO_URL_SINCRONIZAR = 'https://us-central1-' + firebaseConfig.projectId + '.cloudfunctions.net/sincronizarSiigoAhora';
 let siigoDatos = null;            // { desde, hasta, dias: { 'AAAA-MM-DD': resumenDelDia } }
 let siigoPeticion = 0;            // descarta respuestas viejas si se cambia el filtro rápido
 const siigoNombresClientes = {};
@@ -8336,7 +8359,7 @@ function siigoNombreCentro(clave){
 
 // Suma los resúmenes diarios de un centro (o 'global') en el rango.
 function siigoAgregar(dias, fechas, centro){
-  const total = { ventas: 0, facturas: 0, unidades: 0, porDia: [], clientes: {}, productos: {} };
+  const total = { ventas: 0, facturas: 0, unidades: 0, porDia: [], clientes: {}, productos: {}, vendedores: {} };
   fechas.forEach(f => {
     const nodo = (dias[f] || {})[centro] || {};
     total.ventas += Number(nodo.ventas) || 0;
@@ -8347,6 +8370,11 @@ function siigoAgregar(dias, fechas, centro){
       const t = total.clientes[k] ||= { nit: c.nit || k, valor: 0, facturas: 0 };
       t.valor += Number(c.valor) || 0;
       t.facturas += Number(c.facturas) || 0;
+    });
+    Object.entries(nodo.vendedores || {}).forEach(([k, v]) => {
+      const t = total.vendedores[k] ||= { id: v.id ?? null, valor: 0, facturas: 0 };
+      t.valor += Number(v.valor) || 0;
+      t.facturas += Number(v.facturas) || 0;
     });
     Object.entries(nodo.productos || {}).forEach(([k, p]) => {
       const t = total.productos[k] ||= { codigo: p.codigo || '', descripcion: p.descripcion || '', cantidad: 0, valor: 0 };
@@ -8389,12 +8417,18 @@ async function renderVentasSiigoView(){
   const miPeticion = ++siigoPeticion;
   siigoMostrarVacio('Cargando ventas de Siigo…');
   const db = firebase.database();
-  let resumenSnap, estadoSnap, centrosSnap;
+  // Además del período elegido se lee lo necesario para "Hoy / Esta semana / Este mes".
+  const [inicioSemana] = siigoRango('semana');
+  const [inicioMes, hoy] = siigoRango('mes');
+  const leerDesde = [desde, inicioSemana, inicioMes].sort()[0];
+  const leerHasta = [hasta, hoy].sort()[1];
+  let resumenSnap, estadoSnap, centrosSnap, vendedoresSnap;
   try{
-    [resumenSnap, estadoSnap, centrosSnap] = await Promise.all([
-      db.ref('siigo/resumenDiario').orderByKey().startAt(desde).endAt(hasta).once('value'),
+    [resumenSnap, estadoSnap, centrosSnap, vendedoresSnap] = await Promise.all([
+      db.ref('siigo/resumenDiario').orderByKey().startAt(leerDesde).endAt(leerHasta).once('value'),
       db.ref('siigo/estado').once('value'),
       siigoCentros ? Promise.resolve(null) : db.ref('siigo/catalogos/centrosCosto').once('value'),
+      siigoVendedores ? Promise.resolve(null) : db.ref('siigo/catalogos/vendedores').once('value'),
     ]);
   }catch(e){
     console.error('siigo read error', e);
@@ -8406,13 +8440,16 @@ async function renderVentasSiigoView(){
   }
   if(miPeticion !== siigoPeticion) return;
   if(centrosSnap) siigoCentros = centrosSnap.val() || {};
+  if(vendedoresSnap) siigoVendedores = vendedoresSnap.val() || {};
 
   const estado = estadoSnap.val();
   const estadoEl = document.getElementById('siigoEstado');
   if(estado && estado.ultimaSincronizacion){
     const cuando = new Date(estado.ultimaSincronizacion).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    const horas = (Date.now() - Date.parse(estado.ultimaSincronizacion)) / 3600000;
     const err = estado.ultimoError;
     estadoEl.innerHTML = 'Última sincronización: ' + escapeHtml(cuando) +
+      (horas > 2 ? `. <span style="color:#B42318;">Hace más de ${Math.floor(horas)} horas que no se actualiza: las ventas recientes pueden faltar. Usa "Sincronizar ahora".</span>` : '') +
       (err ? ` <span style="color:#B42318;">Último error (${escapeHtml(new Date(err.fecha).toLocaleString('es-CO'))}): ${escapeHtml(err.mensaje || '')}</span>` : '');
   }else{
     estadoEl.textContent = '';
@@ -8434,6 +8471,16 @@ async function siigoPintar(){
   const centro = document.getElementById('siigoCentro').value || 'global';
   const fechas = siigoFechasEntre(desde, hasta);
   const t = siigoAgregar(dias, fechas, centro);
+  const fechaCorta = f => f.slice(8, 10) + '/' + f.slice(5, 7);
+  const rangoTxt = (d, h) => d === h ? fechaCorta(d) : fechaCorta(d) + ' al ' + fechaCorta(h);
+  [['Hoy', 'hoy', 'Hoy'], ['Semana', 'semana', 'Esta semana'], ['Mes', 'mes', 'Este mes']].forEach(([id, tipo, nombre]) => {
+    const [d, h] = siigoRango(tipo);
+    const c = siigoAgregar(dias, siigoFechasEntre(d, h), centro);
+    document.getElementById('siigo' + id + 'Ventas').textContent = fmt(c.ventas);
+    document.getElementById('siigo' + id + 'Lbl').textContent = `${nombre} (${rangoTxt(d, h)}) · ${fmtNum(c.facturas)} facturas · ${fmtNum(c.unidades)} unidades`;
+  });
+  document.getElementById('siigoCortesTitulo').textContent = 'Avance · ' + siigoNombreCentro(centro);
+  document.getElementById('siigoPeriodoTitulo').textContent = 'Período seleccionado (' + rangoTxt(desde, hasta) + ')';
 
   document.getElementById('siigoKpiVentas').textContent = fmt(t.ventas);
   document.getElementById('siigoKpiFacturas').textContent = fmtNum(t.facturas);
@@ -8451,6 +8498,13 @@ async function siigoPintar(){
     ? filasCentros.map(r => `<tr${r.k === centro ? ' style="background:var(--gold-pale);"' : ''}><td>${escapeHtml(siigoNombreCentro(r.k))}</td><td style="text-align:right;">${fmt(r.ventas)}</td><td style="text-align:right;">${pct(r.ventas)}</td><td style="text-align:right;">${fmtNum(r.facturas)}</td><td style="text-align:right;">${fmtNum(r.unidades)}</td></tr>`).join('') +
       `<tr style="font-weight:700;"><td>Total global</td><td style="text-align:right;">${fmt(global.ventas)}</td><td style="text-align:right;">${global.ventas ? '100%' : '–'}</td><td style="text-align:right;">${fmtNum(global.facturas)}</td><td style="text-align:right;">${fmtNum(global.unidades)}</td></tr>`
     : '<tr><td colspan="5" style="color:var(--ink-soft);">Sin ventas en el período.</td></tr>';
+
+  const nombreVendedor = v => { const c = siigoVendedores && v.id != null && siigoVendedores[siigoClave(v.id)]; return c && c.nombre ? c.nombre : (v.id != null ? 'Vendedor ' + v.id : 'Sin vendedor'); };
+  const filasVend = Object.values(t.vendedores).sort((a, b) => b.valor - a.valor);
+  const pctVend = v => t.ventas ? (v / t.ventas * 100).toFixed(1).replace('.', ',') + '%' : '–';
+  document.getElementById('siigoVendedoresBody').innerHTML = filasVend.length
+    ? filasVend.map((v, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(nombreVendedor(v))}</td><td style="text-align:right;">${fmt(v.valor)}</td><td style="text-align:right;">${pctVend(v.valor)}</td><td style="text-align:right;">${fmtNum(v.facturas)}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="color:var(--ink-soft);">Sin ventas en el período (o aún no se ha vuelto a sincronizar con la versión que registra vendedores).</td></tr>';
 
   const topProductos = Object.values(t.productos).sort((a, b) => b.valor - a.valor).slice(0, SIIGO_TOP);
   document.getElementById('siigoProductosBody').innerHTML = topProductos.length
@@ -8487,6 +8541,24 @@ async function siigoPintar(){
 }
 
 document.getElementById('siigoAplicarBtn').addEventListener('click', () => renderVentasSiigoView());
+document.getElementById('siigoSincronizarBtn').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const texto = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sincronizando…';
+  try{
+    const res = await fetch(SIIGO_URL_SINCRONIZAR, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    showToast(data.mensaje || (res.ok ? 'Sincronizado' : 'No se pudo sincronizar'));
+  }catch(err){
+    console.error('siigo sync error', err);
+    showToast('No se pudo contactar la función de Siigo. ¿Ya está publicada en Firebase?');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = texto;
+    renderVentasSiigoView();
+  }
+});
 document.getElementById('siigoCentro').addEventListener('change', () => siigoPintar());
 document.querySelectorAll('[data-siigo-rango]').forEach(btn => btn.addEventListener('click', () => {
   const [d, h] = siigoRango(btn.dataset.siigoRango);
