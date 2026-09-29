@@ -22,6 +22,7 @@ las facturas creadas en los últimos 3 días. También se puede disparar con el 
 | `.../productos/{código}`, `.../clientes/{nit}`, `.../vendedores/{id}` | Cantidad y valor por producto, cliente y vendedor, dentro de cada día y centro |
 | `siigo/catalogos/...` | Centros de costo, vendedores, clientes y productos de Siigo |
 | `siigo/estado` | Última sincronización y último error |
+| `siigo/historico` | Hasta qué mes va cargado el histórico y si ya terminó |
 
 No escribe en `casaDoradaDatos`.
 
@@ -52,7 +53,12 @@ para que los días anteriores queden recalculados con la corrección.
 
 ### Cargar el histórico
 
-La función programada solo lee los últimos días. Para traer meses anteriores, en tu computador:
+**Ya no hace falta hacer nada a mano:** en cada corrida la función también carga meses anteriores,
+empezando por el mes actual y yendo hacia atrás, hasta encontrar 6 meses seguidos sin facturas
+(o llegar a 2018). El avance queda en `siigo/historico` y se ve en *Ventas Siigo*. El botón
+"Sincronizar ahora" también avanza el histórico.
+
+Si prefieres cargarlo todo de una vez desde tu computador:
 
 1. En Firebase → Configuración del proyecto → Cuentas de servicio → *Generar nueva clave privada*.
    Guárdala como `functions/service-account.json` (está en `.gitignore`; no la subas).
