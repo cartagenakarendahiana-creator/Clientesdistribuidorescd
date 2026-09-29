@@ -54,7 +54,7 @@ para que los días anteriores queden recalculados con la corrección.
 ### Cargar el histórico
 
 **Ya no hace falta hacer nada a mano:** en cada corrida la función también carga meses anteriores,
-empezando por el mes actual y yendo hacia atrás, hasta encontrar 3 meses seguidos sin facturas
+empezando por el mes actual y yendo hacia atrás, hasta encontrar 6 meses seguidos sin facturas
 (o llegar a 2018). El avance queda en `siigo/historico` y se ve en *Ventas Siigo*. El botón
 "Sincronizar ahora" también avanza el histórico.
 

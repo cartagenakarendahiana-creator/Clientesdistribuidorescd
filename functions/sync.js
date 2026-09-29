@@ -222,10 +222,10 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
 }
 
 // Carga del HISTÓRICO sin tener que correr nada a mano: en cada corrida se trae uno o más meses
-// hacia atrás (empezando por el mes actual), hasta encontrar 3 meses seguidos sin facturas o
+// hacia atrás (empezando por el mes actual), hasta encontrar 6 meses seguidos sin facturas o
 // llegar a HISTORICO_LIMITE. El avance queda en `siigo/historico`.
 const HISTORICO_LIMITE = '2018-01-01';
-const MESES_VACIOS_PARA_TERMINAR = 3;
+const MESES_VACIOS_PARA_TERMINAR = 6;
 
 async function avanzarHistorico({ client, db, tiempoMaxMs = 240000, log = console.log, hoy = hoyColombia() }) {
   const t0 = Date.now();

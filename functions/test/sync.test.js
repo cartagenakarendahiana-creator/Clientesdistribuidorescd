@@ -179,7 +179,7 @@ test('cuenta facturas con fecha anterior a su creación y mueve las que cambian 
   assert.equal(db.datos.siigo.facturasIndice.y, '2026-09-28');
 });
 
-test('avanzarHistorico carga mes a mes hacia atrás y termina tras 3 meses sin facturas', async () => {
+test('avanzarHistorico carga mes a mes hacia atrás y termina tras 6 meses sin facturas', async () => {
   const db = dbFalsa();
   // Solo hay facturas creadas en agosto y septiembre de 2026.
   const fetchImpl = fetchFalso({
@@ -196,12 +196,13 @@ test('avanzarHistorico carga mes a mes hacia atrás y termina tras 3 meses sin f
     },
   });
   const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'p', fetchImpl });
-  const h = await avanzarHistorico({ client, db, hoy: '2026-09-29', log: () => {} });
+  let h = await avanzarHistorico({ client, db, hoy: '2026-09-29', log: () => {} }); // máx. 6 meses por corrida
+  h = await avanzarHistorico({ client, db, hoy: '2026-09-29', log: () => {} });
   const meses = fetchImpl.llamadas.filter((l) => l.ruta === '/v1/invoices').map((l) => l.params.date_start);
-  assert.deepEqual(meses, ['2026-09-01', '2026-08-01', '2026-07-01', '2026-06-01', '2026-05-01']);
+  assert.deepEqual(meses.slice(0, 6), ['2026-09-01', '2026-08-01', '2026-07-01', '2026-06-01', '2026-05-01', '2026-04-01']);
   assert.equal(h.completo, true);
   assert.equal(h.facturas, 3);
-  assert.equal(h.cargadoDesde, '2026-05-01');
+  assert.equal(h.cargadoDesde, '2026-02-01');
   assert.ok(db.datos.siigo.facturasDia['2026-08-20'].a2);
   // Ya completo: no vuelve a pedir nada.
   const antes = fetchImpl.llamadas.length;
