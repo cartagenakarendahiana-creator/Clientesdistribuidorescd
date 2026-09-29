@@ -2172,7 +2172,7 @@ function initFirebaseSync(){
     return;
   }
   dataRef.on('value', (snap)=>{
-    const val = snap.val();
+    const val = decodeFirebaseKeys(snap.val());
     APPDATA = val ? {...structuredClone(DEFAULT_APPDATA), ...val} : structuredClone(DEFAULT_APPDATA);
     if(!firebaseReady){
       firebaseReady = true;
@@ -2193,6 +2193,26 @@ initFirebaseSync();
 // un solo valor inválido en cualquier módulo hace fallar el guardado de TODO (incluso partes que
 // no tienen nada que ver, como "Entregado" en Clientes). Esta función limpia esos valores
 // antes de enviarlos, para que un dato suelto no bloquee el resto de la app.
+// Firebase tampoco acepta claves con . # $ / [ ] (y la app usa nombres de cliente como clave, ej.
+// "Yanseli Vasquez (HOTEL) S.MARTA" o "Almacén X S.A.S"). Una sola clave así hacía fallar TODO el
+// guardado. Esas letras se codifican al guardar (. → %2E, etc.) y se decodifican al leer.
+function encodeFirebaseKey(k){
+  return String(k).replace(/[%.#$\/\[\]]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
+}
+function decodeFirebaseKey(k){
+  return String(k).replace(/%(25|2E|23|24|2F|5B|5D)/gi, (m, h) => String.fromCharCode(parseInt(h, 16)));
+}
+function decodeFirebaseKeys(val){
+  if(Array.isArray(val)) return val.map(decodeFirebaseKeys);
+  if(val && typeof val === 'object'){
+    const out = {};
+    for(const k in val){
+      if(Object.prototype.hasOwnProperty.call(val, k)) out[decodeFirebaseKey(k)] = decodeFirebaseKeys(val[k]);
+    }
+    return out;
+  }
+  return val;
+}
 function sanitizeForFirebase(val){
   if(val === undefined || val === null) return null;
   if(typeof val === 'number') return (isNaN(val) || !isFinite(val)) ? 0 : val;
@@ -2203,7 +2223,8 @@ function sanitizeForFirebase(val){
       if(!Object.prototype.hasOwnProperty.call(val, k)) continue;
       const v = val[k];
       if(v === undefined) continue; // omite la clave en vez de guardar "undefined"
-      out[k] = sanitizeForFirebase(v);
+      if(k === '') continue; // Firebase no acepta claves vacías
+      out[encodeFirebaseKey(k)] = sanitizeForFirebase(v);
     }
     return out;
   }
@@ -2218,23 +2239,28 @@ async function saveAppData(data){
   }
   guardadosEnCurso++;
   try{
-    await dataRef.set(sanitizeForFirebase(data));
-    showToast('Guardado');
+    // Sin internet Firebase deja el cambio en cola y la promesa no termina hasta reconectar:
+    // no dejamos la ventana bloqueada, avisamos que se enviará al volver la conexión.
+    let enCola = false;
+    const espera = new Promise(res => setTimeout(() => { enCola = true; res(); }, 8000));
+    await Promise.race([dataRef.set(sanitizeForFirebase(data)), espera]);
+    if(enCola) showToast('Sin confirmación del servidor: se guardará al volver la conexión. No recargues la página.', 6000);
+    else showToast('Guardado');
   }catch(e){
     console.error('firebase save error', e);
-    showToast('No se pudo guardar: ' + (e && e.message ? e.message : 'revisa la consola (F12)'));
+    showToast('No se pudo guardar: ' + (e && e.message ? e.message : 'revisa la consola (F12)'), 8000);
   }finally{
     guardadosEnCurso--;
   }
 }
 let APPDATA = structuredClone(DEFAULT_APPDATA);
 
-function showToast(msg){
+function showToast(msg, ms){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(t._timer);
-  t._timer = setTimeout(()=>t.classList.remove('show'), 1400);
+  t._timer = setTimeout(()=>t.classList.remove('show'), ms || 1400);
 }
 
 const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
