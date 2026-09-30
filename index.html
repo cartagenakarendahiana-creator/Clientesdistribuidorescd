@@ -4282,7 +4282,7 @@ function renderInventarioView(){
       <td class="row-actions">
         <button class="icon-btn icon-edit inv-edit-btn" data-idx="${idx}" title="Editar producto">✎</button>
         ${isOverridden ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
-        ${isCustom ? `<button class="icon-btn inv-tosvc-btn" data-idx="${idx}" title="Copiar a Precios de servicio (el producto sigue en Inventario y en los pedidos)">⇢</button>` : ''}
+
         ${isCustom ? `<button class="icon-btn icon-delete inv-delete-btn" data-idx="${idx}" title="Eliminar producto">🗑</button>` : ''}
       </td>
     </tr>`;
@@ -4310,22 +4310,6 @@ function renderInventarioView(){
       await saveAppData(APPDATA);
       renderAll();
       showToast('Producto restaurado a su versión original');
-    });
-  });
-  body.querySelectorAll('.inv-tosvc-btn').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const idx = parseInt(btn.dataset.idx, 10);
-      const p = getAllProducts()[idx];
-      if(!p) return;
-      // Solo COPIA: el producto sigue en Inventario y en los pedidos de los clientes (antes se borraba de todo).
-      if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
-      const ya = APPDATA.plantaServiciosMaquila.some(x => normalizeText(x.servicio) === normalizeText(p.producto) && normalizeText(x.medida || '') === normalizeText(p.medida || ''));
-      if(ya){ showToast('"' + p.producto + '" ya está en Precios de servicio'); return; }
-      if(!confirm('¿Copiar "' + p.producto + '" a Precios de servicio? Seguirá también en Inventario y en los pedidos.')) return;
-      APPDATA.plantaServiciosMaquila.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2,6), categoria: p.categoria || '', servicio: p.producto, medida: p.medida || '', precio: Number(p.precio) || 0 });
-      await saveAppData(APPDATA);
-      renderAll();
-      showToast('Copiado a Precios de servicio (sigue en Inventario)');
     });
   });
   body.querySelectorAll('.inv-delete-btn').forEach(btn=>{
@@ -6282,7 +6266,7 @@ function injectPrintButtons(){
 function showApp(){
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('appRoot').style.display = '';
-  if(!appRendered){ syncPlantaProductosFromInventario(); congelarPreciosServicioProduccion(); renderAll(); injectPrintButtons(); appRendered = true; }
+  if(!appRendered){ syncPlantaProductosFromInventario(); if(firebaseReady && dataRef) asegurarServiciosUltrasonido(); congelarPreciosServicioProduccion(); renderAll(); injectPrintButtons(); appRendered = true; }
 }
 
 const SESSION_KEY = 'casaDoradaSesionActiva';
@@ -6554,7 +6538,7 @@ const PLANTA_MODULES = {
     dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
     title:'precio de servicio', titleCap:'Precio de Servicio',
     fields:[
-      {key:'etapa', label:'Etapa que presta el servicio', type:'select', default:'', options:[{value:'',label:'Todas las etapas'}, ...ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))]},
+      {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:'Taller', options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
       {key:'servicio', label:'Producto o familia (ej. Sábanas, Tendidos)', type:'text', required:true, placeholder:'Ej. Sábanas'},
       {key:'precio', label:'Precio del servicio por unidad', type:'number', required:true, placeholder:'Ej. 3000'}
     ],
@@ -6793,24 +6777,41 @@ function asegurarServiciosUltrasonido(){
   if(cambio) saveAppData(APPDATA);
 }
 
-// Todos los productos de Inventario también quedan en "Precios de servicio" como servicio de TALLER
-// (con su propio precio de servicio, distinto del de venta). El nombre es "producto · medida", igual que en Producción.
+// Cada etapa tiene SU PROPIA lista de precios de servicio: Corte usa la de Corte y Taller la de Taller.
+const ETAPAS_CON_LISTA_PRODUCTOS = ['Corte', 'Taller'];
+// Todos los productos de Inventario quedan en "Precios de servicio" una vez para Corte y otra para
+// Taller, cada uno con su propio precio (distinto del de venta). El nombre es "producto · medida".
+// Los precios que estaban "para todas las etapas" se copian a Corte y a Taller con el mismo valor.
 function asegurarServiciosDeInventario(){
   const lista = APPDATA.plantaServiciosMaquila || (APPDATA.plantaServiciosMaquila = []);
-  let agregados = 0;
-  // Los que se copiaron antes sin etapa pasan a Taller.
-  lista.forEach(x => { if(x && x.origen === 'inventario' && !x.etapa){ x.etapa = 'Taller'; agregados++; } });
-  const nombres = new Set(lista.map(x => normalizeText(x.servicio || '')));
-  getAllProducts().forEach((p, i) => {
+  let cambios = 0;
+  const clave = (nombre, etapa) => normalizeText(nombre || '') + '|' + etapa;
+  const existentes = new Set(lista.filter(x => x && x.etapa).map(x => clave(x.servicio, x.etapa)));
+  const nuevoId = () => 's' + Date.now() + Math.random().toString(36).slice(2,8);
+  // Entradas sin etapa → una para Corte y otra para Taller (mismo precio); la general se quita.
+  for(let i = lista.length - 1; i >= 0; i--){
+    const x = lista[i];
+    if(!x || x.etapa || !x.servicio || TODOS_SERVICIOS_PRODUCCION.includes(x.servicio)) continue;
+    ETAPAS_CON_LISTA_PRODUCTOS.forEach(etapa => {
+      if(existentes.has(clave(x.servicio, etapa))) return;
+      existentes.add(clave(x.servicio, etapa));
+      const copia = { ...x, id: nuevoId(), etapa };
+      lista.push(copia);
+    });
+    lista.splice(i, 1);
+    cambios++;
+  }
+  getAllProducts().forEach(p => {
     if(!p || !p.producto) return;
     const nombre = claveProductoMedida(p.producto, p.medida);
-    const k = normalizeText(nombre);
-    if(nombres.has(k)) return;
-    nombres.add(k);
-    lista.push({ id: 's' + Date.now() + i + Math.random().toString(36).slice(2,5), etapa: 'Taller', servicio: nombre, categoria: p.categoria || '', medida: p.medida || '', precio: 0, origen: 'inventario' });
-    agregados++;
+    ETAPAS_CON_LISTA_PRODUCTOS.forEach(etapa => {
+      if(existentes.has(clave(nombre, etapa))) return;
+      existentes.add(clave(nombre, etapa));
+      lista.push({ id: nuevoId(), etapa, servicio: nombre, categoria: p.categoria || '', medida: p.medida || '', precio: 0, origen: 'inventario' });
+      cambios++;
+    });
   });
-  return agregados > 0;
+  return cambios > 0;
 }
 
 // Para cada producto y etapa, promedia los precios de servicio que se escribieron a mano en los
@@ -6830,13 +6831,7 @@ function promediarPreciosServicioManuales(){
     const promedio = Math.round(g.suma / g.n);
     const kNom = normalizeText(g.producto);
     let entry = lista.find(x => normalizeText(x.servicio || '') === kNom && x.etapa === g.etapa);
-    if(!entry){
-      const general = lista.find(x => normalizeText(x.servicio || '') === kNom && !x.etapa);
-      // Si solo hay una etapa con precios, el registro general toma esa etapa; si no, se crea uno por etapa.
-      const etapasDelProducto = [...grupos.values()].filter(o => normalizeText(o.producto) === kNom).length;
-      if(general && etapasDelProducto === 1){ entry = general; entry.etapa = g.etapa; }
-      else { entry = { id: 's' + Date.now() + Math.random().toString(36).slice(2,7), etapa: g.etapa, servicio: g.producto, precio: 0 }; lista.push(entry); }
-    }
+    if(!entry){ entry = { id: 's' + Date.now() + Math.random().toString(36).slice(2,7), etapa: g.etapa, servicio: g.producto, precio: 0 }; lista.push(entry); }
     entry.precio = promedio;
     entry.promedioDe = g.n;
     actualizados++;
@@ -6862,7 +6857,7 @@ function crearResolvedorPrecioServicio(){
     const nom = normalizeText(nombreProducto), cat = catPorNombre[nom] || '';
     let mejor = null, mejorScore = -1;
     entradas.forEach(en => {
-      if(en.x.etapa && en.x.etapa !== etapa) return;
+      if(en.x.etapa !== etapa) return; // cada etapa usa solo SU lista de precios
       let score = -1;
       if(en.clave === nom) score = 1000;
       else if(cat && en.clave === cat) score = 500;
@@ -7483,13 +7478,13 @@ function openProduccionModal(groupKey, defaultEtapa){
   const hoy = new Date();
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
   asegurarServiciosUltrasonido();
-  // La lista de productos sale SOLO de "Precios de servicio": los que aplican a todas las etapas o a
-  // la etapa elegida. Ultrasonido y Confortadora siguen mostrando solo sus servicios.
+  // La lista de productos sale SOLO de "Precios de servicio" de LA ETAPA elegida (Corte → Corte,
+  // Taller → Taller). Ultrasonido y Confortadora siguen mostrando solo sus servicios.
   const opcionesPara = (etapa) => {
     if(SERVICIOS_POR_ETAPA[etapa]) return [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))];
     const vistos = new Set();
     const nombres = (APPDATA.plantaServiciosMaquila || [])
-      .filter(x => x && x.servicio && (!x.etapa || x.etapa === etapa) && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
+      .filter(x => x && x.servicio && x.etapa === etapa && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
       .map(x => x.servicio)
       .filter(n => { const k = normalizeText(n); if(vistos.has(k)) return false; vistos.add(k); return true; })
       .sort((a, b) => a.localeCompare(b, 'es'));
@@ -8186,7 +8181,7 @@ function calcularUtilidadMes(y, m, tallerFiltro){
       const d = new Date(t);
       if(d.getFullYear() === y && (d.getMonth()+1) === m){
         prodPorProducto[key] = (prodPorProducto[key] || 0) + (Number(o.cantidad) || 0);
-        cobroPorProducto[key] = (cobroPorProducto[key] || 0) + (Number(o.cantidad) || 0) * precioServ('', key);
+        cobroPorProducto[key] = (cobroPorProducto[key] || 0) + (Number(o.cantidad) || 0) * precioServ('Taller', key);
         desdeOrdenes.add(key);
       }
     });
