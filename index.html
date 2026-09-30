@@ -6,7 +6,10 @@
 <title>Casa Dorada · Pedidos y Entregas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<!-- Librería de gráficas guardada dentro de la propia página (vendor/), para que no dependa de un
+     servidor externo que el navegador o la red puedan bloquear. Si aun así falla, se intenta otro CDN. -->
+<script src="vendor/chart.umd.min.js"></script>
+<script>window.Chart || document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 <style>
   :root{
@@ -2107,6 +2110,17 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 
 <script>
+// Si la librería de gráficas no cargó, cada recuadro de gráfica lo dice (antes quedaba todo en blanco).
+if(typeof Chart === 'undefined'){
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('canvas').forEach(c => {
+      const aviso = document.createElement('div');
+      aviso.style.cssText = 'padding:24px 12px;text-align:center;color:#B65B2E;font-size:13px;';
+      aviso.textContent = 'No se pudo cargar la librería de gráficas. Revisa la conexión a internet y recarga la página.';
+      c.replaceWith(aviso);
+    });
+  });
+}
 // Gráficas sin datos: en vez de quedar en blanco (parecía que "no funcionaban"), muestran un aviso.
 if(typeof Chart !== 'undefined'){
   Chart.register({
