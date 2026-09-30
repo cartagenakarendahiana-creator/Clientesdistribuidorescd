@@ -475,6 +475,20 @@
   .prod-linea .pl-fila2 label{flex:1;display:flex;flex-direction:column;font-size:12.5px;font-weight:600;color:var(--ink-soft);gap:4px;}
   .prod-linea .pl-fila2 input{font-size:17px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;}
   .prod-linea .pl-quitar{min-width:44px;font-size:18px;}
+  .rep-controles{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:16px;}
+  .rep-tipos .filter-btn.active{background:var(--gold-dark, #7A5B22);border-color:var(--gold-dark, #7A5B22);color:#fff;}
+  .rep-tipos,.rep-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .rep-nav input[type=date]{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);}
+  .rep-periodo{font-size:17px;font-weight:700;margin:0 0 12px;}
+  .rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px;}
+  .rep-kpi{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--white);}
+  .rep-kpi .lab{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);}
+  .rep-kpi .v{display:block;font-size:20px;font-weight:800;margin-top:4px;color:var(--ink);}
+  .rep-kpi .d{font-size:12px;margin-top:2px;color:var(--ink-soft);}
+  .rep-kpi .d.sube{color:#4C7A52;} .rep-kpi .d.baja{color:#B65B2E;}
+  .rep-sec{margin:0 0 20px;}
+  .rep-sec h3{font-size:15px;margin:0 0 8px;}
+  .rep-sec .vacio{color:var(--ink-soft);font-size:13.5px;padding:6px 0;}
   .pl-picker{position:fixed;inset:0;z-index:300;background:rgba(43,38,33,.55);display:flex;align-items:center;justify-content:center;padding:12px;}
   .pl-picker-box{background:var(--white);border-radius:16px;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(16,24,40,.3);}
   .pl-picker-head{padding:16px 16px 10px;border-bottom:1px solid var(--line);}
@@ -1129,6 +1143,7 @@
         </button>
         <div class="nav-dropdown-menu">
           <button class="nav-dropdown-item active" data-nav="resumen" type="button">Resumen</button>
+          <button class="nav-dropdown-item" data-nav="reportes" type="button">Reportes (día · semana · mes)</button>
           <button class="nav-dropdown-item" data-nav="despachos" type="button">Despachos</button>
           <button class="nav-dropdown-item" data-nav="ventassiigo" type="button">Ventas Siigo</button>
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
@@ -1899,6 +1914,31 @@
   </div>
 
   <!-- ================= GESTIÓN DE PLANTA (9 módulos, guardado real en Firebase) ================= -->
+
+  <div id="viewReportes" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Reportes</h2><div class="sub">Resumen general de un día, una semana (lunes a domingo) o un mes: producción y cobro del servicio por etapa, pedidos nuevos, despachos y gastos. Compara con el período anterior.</div></div>
+          <button class="filter-btn no-print" id="repImprimir" type="button">🖨 Imprimir / PDF</button>
+        </div>
+        <div class="rep-controles no-print">
+          <div class="rep-tipos" role="group" aria-label="Tipo de reporte">
+            <button type="button" class="filter-btn active" data-rep-tipo="dia">Día</button>
+            <button type="button" class="filter-btn" data-rep-tipo="semana">Semana</button>
+            <button type="button" class="filter-btn" data-rep-tipo="mes">Mes</button>
+          </div>
+          <div class="rep-nav">
+            <button type="button" class="filter-btn" id="repAnterior" title="Período anterior">◀</button>
+            <input type="date" id="repFecha">
+            <button type="button" class="filter-btn" id="repSiguiente" title="Período siguiente">▶</button>
+            <button type="button" class="filter-btn" id="repHoy">Hoy</button>
+          </div>
+        </div>
+        <div id="repContenido"></div>
+      </div>
+    </div>
+  </div>
 
   <div id="viewServiciosmaquila" class="view-section" style="display:none;">
     <div class="page-section">
@@ -3338,6 +3378,8 @@ function renderAll(){
   ETAPAS_PRODUCCION.forEach(e => { const el = document.getElementById('viewDash' + e.key.toLowerCase()); if(el && el.style.display !== 'none') renderDashEtapa(e.key); });
   const viewFacturasEl = document.getElementById('viewFacturas');
   if(viewFacturasEl && viewFacturasEl.style.display !== 'none') renderFacturasView();
+  const viewReportesEl = document.getElementById('viewReportes');
+  if(viewReportesEl && viewReportesEl.style.display !== 'none') renderReportes();
 }
 
 // ---------- vistas separadas (Resumen / Pedidos / Vendedores / Clientes / Inventario / Producción) ----------
@@ -3397,7 +3439,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','despachos','facturas','ventassiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','reportes','despachos','facturas','ventassiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -3415,6 +3457,7 @@ function switchView(viewName){
     g.classList.toggle('has-active', !!g.querySelector('.nav-dropdown-item.active'));
   });
   if(viewName === 'pedidos') renderPedidosView();
+  if(viewName === 'reportes') renderReportes();
   if(viewName === 'vendedores') renderVendedoresView();
   if(viewName === 'distribuidores') renderDistribuidoresView();
   if(viewName === 'inventario') renderInventarioView();
@@ -8540,6 +8583,147 @@ document.addEventListener('click', async (e) => {
   renderAll();
   showToast('Devuelto a Inventario');
 });
+
+// ================= Reportes (día · semana · mes) =================
+let repTipo = 'dia';
+function repIso(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function repRango(tipo, fechaIso){
+  const [y, m, d] = fechaIso.split('-').map(Number);
+  const f = new Date(y, m - 1, d);
+  if(tipo === 'semana'){
+    const lunes = new Date(f); lunes.setDate(f.getDate() - ((f.getDay() + 6) % 7));
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+    return { desde: repIso(lunes), hasta: repIso(domingo) };
+  }
+  if(tipo === 'mes') return { desde: repIso(new Date(y, m - 1, 1)), hasta: repIso(new Date(y, m, 0)) };
+  return { desde: fechaIso, hasta: fechaIso };
+}
+function repMover(tipo, fechaIso, paso){
+  const [y, m, d] = fechaIso.split('-').map(Number);
+  const f = new Date(y, m - 1, d);
+  if(tipo === 'mes') return repIso(new Date(y, m - 1 + paso, 1));
+  f.setDate(f.getDate() + paso * (tipo === 'semana' ? 7 : 1));
+  return repIso(f);
+}
+function repTitulo(tipo, r){
+  const larga = (iso, o) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('es-CO', o); };
+  if(tipo === 'mes') return 'Mes de ' + larga(r.desde, { month: 'long', year: 'numeric' });
+  if(tipo === 'semana') return 'Semana del ' + larga(r.desde, { day: 'numeric', month: 'long' }) + ' al ' + larga(r.hasta, { day: 'numeric', month: 'long', year: 'numeric' });
+  return larga(r.desde, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+// Calcula todos los datos del reporte para el rango [desde, hasta] (fechas YYYY-MM-DD, inclusive).
+function calcularReporte(desde, hasta){
+  const tD = parseFechaToTime(desde), tH = parseFechaToTime(hasta);
+  const enRango = (fecha) => { const t = parseFechaToTime(fecha); return t !== null && t >= tD && t <= tH; };
+  const precioServ = crearResolvedorPrecioServicio();
+  const etapas = {};
+  ETAPAS_PRODUCCION.forEach(e => { etapas[e.key] = { unidades: 0, cobro: 0, registros: new Set(), productos: {} }; });
+  (APPDATA.plantaProduccionDiaria || []).forEach(r => {
+    if(!r || !enRango(r.fecha)) return;
+    const etapa = normEtapa(r.etapa);
+    const e = etapas[etapa]; if(!e) return;
+    const cant = Number(r.cantidad) || 0;
+    const cobro = cant * precioServicioDeFila(precioServ, etapa, r);
+    e.unidades += cant; e.cobro += cobro; e.registros.add(r.registroId || r.id);
+    const k = r.producto || '—';
+    if(!e.productos[k]) e.productos[k] = { cantidad: 0, cobro: 0 };
+    e.productos[k].cantidad += cant; e.productos[k].cobro += cobro;
+  });
+  const pedidos = [];
+  getAllDistributors().forEach(d => {
+    if(!enRango(d.fecha)) return;
+    const t = distTotals(d.id);
+    const unidades = getOrderLines(d.id).reduce((s, l) => s + (Number(l.cantidad) || 0), 0);
+    pedidos.push({ nombre: d.nombre, vendedor: d.vendedor || '', valor: t.totalPedido, unidades, fecha: d.fecha });
+  });
+  pedidos.sort((a, b) => b.valor - a.valor);
+  const despachos = (APPDATA.despachos || []).filter(x => x && enRango(x.fecha));
+  const gastos = (APPDATA.plantaGastosAdicionales || []).filter(g => g && enRango(g.fecha));
+  const totalUnidades = ETAPAS_PRODUCCION.reduce((s, e) => s + etapas[e.key].unidades, 0);
+  const totalCobro = ETAPAS_PRODUCCION.reduce((s, e) => s + etapas[e.key].cobro, 0);
+  return {
+    etapas, pedidos, despachos, gastos, totalUnidades, totalCobro,
+    valorPedidos: pedidos.reduce((s, p) => s + p.valor, 0),
+    valorDespachos: despachos.reduce((s, x) => s + (Number(x.valorFactura) || 0), 0),
+    fletes: despachos.reduce((s, x) => s + (Number(x.valorFlete) || 0), 0),
+    totalGastos: gastos.reduce((s, g) => s + (Number(g.valor) || 0), 0)
+  };
+}
+function renderReportes(){
+  const cont = document.getElementById('repContenido');
+  if(!cont) return;
+  const inp = document.getElementById('repFecha');
+  if(!inp.value) inp.value = repIso(new Date());
+  document.querySelectorAll('[data-rep-tipo]').forEach(b => b.classList.toggle('active', b.dataset.repTipo === repTipo));
+  const r = repRango(repTipo, inp.value);
+  const ant = repRango(repTipo, repMover(repTipo, r.desde, -1));
+  const d = calcularReporte(r.desde, r.hasta), p = calcularReporte(ant.desde, ant.hasta);
+  const cambio = (a, b) => {
+    if(!b && !a) return '<div class="d">igual que el período anterior</div>';
+    if(!b) return '<div class="d sube">nuevo frente al período anterior</div>';
+    const pct = Math.round((a - b) / b * 100);
+    return `<div class="d ${pct >= 0 ? 'sube' : 'baja'}">${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct)}% vs. período anterior</div>`;
+  };
+  const kpi = (lab, v, a, b) => `<div class="rep-kpi"><div class="lab">${lab}</div><b class="v">${v}</b>${cambio(a, b)}</div>`;
+  let html = `<div class="rep-periodo">${escapeHtml(repTitulo(repTipo, r))}</div>
+    <div class="rep-kpis">
+      ${kpi('Unidades producidas', fmtNum(d.totalUnidades), d.totalUnidades, p.totalUnidades)}
+      ${kpi('Cobro de servicios', fmt(d.totalCobro), d.totalCobro, p.totalCobro)}
+      ${kpi('Pedidos nuevos', fmtNum(d.pedidos.length) + ' · ' + fmt(d.valorPedidos), d.valorPedidos, p.valorPedidos)}
+      ${kpi('Despachos', fmtNum(d.despachos.length) + ' · ' + fmt(d.valorDespachos), d.despachos.length, p.despachos.length)}
+      ${kpi('Gastos adicionales', fmt(d.totalGastos), d.totalGastos, p.totalGastos)}
+    </div>`;
+  if(repTipo === 'mes'){
+    const [y, m] = r.desde.split('-').map(Number);
+    const u = calcularUtilidadMes(y, m, '');
+    html += `<div class="rep-sec"><h3>Cierre del mes</h3><div class="rep-kpis">
+      <div class="rep-kpi"><div class="lab">Cobro de servicios</div><b class="v">${fmt(u.facturacionMes)}</b></div>
+      <div class="rep-kpi"><div class="lab">Centro de costos</div><b class="v">${fmt(u.costosFijosMes)}</b></div>
+      <div class="rep-kpi"><div class="lab">Costos variables</div><b class="v">${fmt(u.costosVariablesMes)}</b></div>
+      <div class="rep-kpi"><div class="lab">Gastos adicionales</div><b class="v">${fmt(u.gastosAdicionalesMes)}</b></div>
+      <div class="rep-kpi"><div class="lab">Utilidad neta</div><b class="v" style="color:${u.utilidadNeta >= 0 ? '#4C7A52' : '#B65B2E'};">${fmt(u.utilidadNeta)}</b></div>
+    </div></div>`;
+  }
+  html += `<div class="rep-sec"><h3>Producción por etapa</h3><div class="table-scroll"><table>
+    <thead><tr><th>Etapa</th><th class="num">Registros</th><th class="num">Unidades</th><th class="num">Cobro del servicio</th><th class="num">Unidades período anterior</th></tr></thead><tbody>
+    ${ETAPAS_PRODUCCION.map(e => `<tr><td><strong>${escapeHtml(e.label)}</strong></td><td class="num">${fmtNum(d.etapas[e.key].registros.size)}</td><td class="num">${fmtNum(d.etapas[e.key].unidades)}</td><td class="num">${fmt(d.etapas[e.key].cobro)}</td><td class="num">${fmtNum(p.etapas[e.key].unidades)}</td></tr>`).join('')}
+    <tr><td><strong>Total</strong></td><td class="num"></td><td class="num"><strong>${fmtNum(d.totalUnidades)}</strong></td><td class="num"><strong>${fmt(d.totalCobro)}</strong></td><td class="num">${fmtNum(p.totalUnidades)}</td></tr>
+    </tbody></table></div></div>`;
+  ETAPAS_PRODUCCION.forEach(e => {
+    const filas = Object.entries(d.etapas[e.key].productos).sort((a, b) => b[1].cantidad - a[1].cantidad);
+    if(!filas.length) return;
+    html += `<div class="rep-sec"><h3>${escapeHtml(e.label)} · productos</h3><div class="table-scroll"><table data-cat-col="0">
+      <thead><tr><th>Producto</th><th class="num">Unidades</th><th class="num">Precio servicio (prom.)</th><th class="num">Cobro</th></tr></thead><tbody>
+      ${filas.map(([n, x]) => `<tr><td>${escapeHtml(n)}</td><td class="num">${fmtNum(x.cantidad)}</td><td class="num">${x.cantidad && x.cobro ? fmt(x.cobro / x.cantidad) : '—'}</td><td class="num">${x.cobro ? fmt(x.cobro) : '—'}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+  });
+  html += `<div class="rep-sec"><h3>Pedidos nuevos (${fmtNum(d.pedidos.length)})</h3>` + (d.pedidos.length ? `<div class="table-scroll"><table>
+    <thead><tr><th>Cliente</th><th>Vendedor</th><th>Fecha</th><th class="num">Unidades</th><th class="num">Valor</th></tr></thead><tbody>
+    ${d.pedidos.map(x => `<tr><td>${escapeHtml(x.nombre)}</td><td>${escapeHtml(x.vendedor || '—')}</td><td>${escapeHtml(x.fecha || '')}</td><td class="num">${fmtNum(x.unidades)}</td><td class="num">${fmt(x.valor)}</td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="vacio">Sin pedidos nuevos en este período.</div>') + '</div>';
+  html += `<div class="rep-sec"><h3>Despachos (${fmtNum(d.despachos.length)})</h3>` + (d.despachos.length ? `<div class="table-scroll"><table>
+    <thead><tr><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Transportadora</th><th class="num">Valor factura</th><th class="num">Flete</th></tr></thead><tbody>
+    ${d.despachos.map(x => `<tr><td>${escapeHtml(x.fecha || '')}</td><td>${escapeHtml(x.cliente || '')}</td><td>${escapeHtml(x.ciudad || '')}</td><td>${escapeHtml(x.transportadora || '')}</td><td class="num">${fmt(Number(x.valorFactura) || 0)}</td><td class="num">${fmt(Number(x.valorFlete) || 0)}</td></tr>`).join('')}
+    <tr><td colspan="4"><strong>Total</strong></td><td class="num"><strong>${fmt(d.valorDespachos)}</strong></td><td class="num"><strong>${fmt(d.fletes)}</strong></td></tr>
+    </tbody></table></div>` : '<div class="vacio">Sin despachos en este período.</div>') + '</div>';
+  html += `<div class="rep-sec"><h3>Gastos adicionales (${fmtNum(d.gastos.length)})</h3>` + (d.gastos.length ? `<div class="table-scroll"><table>
+    <thead><tr><th>Fecha</th><th>Concepto</th><th>Etapa</th><th class="num">Valor</th></tr></thead><tbody>
+    ${d.gastos.map(g => `<tr><td>${escapeHtml(g.fecha || '')}</td><td>${escapeHtml(g.concepto || '')}</td><td>${escapeHtml(g.etapa ? normEtapa(g.etapa) : '—')}</td><td class="num">${fmt(Number(g.valor) || 0)}</td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="vacio">Sin gastos adicionales en este período.</div>') + '</div>';
+  const pend = computeGlobalUnitTotals();
+  const debe = getAllDistributors().reduce((s, x) => s + distTotals(x.id).totalPendienteVal, 0);
+  html += `<div class="rep-sec"><h3>Estado actual (hoy)</h3><div class="rep-kpis">
+    <div class="rep-kpi"><div class="lab">Unidades pendientes por entregar</div><b class="v">${fmtNum(pend.totalUnidadesPendientes)}</b></div>
+    <div class="rep-kpi"><div class="lab">Valor pendiente por entregar</div><b class="v">${fmt(debe)}</b></div>
+  </div></div>`;
+  cont.innerHTML = html;
+}
+document.querySelectorAll('[data-rep-tipo]').forEach(b => b.addEventListener('click', () => { repTipo = b.dataset.repTipo; renderReportes(); }));
+document.getElementById('repFecha').addEventListener('change', renderReportes);
+document.getElementById('repAnterior').addEventListener('click', () => { const i = document.getElementById('repFecha'); i.value = repMover(repTipo, i.value || repIso(new Date()), -1); renderReportes(); });
+document.getElementById('repSiguiente').addEventListener('click', () => { const i = document.getElementById('repFecha'); i.value = repMover(repTipo, i.value || repIso(new Date()), 1); renderReportes(); });
+document.getElementById('repHoy').addEventListener('click', () => { document.getElementById('repFecha').value = repIso(new Date()); renderReportes(); });
+document.getElementById('repImprimir').addEventListener('click', () => window.print());
 
 // ---- Categorías en todas las tablas de productos ----
 // Las tablas marcadas con data-cat-col="N" (N = columna con el nombre del producto) se agrupan
