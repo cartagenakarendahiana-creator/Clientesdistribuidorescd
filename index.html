@@ -4255,7 +4255,7 @@ function renderInventarioView(){
       <td class="row-actions">
         <button class="icon-btn icon-edit inv-edit-btn" data-idx="${idx}" title="Editar producto">✎</button>
         ${isOverridden ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
-        ${isCustom ? `<button class="icon-btn inv-tosvc-btn" data-idx="${idx}" title="Mover a Precios de servicio">⇢</button>` : ''}
+        ${isCustom ? `<button class="icon-btn inv-tosvc-btn" data-idx="${idx}" title="Copiar a Precios de servicio (el producto sigue en Inventario y en los pedidos)">⇢</button>` : ''}
         ${isCustom ? `<button class="icon-btn icon-delete inv-delete-btn" data-idx="${idx}" title="Eliminar producto">🗑</button>` : ''}
       </td>
     </tr>`;
@@ -4290,13 +4290,15 @@ function renderInventarioView(){
       const idx = parseInt(btn.dataset.idx, 10);
       const p = getAllProducts()[idx];
       if(!p) return;
-      if(!confirm('¿Mover "' + p.producto + '" a Precios de servicio? Saldrá del Inventario y de los pedidos de clientes donde se haya usado.')) return;
+      // Solo COPIA: el producto sigue en Inventario y en los pedidos de los clientes (antes se borraba de todo).
       if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
+      const ya = APPDATA.plantaServiciosMaquila.some(x => normalizeText(x.servicio) === normalizeText(p.producto) && normalizeText(x.medida || '') === normalizeText(p.medida || ''));
+      if(ya){ showToast('"' + p.producto + '" ya está en Precios de servicio'); return; }
+      if(!confirm('¿Copiar "' + p.producto + '" a Precios de servicio? Seguirá también en Inventario y en los pedidos.')) return;
       APPDATA.plantaServiciosMaquila.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2,6), categoria: p.categoria || '', servicio: p.producto, medida: p.medida || '', precio: Number(p.precio) || 0 });
-      deleteCustomProduct(idx - baseLen);
       await saveAppData(APPDATA);
       renderAll();
-      showToast('Movido a Precios de servicio');
+      showToast('Copiado a Precios de servicio (sigue en Inventario)');
     });
   });
   body.querySelectorAll('.inv-delete-btn').forEach(btn=>{
@@ -6523,7 +6525,10 @@ const PLANTA_MODULES = {
     columns:[
       {key:'etapa', label:'Etapa', html:true, format:v=> v ? `<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>` : 'Todas'},
       {key:'servicio', label:'Producto / familia'},
-      {key:'precio', label:'Precio por unidad', editable:'precioServicio'}
+      {key:'precio', label:'Precio por unidad', editable:'precioServicio'},
+      {key:'categoria', label:'Inventario', html:true, format:(v, item) => ('categoria' in item || item.medida)
+        ? `<button type="button" class="acc-btn no-print" data-svc-a-inv="${escapeAttr(item.id)}" title="Volver a crear este producto en Inventario">↩ Devolver a Inventario</button>`
+        : '<span style="color:var(--ink-soft);">—</span>'}
     ]
   },
   ordenesproduccion:{
@@ -8291,6 +8296,23 @@ function renderUtilPieCostosFijos(){
     options: { plugins:{ legend:{ position:'bottom' } } }
   });
 }
+
+// "Devolver a Inventario": vuelve a crear como producto propio un producto que se había pasado a
+// Precios de servicio (no borra la fila de Precios de servicio).
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-svc-a-inv]');
+  if(!btn) return;
+  const item = (APPDATA.plantaServiciosMaquila || []).find(x => x && x.id === btn.dataset.svcAInv);
+  if(!item) return;
+  const existe = getAllProducts().some(pr => normalizeText(pr.producto) === normalizeText(item.servicio) && normalizeText(pr.medida || '') === normalizeText(item.medida || ''));
+  if(existe){ showToast('"' + item.servicio + '" ya está en Inventario'); return; }
+  if(!confirm('¿Devolver "' + item.servicio + '" a Inventario? Quedará como producto con precio ' + fmt(Number(item.precio) || 0) + '. Los pedidos de donde se quitó antes no se recuperan: agrégalo de nuevo a esos pedidos.')) return;
+  if(!APPDATA.customProducts) APPDATA.customProducts = [];
+  APPDATA.customProducts.push({ categoria: item.categoria || 'Otros', producto: item.servicio, medida: item.medida || '', precio: Number(item.precio) || 0 });
+  await saveAppData(APPDATA);
+  renderAll();
+  showToast('Devuelto a Inventario');
+});
 
 // Pestañas dentro de una página: muestran una sección a la vez (recuerda la última elegida).
 document.querySelectorAll('.page-tabs').forEach(bar => {
