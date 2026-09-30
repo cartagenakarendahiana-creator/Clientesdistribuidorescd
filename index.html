@@ -485,6 +485,7 @@
   .pl-picker-list button:hover,.pl-picker-list button:focus-visible{background:#F4ECDD;border-color:#C9A96B;}
   .pl-picker-list button.sel{background:#F4ECDD;border-color:#9E7B3B;font-weight:700;}
   .pl-picker-list .pl-medida{display:block;font-size:14px;color:var(--ink-soft);margin-top:2px;}
+  .pl-picker-list .pl-picker-cat{position:sticky;top:-8px;z-index:1;background:var(--cream-2, #F4ECDD);color:var(--gold-dark, #7A5B22);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;margin:8px 0 6px;border-radius:8px;}
   .pl-picker-list .vacio{padding:18px;color:var(--ink-soft);font-size:16px;text-align:center;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
@@ -1035,6 +1036,8 @@
     .page-tab:hover{color:var(--ink);}
     .page-tab.active{color:var(--gold-dark);border-bottom-color:var(--gold);}
     .page-tab-panel[hidden]{display:none !important;}
+    .page-tab .svc-count{font-size:11.5px;font-weight:500;color:var(--ink-soft);margin-left:2px;}
+    .page-tab .svc-count b{color:#B65B2E;font-weight:600;}
     .prod-stat-destacado{border-color:var(--gold) !important;background:var(--gold-pale) !important;}
     /* Tablas largas: altura máxima con desplazamiento y encabezado fijo */
     .tabla-limitada{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:12px;}
@@ -1736,7 +1739,7 @@
               </div>
             </div>
             <div class="prod-table-wrap">
-              <table class="prod-table" id="costProductoTable">
+              <table class="prod-table" id="costProductoTable" data-cat-col="0">
                 <thead>
                   <tr><th>Producto</th><th>Categoría</th><th>Tiempo</th><th>Costo material</th><th>Costo mano de obra</th><th>Costo total</th><th>Precio venta</th><th>Margen</th><th>Insumos</th></tr>
                 </thead>
@@ -1866,7 +1869,7 @@
               </select>
             </div>
             <div class="prod-table-wrap tabla-limitada">
-              <table class="prod-table" id="utilMesTable">
+              <table class="prod-table" id="utilMesTable" data-cat-col="0">
                 <thead>
                   <tr><th>Producto</th><th>Producción del mes</th><th>Precio servicio (promedio)</th><th>Cobro del servicio</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
                 </thead>
@@ -1881,7 +1884,7 @@
               <input type="search" class="filtro-tabla" data-filtra="utilProductoTable" placeholder="Buscar producto…" style="min-width:220px;padding:8px 12px;border:1px solid var(--line);">
             </div>
             <div class="prod-table-wrap tabla-limitada">
-              <table class="prod-table" id="utilProductoTable">
+              <table class="prod-table" id="utilProductoTable" data-cat-col="0">
                 <thead>
                   <tr><th>Producto</th><th>Costo total</th><th>Precio venta</th><th>Utilidad</th><th>Margen</th></tr>
                 </thead>
@@ -1907,13 +1910,19 @@
             <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
           </div>
         </div>
+        <div class="page-tabs" role="tablist" data-tabs-id="servicios" id="serviciosTabs">
+          <button type="button" class="page-tab active" data-tab="Corte">Corte <span class="svc-count"></span></button>
+          <button type="button" class="page-tab" data-tab="Taller">Taller <span class="svc-count"></span></button>
+          <button type="button" class="page-tab" data-tab="Ultrasonido">Ultrasonido <span class="svc-count"></span></button>
+          <button type="button" class="page-tab" data-tab="Confortadora">Confortadora <span class="svc-count"></span></button>
+        </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="serviciosmaquilaSearch" placeholder="Buscar etapa o producto...">
+          <input type="text" id="serviciosmaquilaSearch" placeholder="Buscar producto en esta pestaña...">
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Etapa</th><th>Producto / familia</th><th class="num">Precio por unidad</th><th></th></tr></thead>
+            <thead><tr><th>Producto / familia</th><th class="num">Precio de servicio por unidad</th><th>Inventario</th><th></th></tr></thead>
             <tbody id="serviciosmaquilaBody"></tbody>
           </table>
         </div>
@@ -1954,7 +1963,7 @@
           <input type="text" id="plantaproductosSearch" placeholder="Buscar producto, categoría...">
         </div>
         <div class="table-scroll">
-          <table>
+          <table data-cat-col="0">
             <thead><tr><th>Producto</th><th>Categoría</th><th>Unidad</th><th class="num">Tiempo estándar</th><th class="num">Costo material</th><th class="num">Precio venta</th><th>Estado</th><th></th></tr></thead>
             <tbody id="plantaproductosBody"></tbody>
           </table>
@@ -2128,7 +2137,7 @@
           <div><h2 id="produccionUnidadesPorProductoTitulo">Unidades fabricadas por producto</h2><div class="sub">Suma de unidades producidas por producto, respetando el rango de fechas, la etapa y el producto filtrados arriba.</div></div>
         </div>
         <div class="table-scroll">
-          <table>
+          <table data-cat-col="0">
             <thead><tr><th>Producto</th><th class="num" id="produccionUnidadesPorProductoColLabel">Unidades fabricadas</th><th class="num">Registros</th></tr></thead>
             <tbody id="produccionTotalesPorProductoBody"></tbody>
           </table>
@@ -2143,7 +2152,7 @@
           <input type="text" id="produccionDisponibilidadSearch" placeholder="Buscar producto...">
         </div>
         <div class="table-scroll">
-          <table>
+          <table data-cat-col="0">
             <thead><tr><th>Producto</th><th class="num">Producido (total)</th><th class="num">Vendido (facturado)</th><th class="num">Disponible</th></tr></thead>
             <tbody id="produccionDisponibilidadBody"></tbody>
           </table>
@@ -4282,7 +4291,7 @@ function renderInventarioView(){
       <td class="row-actions">
         <button class="icon-btn icon-edit inv-edit-btn" data-idx="${idx}" title="Editar producto">✎</button>
         ${isOverridden ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
-        ${isCustom ? `<button class="icon-btn inv-tosvc-btn" data-idx="${idx}" title="Copiar a Precios de servicio (el producto sigue en Inventario y en los pedidos)">⇢</button>` : ''}
+
         ${isCustom ? `<button class="icon-btn icon-delete inv-delete-btn" data-idx="${idx}" title="Eliminar producto">🗑</button>` : ''}
       </td>
     </tr>`;
@@ -4310,22 +4319,6 @@ function renderInventarioView(){
       await saveAppData(APPDATA);
       renderAll();
       showToast('Producto restaurado a su versión original');
-    });
-  });
-  body.querySelectorAll('.inv-tosvc-btn').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const idx = parseInt(btn.dataset.idx, 10);
-      const p = getAllProducts()[idx];
-      if(!p) return;
-      // Solo COPIA: el producto sigue en Inventario y en los pedidos de los clientes (antes se borraba de todo).
-      if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
-      const ya = APPDATA.plantaServiciosMaquila.some(x => normalizeText(x.servicio) === normalizeText(p.producto) && normalizeText(x.medida || '') === normalizeText(p.medida || ''));
-      if(ya){ showToast('"' + p.producto + '" ya está en Precios de servicio'); return; }
-      if(!confirm('¿Copiar "' + p.producto + '" a Precios de servicio? Seguirá también en Inventario y en los pedidos.')) return;
-      APPDATA.plantaServiciosMaquila.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2,6), categoria: p.categoria || '', servicio: p.producto, medida: p.medida || '', precio: Number(p.precio) || 0 });
-      await saveAppData(APPDATA);
-      renderAll();
-      showToast('Copiado a Precios de servicio (sigue en Inventario)');
     });
   });
   body.querySelectorAll('.inv-delete-btn').forEach(btn=>{
@@ -6282,7 +6275,7 @@ function injectPrintButtons(){
 function showApp(){
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('appRoot').style.display = '';
-  if(!appRendered){ syncPlantaProductosFromInventario(); congelarPreciosServicioProduccion(); renderAll(); injectPrintButtons(); appRendered = true; }
+  if(!appRendered){ syncPlantaProductosFromInventario(); if(firebaseReady && dataRef) asegurarServiciosUltrasonido(); congelarPreciosServicioProduccion(); renderAll(); injectPrintButtons(); appRendered = true; }
 }
 
 const SESSION_KEY = 'casaDoradaSesionActiva';
@@ -6553,13 +6546,14 @@ const PLANTA_MODULES = {
   serviciosmaquila:{
     dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
     title:'precio de servicio', titleCap:'Precio de Servicio',
+    filterFn: item => item && item.etapa === etapaServiciosActual(), // una pestaña por etapa
+    groupBy: () => categoriasServicios(), // y dentro de cada pestaña, por categoría (Sábanas, Tendidos…)
     fields:[
-      {key:'etapa', label:'Etapa que presta el servicio', type:'select', default:'', options:[{value:'',label:'Todas las etapas'}, ...ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))]},
+      {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:()=>etapaServiciosActual(), options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
       {key:'servicio', label:'Producto o familia (ej. Sábanas, Tendidos)', type:'text', required:true, placeholder:'Ej. Sábanas'},
       {key:'precio', label:'Precio del servicio por unidad', type:'number', required:true, placeholder:'Ej. 3000'}
     ],
     columns:[
-      {key:'etapa', label:'Etapa', html:true, format:v=> v ? `<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>` : 'Todas'},
       {key:'servicio', label:'Producto / familia'},
       {key:'precio', label:'Precio por unidad', editable:'precioServicio'},
       {key:'categoria', label:'Inventario', html:true, format:(v, item) => (('categoria' in item || item.medida) && !getAllProducts().some(pr => normalizeText(claveProductoMedida(pr.producto, pr.medida)) === normalizeText(item.servicio) || (normalizeText(pr.producto) === normalizeText(item.servicio) && normalizeText(pr.medida || '') === normalizeText(item.medida || ''))))
@@ -6696,15 +6690,31 @@ function renderPlantaModule(moduleKey){
   let rows = raw.map((item, idx) => ({item, idx}));
   if(typeof mod.filterFn === 'function') rows = rows.filter(({item}) => mod.filterFn(item));
   if(term){
-    rows = rows.filter(({item}) => mod.columns.some(c => String(item[c.key] ?? '').toLowerCase().includes(term)));
+    const t = normalizeText(term); // sin importar tildes ni mayúsculas
+    rows = rows.filter(({item}) => mod.columns.some(c => normalizeText(String(item[c.key] ?? '')).includes(t)));
   }
   const colCount = mod.columns.length + 1;
+  // Agrupado por categoría (con una fila de título por grupo), si el módulo lo pide.
+  let grupoDe = null;
+  if(typeof mod.groupBy === 'function'){
+    const g = mod.groupBy();
+    grupoDe = g.grupo;
+    rows.forEach(r => { r.grupo = g.grupo(r.item); });
+    rows.sort((a, b) => g.orden(a.grupo) - g.orden(b.grupo) || a.grupo.localeCompare(b.grupo, 'es') || String(a.item.servicio || '').localeCompare(String(b.item.servicio || ''), 'es'));
+  }
+  let grupoPrevio = null;
+  const tituloGrupo = (r) => {
+    if(!grupoDe || r.grupo === grupoPrevio) return '';
+    grupoPrevio = r.grupo;
+    const n = rows.filter(x => x.grupo === r.grupo).length;
+    return `<tr class="cat-row"><td colspan="${colCount}">${escapeHtml(r.grupo)} <span style="font-weight:500;opacity:.7;">(${n})</span></td></tr>`;
+  };
   if(moduleKey === 'produccion'){
     renderProduccionRegistros(body, term);
   }else if(!rows.length){
     body.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">${raw.length ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay registros. Usa el botón "+ Nuevo" para crear el primero.'}</td></tr>`;
   }else{
-    body.innerHTML = rows.map(({item, idx}) => `
+    body.innerHTML = rows.map((r) => { const {item, idx} = r; return tituloGrupo(r) + `
       <tr>
         ${mod.columns.map(c => {
           const rawVal = item[c.key];
@@ -6719,8 +6729,9 @@ function renderPlantaModule(moduleKey){
           <button class="icon-btn icon-delete" data-planta-delete="${moduleKey}" data-idx="${idx}" title="Eliminar">🗑</button>
         </td>
       </tr>
-    `).join('');
+    `; }).join('');
   }
+  if(moduleKey === 'serviciosmaquila') actualizarConteoPestanasServicios();
   if(moduleKey === 'produccion'){
     actualizarProduccionProductoFiltroOptions();
     actualizarEtiquetasUnidadProduccion();
@@ -6793,24 +6804,73 @@ function asegurarServiciosUltrasonido(){
   if(cambio) saveAppData(APPDATA);
 }
 
-// Todos los productos de Inventario también quedan en "Precios de servicio" como servicio de TALLER
-// (con su propio precio de servicio, distinto del de venta). El nombre es "producto · medida", igual que en Producción.
+// Cada etapa tiene SU PROPIA lista de precios de servicio (Corte usa la de Corte, Taller la de Taller,
+// etc.) y en "Precios de servicio" cada una va en su propia pestaña.
+const ETAPAS_CON_LISTA_PRODUCTOS = ['Corte', 'Taller', 'Ultrasonido', 'Confortadora'];
+function etapaServiciosActual(){
+  const b = document.querySelector('#serviciosTabs .page-tab.active');
+  return (b && b.dataset.tab) || 'Corte';
+}
+// Categoría de cada precio de servicio: la que trae, o la del producto de Inventario con ese nombre.
+// Los servicios fijos (Ultrasonido/Confortadora) van en "Servicios"; lo demás en "Otros".
+function categoriasServicios(){
+  const porNombre = new Map(), orden = new Map();
+  getAllProducts().forEach(p => {
+    if(!p || !p.producto) return;
+    const cat = (p.categoria || '').trim() || 'Otros';
+    if(!orden.has(cat)) orden.set(cat, orden.size + 1);
+    porNombre.set(normalizeText(claveProductoMedida(p.producto, p.medida)), cat);
+    if(!porNombre.has(normalizeText(p.producto))) porNombre.set(normalizeText(p.producto), cat);
+  });
+  const grupo = (item) => {
+    if(TODOS_SERVICIOS_PRODUCCION.includes(item.servicio)) return 'Servicios';
+    return (item.categoria || '').trim() || porNombre.get(normalizeText(item.servicio || '')) || 'Otros';
+  };
+  const ordenDe = (g) => g === 'Servicios' ? 0 : (orden.get(g) || (g === 'Otros' ? 9999 : 9000));
+  return { grupo, orden: ordenDe };
+}
+function actualizarConteoPestanasServicios(){
+  const lista = APPDATA.plantaServiciosMaquila || [];
+  document.querySelectorAll('#serviciosTabs .page-tab').forEach(b => {
+    const n = lista.filter(x => x && x.etapa === b.dataset.tab).length;
+    const sinPrecio = lista.filter(x => x && x.etapa === b.dataset.tab && !(Number(x.precio) > 0)).length;
+    const s = b.querySelector('.svc-count');
+    if(s) s.innerHTML = n + (sinPrecio ? ' · <b>' + sinPrecio + ' sin precio</b>' : '');
+  });
+}
+// Todos los productos de Inventario quedan en "Precios de servicio" una vez para Corte y otra para
+// Taller, cada uno con su propio precio (distinto del de venta). El nombre es "producto · medida".
+// Los precios que estaban "para todas las etapas" se copian a Corte y a Taller con el mismo valor.
 function asegurarServiciosDeInventario(){
   const lista = APPDATA.plantaServiciosMaquila || (APPDATA.plantaServiciosMaquila = []);
-  let agregados = 0;
-  // Los que se copiaron antes sin etapa pasan a Taller.
-  lista.forEach(x => { if(x && x.origen === 'inventario' && !x.etapa){ x.etapa = 'Taller'; agregados++; } });
-  const nombres = new Set(lista.map(x => normalizeText(x.servicio || '')));
-  getAllProducts().forEach((p, i) => {
+  let cambios = 0;
+  const clave = (nombre, etapa) => normalizeText(nombre || '') + '|' + etapa;
+  const existentes = new Set(lista.filter(x => x && x.etapa).map(x => clave(x.servicio, x.etapa)));
+  const nuevoId = () => 's' + Date.now() + Math.random().toString(36).slice(2,8);
+  // Entradas sin etapa → una para Corte y otra para Taller (mismo precio); la general se quita.
+  for(let i = lista.length - 1; i >= 0; i--){
+    const x = lista[i];
+    if(!x || x.etapa || !x.servicio || TODOS_SERVICIOS_PRODUCCION.includes(x.servicio)) continue;
+    ETAPAS_CON_LISTA_PRODUCTOS.forEach(etapa => {
+      if(existentes.has(clave(x.servicio, etapa))) return;
+      existentes.add(clave(x.servicio, etapa));
+      const copia = { ...x, id: nuevoId(), etapa };
+      lista.push(copia);
+    });
+    lista.splice(i, 1);
+    cambios++;
+  }
+  getAllProducts().forEach(p => {
     if(!p || !p.producto) return;
     const nombre = claveProductoMedida(p.producto, p.medida);
-    const k = normalizeText(nombre);
-    if(nombres.has(k)) return;
-    nombres.add(k);
-    lista.push({ id: 's' + Date.now() + i + Math.random().toString(36).slice(2,5), etapa: 'Taller', servicio: nombre, categoria: p.categoria || '', medida: p.medida || '', precio: 0, origen: 'inventario' });
-    agregados++;
+    ETAPAS_CON_LISTA_PRODUCTOS.forEach(etapa => {
+      if(existentes.has(clave(nombre, etapa))) return;
+      existentes.add(clave(nombre, etapa));
+      lista.push({ id: nuevoId(), etapa, servicio: nombre, categoria: p.categoria || '', medida: p.medida || '', precio: 0, origen: 'inventario' });
+      cambios++;
+    });
   });
-  return agregados > 0;
+  return cambios > 0;
 }
 
 // Para cada producto y etapa, promedia los precios de servicio que se escribieron a mano en los
@@ -6830,13 +6890,7 @@ function promediarPreciosServicioManuales(){
     const promedio = Math.round(g.suma / g.n);
     const kNom = normalizeText(g.producto);
     let entry = lista.find(x => normalizeText(x.servicio || '') === kNom && x.etapa === g.etapa);
-    if(!entry){
-      const general = lista.find(x => normalizeText(x.servicio || '') === kNom && !x.etapa);
-      // Si solo hay una etapa con precios, el registro general toma esa etapa; si no, se crea uno por etapa.
-      const etapasDelProducto = [...grupos.values()].filter(o => normalizeText(o.producto) === kNom).length;
-      if(general && etapasDelProducto === 1){ entry = general; entry.etapa = g.etapa; }
-      else { entry = { id: 's' + Date.now() + Math.random().toString(36).slice(2,7), etapa: g.etapa, servicio: g.producto, precio: 0 }; lista.push(entry); }
-    }
+    if(!entry){ entry = { id: 's' + Date.now() + Math.random().toString(36).slice(2,7), etapa: g.etapa, servicio: g.producto, precio: 0 }; lista.push(entry); }
     entry.precio = promedio;
     entry.promedioDe = g.n;
     actualizados++;
@@ -6862,7 +6916,7 @@ function crearResolvedorPrecioServicio(){
     const nom = normalizeText(nombreProducto), cat = catPorNombre[nom] || '';
     let mejor = null, mejorScore = -1;
     entradas.forEach(en => {
-      if(en.x.etapa && en.x.etapa !== etapa) return;
+      if(en.x.etapa !== etapa) return; // cada etapa usa solo SU lista de precios
       let score = -1;
       if(en.clave === nom) score = 1000;
       else if(cat && en.clave === cat) score = 500;
@@ -6957,7 +7011,7 @@ function renderProduccionRegistros(body, term){
       </tr>
       <tr class="prod-reg-detalle" style="${abierto ? '' : 'display:none;'}background:var(--cream-2);">
         <td colspan="7" style="padding:8px 14px 12px 40px;">
-          <table style="width:100%;">
+          <table style="width:100%;" data-cat-col="0">
             <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio del servicio</th><th class="num">Subtotal</th></tr></thead>
             <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num"><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="produccion" data-grupo="${k}" data-fila="${escapeAttr(l.id)}" data-etapa="${escapeAttr(g.etapa)}" data-producto="${escapeAttr(l.producto || '')}" value="${l.precio || 0}"></td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
               <tr><td style="font-weight:700;">Total</td><td class="num" style="font-weight:700;">${fmtNum(total)}</td><td></td><td class="num" style="font-weight:700;">${fmt(valor)}</td></tr>
@@ -7010,7 +7064,7 @@ function abrirComprobanteProduccionModal(groupKey){
       </div>
       ${g.obs ? `<div class="factura-doc-cliente"><strong>Observaciones:</strong> ${escapeHtml(g.obs)}</div>` : ''}
       <div class="table-scroll">
-        <table>
+        <table data-cat-col="0">
           <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio servicio</th><th class="num">Subtotal</th></tr></thead>
           <tbody>
             ${g.detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num">${l.precio ? fmt(l.precio) : '—'}</td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
@@ -7483,17 +7537,18 @@ function openProduccionModal(groupKey, defaultEtapa){
   const hoy = new Date();
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
   asegurarServiciosUltrasonido();
-  // La lista de productos sale SOLO de "Precios de servicio": los que aplican a todas las etapas o a
-  // la etapa elegida. Ultrasonido y Confortadora siguen mostrando solo sus servicios.
+  // La lista de productos sale SOLO de "Precios de servicio" de LA ETAPA elegida (Corte → Corte,
+  // Taller → Taller, Ultrasonido → Ultrasonido, Confortadora → Confortadora).
   const opcionesPara = (etapa) => {
-    if(SERVICIOS_POR_ETAPA[etapa]) return [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))];
-    const vistos = new Set();
+    // Ultrasonido y Confortadora: primero sus servicios fijos y luego los productos de su lista.
+    const fijos = SERVICIOS_POR_ETAPA[etapa] || [];
+    const vistos = new Set(fijos.map(normalizeText));
     const nombres = (APPDATA.plantaServiciosMaquila || [])
-      .filter(x => x && x.servicio && (!x.etapa || x.etapa === etapa) && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
+      .filter(x => x && x.servicio && x.etapa === etapa && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
       .map(x => x.servicio)
       .filter(n => { const k = normalizeText(n); if(vistos.has(k)) return false; vistos.add(k); return true; })
       .sort((a, b) => a.localeCompare(b, 'es'));
-    return [{value:'', label:'Selecciona un producto'}, ...nombres.map(n => ({value:n, label:n}))];
+    return [{value:'', label: fijos.length ? 'Selecciona un servicio o producto' : 'Selecciona un producto'}, ...fijos.map(n => ({value:n, label:n})), ...nombres.map(n => ({value:n, label:n}))];
   };
   // Al crear desde un Dashboard de etapa arranca en esa etapa; al editar, en la del registro.
   let etapaActual = editing ? normEtapa(record.etapa) : normEtapa(defaultEtapa || record.etapa);
@@ -7571,12 +7626,18 @@ function openProduccionModal(groupKey, defaultEtapa){
     document.body.appendChild(picker);
     const lista = picker.querySelector('.pl-picker-list');
     const buscar = picker.querySelector('.pl-picker-buscar');
+    const buscadorCat = crearBuscadorCategoria();
     const pintar = () => {
       const palabras = normalizeText(buscar.value || '').split(/\s+/).filter(Boolean);
-      const vis = ops.filter(o => { const t = normalizeText(o.textContent); return palabras.every(w => t.includes(w)); });
-      lista.innerHTML = vis.length ? vis.map(o => {
+      const vis = ops.map((o, i) => ({ o, i, cat: buscadorCat.categoria(o.value) }))
+        .filter(({o, cat}) => { const t = normalizeText(o.textContent + ' ' + cat); return palabras.every(w => t.includes(w)); })
+        .sort((a, b) => buscadorCat.orden(a.cat) - buscadorCat.orden(b.cat) || a.cat.localeCompare(b.cat, 'es') || a.i - b.i);
+      let previa = null;
+      lista.innerHTML = vis.length ? vis.map(({o, cat}) => {
         const [nom, ...med] = o.textContent.split(' · ');
-        return `<button type="button" data-v="${escapeAttr(o.value)}" class="${o.value === sel.value ? 'sel' : ''}">${escapeHtml(nom)}${med.length ? `<span class="pl-medida">${escapeHtml(med.join(' · '))}</span>` : ''}</button>`;
+        const titulo = cat !== previa ? `<div class="pl-picker-cat">${escapeHtml(cat)}</div>` : '';
+        previa = cat;
+        return titulo + `<button type="button" data-v="${escapeAttr(o.value)}" class="${o.value === sel.value ? 'sel' : ''}">${escapeHtml(nom)}${med.length ? `<span class="pl-medida">${escapeHtml(med.join(' · '))}</span>` : ''}</button>`;
       }).join('') : `<div class="vacio">${ops.length ? 'No hay productos con ese nombre.' : 'No hay productos para esta etapa. Agrégalos en "Precios de servicio".'}</div>`;
     };
     const cerrar = () => { picker.remove(); document.removeEventListener('keydown', onKey, true); };
@@ -8186,7 +8247,7 @@ function calcularUtilidadMes(y, m, tallerFiltro){
       const d = new Date(t);
       if(d.getFullYear() === y && (d.getMonth()+1) === m){
         prodPorProducto[key] = (prodPorProducto[key] || 0) + (Number(o.cantidad) || 0);
-        cobroPorProducto[key] = (cobroPorProducto[key] || 0) + (Number(o.cantidad) || 0) * precioServ('', key);
+        cobroPorProducto[key] = (cobroPorProducto[key] || 0) + (Number(o.cantidad) || 0) * precioServ('Taller', key);
         desdeOrdenes.add(key);
       }
     });
@@ -8480,6 +8541,90 @@ document.addEventListener('click', async (e) => {
   showToast('Devuelto a Inventario');
 });
 
+// ---- Categorías en todas las tablas de productos ----
+// Las tablas marcadas con data-cat-col="N" (N = columna con el nombre del producto) se agrupan
+// por categoría del Inventario (Sábanas, Tendidos…), con una fila de título por grupo. Se respeta
+// el orden que ya traía cada tabla dentro de cada grupo (p. ej. "mayor a menor").
+function crearBuscadorCategoria(){
+  const mapa = new Map(), orden = new Map();
+  const poner = (nombre, cat) => { const k = normalizeText(nombre || ''); if(k && cat && !mapa.has(k)) mapa.set(k, cat); };
+  getAllProducts().forEach(p => {
+    if(!p || !p.producto) return;
+    const cat = (p.categoria || '').trim();
+    if(!cat) return;
+    if(!orden.has(cat)) orden.set(cat, orden.size + 1);
+    poner(claveProductoMedida(p.producto, p.medida), cat);
+    poner(p.producto, cat);
+  });
+  (APPDATA.plantaProductos || []).forEach(pp => poner(pp.nombre, (pp.categoria || '').trim()));
+  (APPDATA.plantaServiciosMaquila || []).forEach(x => poner(x.servicio, (x.categoria || '').trim()));
+  const claves = [...mapa.keys()].sort((a, b) => b.length - a.length);
+  const servicios = new Set(TODOS_SERVICIOS_PRODUCCION.map(normalizeText));
+  const categoria = (texto) => {
+    const t = normalizeText(texto || '');
+    if(!t) return 'Otros';
+    if(servicios.has(t)) return 'Servicios';
+    if(mapa.has(t)) return mapa.get(t);
+    const k = claves.find(k => t.startsWith(k)); // el nombre puede traer etiquetas pegadas al final
+    return k ? mapa.get(k) : 'Otros';
+  };
+  const ordenDe = (g) => g === 'Servicios' ? 0 : (orden.get(g) || (g === 'Otros' ? 99999 : 90000));
+  return { categoria, orden: ordenDe };
+}
+function agruparTablaPorCategoria(tbody, buscador){
+  const tabla = tbody.parentElement;
+  const col = parseInt(tabla.dataset.catCol, 10) || 0;
+  const filas = [...tbody.children].filter(tr => tr.tagName === 'TR');
+  if(!filas.length || filas.some(tr => tr.classList.contains('cat-row'))) return; // ya agrupada
+  const datos = [], resto = [];
+  filas.forEach((tr, i) => {
+    const celdas = tr.children;
+    const primera = celdas[0];
+    // Mensajes ("sin datos") y filas de total quedan al final, sin agrupar.
+    if(celdas.length < 2 || (primera && /^total/i.test(primera.textContent.trim()))){ resto.push(tr); return; }
+    const celda = celdas[col];
+    datos.push({ tr, i, cat: buscador.categoria(celda ? celda.textContent : '') });
+  });
+  if(!datos.length) return;
+  const cats = new Set(datos.map(d => d.cat));
+  if(cats.size === 1 && cats.has('Otros')) return; // nada que agrupar
+  datos.sort((a, b) => buscador.orden(a.cat) - buscador.orden(b.cat) || a.cat.localeCompare(b.cat, 'es') || a.i - b.i);
+  const th = tabla.querySelectorAll('thead tr:first-child > th');
+  const colspan = [...th].reduce((s, c) => s + (parseInt(c.getAttribute('colspan'), 10) || 1), 0) || 1;
+  const frag = document.createDocumentFragment();
+  let previa = null;
+  datos.forEach(d => {
+    if(d.cat !== previa){
+      previa = d.cat;
+      const n = datos.filter(x => x.cat === d.cat).length;
+      const cab = document.createElement('tr');
+      cab.className = 'cat-row cat-auto';
+      cab.innerHTML = `<td colspan="${colspan}">${escapeHtml(d.cat)} <span style="font-weight:500;opacity:.7;">(${n})</span></td>`;
+      frag.appendChild(cab);
+    }
+    frag.appendChild(d.tr);
+  });
+  resto.forEach(tr => frag.appendChild(tr));
+  tbody.appendChild(frag);
+}
+let agrupacionPendiente = false;
+function agruparTablasDeProductos(){
+  agrupacionPendiente = false;
+  const tbodies = [...document.querySelectorAll('table[data-cat-col] > tbody')];
+  if(!tbodies.length) return;
+  let buscador = null;
+  tbodies.forEach(tb => {
+    if(!tb.children.length || tb.querySelector(':scope > tr.cat-row')) return;
+    buscador = buscador || crearBuscadorCategoria();
+    agruparTablaPorCategoria(tb, buscador);
+  });
+}
+new MutationObserver(() => {
+  if(agrupacionPendiente) return;
+  agrupacionPendiente = true;
+  Promise.resolve().then(agruparTablasDeProductos);
+}).observe(document.body, { childList: true, subtree: true });
+
 // Pestañas dentro de una página: muestran una sección a la vez (recuerda la última elegida).
 document.querySelectorAll('.page-tabs').forEach(bar => {
   const cont = bar.parentElement;
@@ -8493,6 +8638,10 @@ document.querySelectorAll('.page-tabs').forEach(bar => {
   let guardada = null; try{ guardada = localStorage.getItem(clave); }catch(e){}
   if(guardada && bar.querySelector('[data-tab="' + guardada + '"]')) mostrar(guardada);
 });
+// Precios de servicio: al cambiar de pestaña (etapa) se vuelve a pintar la lista de esa etapa.
+document.getElementById('serviciosTabs').addEventListener('click', (e) => {
+  if(e.target.closest('.page-tab')) renderPlantaModule('serviciosmaquila');
+});
 // Buscador que filtra las filas de una tabla (atributo data-filtra = id de la tabla).
 document.addEventListener('input', (e) => {
   const inp = e.target.closest('.filtro-tabla');
@@ -8500,7 +8649,13 @@ document.addEventListener('input', (e) => {
   const tabla = document.getElementById(inp.dataset.filtra);
   if(!tabla) return;
   const q = normalizeText(inp.value || '');
-  tabla.querySelectorAll('tbody tr').forEach(tr => { tr.style.display = !q || normalizeText(tr.textContent).includes(q) ? '' : 'none'; });
+  tabla.querySelectorAll('tbody tr:not(.cat-auto)').forEach(tr => { tr.style.display = !q || normalizeText(tr.textContent).includes(q) ? '' : 'none'; });
+  // Títulos de categoría: solo si queda alguna fila visible en su grupo.
+  tabla.querySelectorAll('tbody tr.cat-auto').forEach(cab => {
+    let sig = cab.nextElementSibling, visible = false;
+    while(sig && !sig.classList.contains('cat-auto')){ if(sig.style.display !== 'none'){ visible = true; break; } sig = sig.nextElementSibling; }
+    cab.style.display = visible ? '' : 'none';
+  });
 });
 
 // Tarjetas "Costos Fijos" y "Gastos Adicionales" del Dashboard de Costos y Utilidades:
@@ -8697,7 +8852,7 @@ function dashEtapaHtml(e){
             <option value="asc">Cobro del servicio: menor a mayor</option>
           </select>
         </div>
-        <table class="prod-table" id="${id('tabla')}">
+        <table class="prod-table" id="${id('tabla')}" data-cat-col="0">
           <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th>${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? '<th>Costo variable unit.</th><th>Costo variable total</th>' : ''}<th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -8822,7 +8977,7 @@ function abrirComprobanteEtapaModal(key){
         <div style="text-align:right;"><div class="sub">${escapeHtml(info.periodoTxt || '')}</div></div>
       </div>
       <div class="table-scroll">
-        <table>
+        <table data-cat-col="0">
           <thead><tr><th>${info.esServ ? 'Servicio' : 'Producto'}</th><th class="num">Cantidad</th><th class="num">Precio servicio</th><th class="num">Subtotal</th></tr></thead>
           <tbody>
             ${d.filas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td class="num">${fmtNum(f.cantidad)}</td><td class="num">${f.precioServicio ? fmt(f.precioServicio) : '—'}</td><td class="num">${f.cobro ? fmt(f.cobro) : '—'}</td></tr>`).join('')}
