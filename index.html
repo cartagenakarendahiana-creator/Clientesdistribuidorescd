@@ -1316,6 +1316,7 @@
             <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="hoy">Hoy</button>
             <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="semana">Semana</button>
             <button class="prod-btn prod-btn-outline" type="button" data-siigo-rango="mes">Mes</button>
+            <button class="prod-btn prod-btn-outline" type="button" id="siigoTodoBtn" title="Todo lo que hay guardado de Siigo, desde la primera factura hasta hoy">Todo</button>
             <button class="prod-btn prod-btn-primary" type="button" id="siigoAplicarBtn">Aplicar</button>
             <button class="prod-btn prod-btn-outline" type="button" id="siigoSincronizarBtn" title="Trae ya mismo las facturas nuevas de Siigo">↻ Sincronizar ahora</button>
           </div>
@@ -8871,6 +8872,21 @@ document.getElementById('siigoSincronizarBtn').addEventListener('click', async (
   }
 });
 document.getElementById('siigoCentro').addEventListener('change', () => siigoPintar());
+// "Todo": desde el primer día que tenga datos de Siigo guardados hasta hoy.
+document.getElementById('siigoTodoBtn').addEventListener('click', async () => {
+  if(!dataRef) return;
+  try{
+    const snap = await firebase.database().ref('siigo/resumenDiario').orderByKey().limitToFirst(1).once('value');
+    const primera = Object.keys(snap.val() || {})[0];
+    const [, hoy] = siigoRango('mes');
+    document.getElementById('siigoDesde').value = primera || hoy;
+    document.getElementById('siigoHasta').value = hoy;
+    renderVentasSiigoView();
+  }catch(e){
+    console.error('siigo todo', e);
+    showToast('No se pudo leer el rango de datos de Siigo');
+  }
+});
 document.querySelectorAll('[data-siigo-rango]').forEach(btn => btn.addEventListener('click', () => {
   const [d, h] = siigoRango(btn.dataset.siigoRango);
   document.getElementById('siigoDesde').value = d;

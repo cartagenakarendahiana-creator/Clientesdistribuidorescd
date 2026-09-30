@@ -26,6 +26,25 @@ las facturas creadas en los últimos 3 días. También se puede disparar con el 
 
 No escribe en `casaDoradaDatos`.
 
+## Publicar sin terminal (desde GitHub)
+
+El repositorio trae el botón **Actions → "Publicar funciones de Siigo" → "Run workflow"**, que publica
+las funciones desde GitHub. También se ejecuta solo cada vez que se une a `main` un cambio en `functions/`.
+Necesita, una sola vez:
+
+1. **Clave de Firebase:** en la consola de Firebase (proyecto `pedidos-nuevo`) → ⚙️ *Configuración del proyecto* →
+   *Cuentas de servicio* → **Generar nueva clave privada**. Se descarga un archivo `.json`.
+2. **Permisos de esa cuenta:** en [Google Cloud → IAM](https://console.cloud.google.com/iam-admin/iam?project=pedidos-nuevo),
+   busca la cuenta `firebase-adminsdk-…@pedidos-nuevo.iam.gserviceaccount.com`, pulsa el lápiz y agrégale los roles
+   **Editor** y **Secret Manager Secret Accessor**.
+3. **Secreto en GitHub:** en GitHub → *Settings* → *Secrets and variables* → *Actions* → **New repository secret**.
+   Nombre: `FIREBASE_SERVICE_ACCOUNT`. Valor: todo el contenido del archivo `.json` (ábrelo con el Bloc de notas,
+   copia y pega). Después borra el archivo de tu computador.
+4. **Publicar:** *Actions* → *Publicar funciones de Siigo* → **Run workflow**. Si termina en verde, ya quedó.
+
+Las claves de Siigo (`SIIGO_USERNAME`, `SIIGO_ACCESS_KEY`, `SIIGO_PARTNER_ID`) deben estar ya guardadas en
+Firebase (ver abajo). Si nunca se configuraron, la publicación falla indicando cuál falta.
+
 ## Puesta en marcha (una sola vez)
 
 Requisitos: plan **Blaze** de Firebase en el proyecto `pedidos-nuevo` y
