@@ -485,6 +485,7 @@
   .pl-picker-list button:hover,.pl-picker-list button:focus-visible{background:#F4ECDD;border-color:#C9A96B;}
   .pl-picker-list button.sel{background:#F4ECDD;border-color:#9E7B3B;font-weight:700;}
   .pl-picker-list .pl-medida{display:block;font-size:14px;color:var(--ink-soft);margin-top:2px;}
+  .pl-picker-list .pl-picker-cat{position:sticky;top:-8px;z-index:1;background:var(--cream-2, #F4ECDD);color:var(--gold-dark, #7A5B22);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;margin:8px 0 6px;border-radius:8px;}
   .pl-picker-list .vacio{padding:18px;color:var(--ink-soft);font-size:16px;text-align:center;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
@@ -1738,7 +1739,7 @@
               </div>
             </div>
             <div class="prod-table-wrap">
-              <table class="prod-table" id="costProductoTable">
+              <table class="prod-table" id="costProductoTable" data-cat-col="0">
                 <thead>
                   <tr><th>Producto</th><th>Categoría</th><th>Tiempo</th><th>Costo material</th><th>Costo mano de obra</th><th>Costo total</th><th>Precio venta</th><th>Margen</th><th>Insumos</th></tr>
                 </thead>
@@ -1868,7 +1869,7 @@
               </select>
             </div>
             <div class="prod-table-wrap tabla-limitada">
-              <table class="prod-table" id="utilMesTable">
+              <table class="prod-table" id="utilMesTable" data-cat-col="0">
                 <thead>
                   <tr><th>Producto</th><th>Producción del mes</th><th>Precio servicio (promedio)</th><th>Cobro del servicio</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
                 </thead>
@@ -1883,7 +1884,7 @@
               <input type="search" class="filtro-tabla" data-filtra="utilProductoTable" placeholder="Buscar producto…" style="min-width:220px;padding:8px 12px;border:1px solid var(--line);">
             </div>
             <div class="prod-table-wrap tabla-limitada">
-              <table class="prod-table" id="utilProductoTable">
+              <table class="prod-table" id="utilProductoTable" data-cat-col="0">
                 <thead>
                   <tr><th>Producto</th><th>Costo total</th><th>Precio venta</th><th>Utilidad</th><th>Margen</th></tr>
                 </thead>
@@ -1962,7 +1963,7 @@
           <input type="text" id="plantaproductosSearch" placeholder="Buscar producto, categoría...">
         </div>
         <div class="table-scroll">
-          <table>
+          <table data-cat-col="0">
             <thead><tr><th>Producto</th><th>Categoría</th><th>Unidad</th><th class="num">Tiempo estándar</th><th class="num">Costo material</th><th class="num">Precio venta</th><th>Estado</th><th></th></tr></thead>
             <tbody id="plantaproductosBody"></tbody>
           </table>
@@ -2136,7 +2137,7 @@
           <div><h2 id="produccionUnidadesPorProductoTitulo">Unidades fabricadas por producto</h2><div class="sub">Suma de unidades producidas por producto, respetando el rango de fechas, la etapa y el producto filtrados arriba.</div></div>
         </div>
         <div class="table-scroll">
-          <table>
+          <table data-cat-col="0">
             <thead><tr><th>Producto</th><th class="num" id="produccionUnidadesPorProductoColLabel">Unidades fabricadas</th><th class="num">Registros</th></tr></thead>
             <tbody id="produccionTotalesPorProductoBody"></tbody>
           </table>
@@ -2151,7 +2152,7 @@
           <input type="text" id="produccionDisponibilidadSearch" placeholder="Buscar producto...">
         </div>
         <div class="table-scroll">
-          <table>
+          <table data-cat-col="0">
             <thead><tr><th>Producto</th><th class="num">Producido (total)</th><th class="num">Vendido (facturado)</th><th class="num">Disponible</th></tr></thead>
             <tbody id="produccionDisponibilidadBody"></tbody>
           </table>
@@ -7010,7 +7011,7 @@ function renderProduccionRegistros(body, term){
       </tr>
       <tr class="prod-reg-detalle" style="${abierto ? '' : 'display:none;'}background:var(--cream-2);">
         <td colspan="7" style="padding:8px 14px 12px 40px;">
-          <table style="width:100%;">
+          <table style="width:100%;" data-cat-col="0">
             <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio del servicio</th><th class="num">Subtotal</th></tr></thead>
             <tbody>${detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num"><input type="number" class="precio-servicio-edit inv-precio-input" min="0" step="1" data-context="produccion" data-grupo="${k}" data-fila="${escapeAttr(l.id)}" data-etapa="${escapeAttr(g.etapa)}" data-producto="${escapeAttr(l.producto || '')}" value="${l.precio || 0}"></td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
               <tr><td style="font-weight:700;">Total</td><td class="num" style="font-weight:700;">${fmtNum(total)}</td><td></td><td class="num" style="font-weight:700;">${fmt(valor)}</td></tr>
@@ -7063,7 +7064,7 @@ function abrirComprobanteProduccionModal(groupKey){
       </div>
       ${g.obs ? `<div class="factura-doc-cliente"><strong>Observaciones:</strong> ${escapeHtml(g.obs)}</div>` : ''}
       <div class="table-scroll">
-        <table>
+        <table data-cat-col="0">
           <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio servicio</th><th class="num">Subtotal</th></tr></thead>
           <tbody>
             ${g.detalle.map(l => `<tr><td>${escapeHtml(l.producto || '—')}</td><td class="num">${fmtNum(l.cant)}</td><td class="num">${l.precio ? fmt(l.precio) : '—'}</td><td class="num">${l.precio ? fmt(l.sub) : '—'}</td></tr>`).join('')}
@@ -7625,12 +7626,18 @@ function openProduccionModal(groupKey, defaultEtapa){
     document.body.appendChild(picker);
     const lista = picker.querySelector('.pl-picker-list');
     const buscar = picker.querySelector('.pl-picker-buscar');
+    const buscadorCat = crearBuscadorCategoria();
     const pintar = () => {
       const palabras = normalizeText(buscar.value || '').split(/\s+/).filter(Boolean);
-      const vis = ops.filter(o => { const t = normalizeText(o.textContent); return palabras.every(w => t.includes(w)); });
-      lista.innerHTML = vis.length ? vis.map(o => {
+      const vis = ops.map((o, i) => ({ o, i, cat: buscadorCat.categoria(o.value) }))
+        .filter(({o, cat}) => { const t = normalizeText(o.textContent + ' ' + cat); return palabras.every(w => t.includes(w)); })
+        .sort((a, b) => buscadorCat.orden(a.cat) - buscadorCat.orden(b.cat) || a.cat.localeCompare(b.cat, 'es') || a.i - b.i);
+      let previa = null;
+      lista.innerHTML = vis.length ? vis.map(({o, cat}) => {
         const [nom, ...med] = o.textContent.split(' · ');
-        return `<button type="button" data-v="${escapeAttr(o.value)}" class="${o.value === sel.value ? 'sel' : ''}">${escapeHtml(nom)}${med.length ? `<span class="pl-medida">${escapeHtml(med.join(' · '))}</span>` : ''}</button>`;
+        const titulo = cat !== previa ? `<div class="pl-picker-cat">${escapeHtml(cat)}</div>` : '';
+        previa = cat;
+        return titulo + `<button type="button" data-v="${escapeAttr(o.value)}" class="${o.value === sel.value ? 'sel' : ''}">${escapeHtml(nom)}${med.length ? `<span class="pl-medida">${escapeHtml(med.join(' · '))}</span>` : ''}</button>`;
       }).join('') : `<div class="vacio">${ops.length ? 'No hay productos con ese nombre.' : 'No hay productos para esta etapa. Agrégalos en "Precios de servicio".'}</div>`;
     };
     const cerrar = () => { picker.remove(); document.removeEventListener('keydown', onKey, true); };
@@ -8534,6 +8541,90 @@ document.addEventListener('click', async (e) => {
   showToast('Devuelto a Inventario');
 });
 
+// ---- Categorías en todas las tablas de productos ----
+// Las tablas marcadas con data-cat-col="N" (N = columna con el nombre del producto) se agrupan
+// por categoría del Inventario (Sábanas, Tendidos…), con una fila de título por grupo. Se respeta
+// el orden que ya traía cada tabla dentro de cada grupo (p. ej. "mayor a menor").
+function crearBuscadorCategoria(){
+  const mapa = new Map(), orden = new Map();
+  const poner = (nombre, cat) => { const k = normalizeText(nombre || ''); if(k && cat && !mapa.has(k)) mapa.set(k, cat); };
+  getAllProducts().forEach(p => {
+    if(!p || !p.producto) return;
+    const cat = (p.categoria || '').trim();
+    if(!cat) return;
+    if(!orden.has(cat)) orden.set(cat, orden.size + 1);
+    poner(claveProductoMedida(p.producto, p.medida), cat);
+    poner(p.producto, cat);
+  });
+  (APPDATA.plantaProductos || []).forEach(pp => poner(pp.nombre, (pp.categoria || '').trim()));
+  (APPDATA.plantaServiciosMaquila || []).forEach(x => poner(x.servicio, (x.categoria || '').trim()));
+  const claves = [...mapa.keys()].sort((a, b) => b.length - a.length);
+  const servicios = new Set(TODOS_SERVICIOS_PRODUCCION.map(normalizeText));
+  const categoria = (texto) => {
+    const t = normalizeText(texto || '');
+    if(!t) return 'Otros';
+    if(servicios.has(t)) return 'Servicios';
+    if(mapa.has(t)) return mapa.get(t);
+    const k = claves.find(k => t.startsWith(k)); // el nombre puede traer etiquetas pegadas al final
+    return k ? mapa.get(k) : 'Otros';
+  };
+  const ordenDe = (g) => g === 'Servicios' ? 0 : (orden.get(g) || (g === 'Otros' ? 99999 : 90000));
+  return { categoria, orden: ordenDe };
+}
+function agruparTablaPorCategoria(tbody, buscador){
+  const tabla = tbody.parentElement;
+  const col = parseInt(tabla.dataset.catCol, 10) || 0;
+  const filas = [...tbody.children].filter(tr => tr.tagName === 'TR');
+  if(!filas.length || filas.some(tr => tr.classList.contains('cat-row'))) return; // ya agrupada
+  const datos = [], resto = [];
+  filas.forEach((tr, i) => {
+    const celdas = tr.children;
+    const primera = celdas[0];
+    // Mensajes ("sin datos") y filas de total quedan al final, sin agrupar.
+    if(celdas.length < 2 || (primera && /^total/i.test(primera.textContent.trim()))){ resto.push(tr); return; }
+    const celda = celdas[col];
+    datos.push({ tr, i, cat: buscador.categoria(celda ? celda.textContent : '') });
+  });
+  if(!datos.length) return;
+  const cats = new Set(datos.map(d => d.cat));
+  if(cats.size === 1 && cats.has('Otros')) return; // nada que agrupar
+  datos.sort((a, b) => buscador.orden(a.cat) - buscador.orden(b.cat) || a.cat.localeCompare(b.cat, 'es') || a.i - b.i);
+  const th = tabla.querySelectorAll('thead tr:first-child > th');
+  const colspan = [...th].reduce((s, c) => s + (parseInt(c.getAttribute('colspan'), 10) || 1), 0) || 1;
+  const frag = document.createDocumentFragment();
+  let previa = null;
+  datos.forEach(d => {
+    if(d.cat !== previa){
+      previa = d.cat;
+      const n = datos.filter(x => x.cat === d.cat).length;
+      const cab = document.createElement('tr');
+      cab.className = 'cat-row cat-auto';
+      cab.innerHTML = `<td colspan="${colspan}">${escapeHtml(d.cat)} <span style="font-weight:500;opacity:.7;">(${n})</span></td>`;
+      frag.appendChild(cab);
+    }
+    frag.appendChild(d.tr);
+  });
+  resto.forEach(tr => frag.appendChild(tr));
+  tbody.appendChild(frag);
+}
+let agrupacionPendiente = false;
+function agruparTablasDeProductos(){
+  agrupacionPendiente = false;
+  const tbodies = [...document.querySelectorAll('table[data-cat-col] > tbody')];
+  if(!tbodies.length) return;
+  let buscador = null;
+  tbodies.forEach(tb => {
+    if(!tb.children.length || tb.querySelector(':scope > tr.cat-row')) return;
+    buscador = buscador || crearBuscadorCategoria();
+    agruparTablaPorCategoria(tb, buscador);
+  });
+}
+new MutationObserver(() => {
+  if(agrupacionPendiente) return;
+  agrupacionPendiente = true;
+  Promise.resolve().then(agruparTablasDeProductos);
+}).observe(document.body, { childList: true, subtree: true });
+
 // Pestañas dentro de una página: muestran una sección a la vez (recuerda la última elegida).
 document.querySelectorAll('.page-tabs').forEach(bar => {
   const cont = bar.parentElement;
@@ -8558,7 +8649,13 @@ document.addEventListener('input', (e) => {
   const tabla = document.getElementById(inp.dataset.filtra);
   if(!tabla) return;
   const q = normalizeText(inp.value || '');
-  tabla.querySelectorAll('tbody tr').forEach(tr => { tr.style.display = !q || normalizeText(tr.textContent).includes(q) ? '' : 'none'; });
+  tabla.querySelectorAll('tbody tr:not(.cat-auto)').forEach(tr => { tr.style.display = !q || normalizeText(tr.textContent).includes(q) ? '' : 'none'; });
+  // Títulos de categoría: solo si queda alguna fila visible en su grupo.
+  tabla.querySelectorAll('tbody tr.cat-auto').forEach(cab => {
+    let sig = cab.nextElementSibling, visible = false;
+    while(sig && !sig.classList.contains('cat-auto')){ if(sig.style.display !== 'none'){ visible = true; break; } sig = sig.nextElementSibling; }
+    cab.style.display = visible ? '' : 'none';
+  });
 });
 
 // Tarjetas "Costos Fijos" y "Gastos Adicionales" del Dashboard de Costos y Utilidades:
@@ -8755,7 +8852,7 @@ function dashEtapaHtml(e){
             <option value="asc">Cobro del servicio: menor a mayor</option>
           </select>
         </div>
-        <table class="prod-table" id="${id('tabla')}">
+        <table class="prod-table" id="${id('tabla')}" data-cat-col="0">
           <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th>${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? '<th>Costo variable unit.</th><th>Costo variable total</th>' : ''}<th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -8880,7 +8977,7 @@ function abrirComprobanteEtapaModal(key){
         <div style="text-align:right;"><div class="sub">${escapeHtml(info.periodoTxt || '')}</div></div>
       </div>
       <div class="table-scroll">
-        <table>
+        <table data-cat-col="0">
           <thead><tr><th>${info.esServ ? 'Servicio' : 'Producto'}</th><th class="num">Cantidad</th><th class="num">Precio servicio</th><th class="num">Subtotal</th></tr></thead>
           <tbody>
             ${d.filas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td class="num">${fmtNum(f.cantidad)}</td><td class="num">${f.precioServicio ? fmt(f.precioServicio) : '—'}</td><td class="num">${f.cobro ? fmt(f.cobro) : '—'}</td></tr>`).join('')}
