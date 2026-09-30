@@ -465,6 +465,27 @@
   }
   .modal h3{margin:0 0 16px;font-size:19px;}
   .modal.wide{max-width:960px;}
+  /* Registro de Producción: filas grandes y fáciles de leer */
+  .prod-linea{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--cream, #FBF8F3);}
+  .prod-linea .pl-fila1{display:flex;gap:8px;align-items:stretch;}
+  .prod-linea .pl-elegir{flex:1;min-width:0;text-align:left;font-size:16px;line-height:1.35;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink);cursor:pointer;font-family:var(--font);white-space:normal;}
+  .prod-linea .pl-elegir.vacio{color:var(--ink-soft);}
+  .prod-linea .pl-elegir:focus-visible{outline:2px solid var(--gold, #9E7B3B);outline-offset:1px;}
+  .prod-linea .pl-fila2{display:flex;gap:10px;margin-top:8px;}
+  .prod-linea .pl-fila2 label{flex:1;display:flex;flex-direction:column;font-size:12.5px;font-weight:600;color:var(--ink-soft);gap:4px;}
+  .prod-linea .pl-fila2 input{font-size:17px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;}
+  .prod-linea .pl-quitar{min-width:44px;font-size:18px;}
+  .pl-picker{position:fixed;inset:0;z-index:300;background:rgba(43,38,33,.55);display:flex;align-items:center;justify-content:center;padding:12px;}
+  .pl-picker-box{background:var(--white);border-radius:16px;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(16,24,40,.3);}
+  .pl-picker-head{padding:16px 16px 10px;border-bottom:1px solid var(--line);}
+  .pl-picker-head h4{margin:0 0 10px;font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .pl-picker-head input{width:100%;box-sizing:border-box;font-size:18px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;}
+  .pl-picker-list{overflow-y:auto;padding:8px 10px 14px;}
+  .pl-picker-list button{display:block;width:100%;text-align:left;font-size:17px;line-height:1.35;padding:14px 14px;margin:0 0 6px;border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink);cursor:pointer;font-family:var(--font);}
+  .pl-picker-list button:hover,.pl-picker-list button:focus-visible{background:#F4ECDD;border-color:#C9A96B;}
+  .pl-picker-list button.sel{background:#F4ECDD;border-color:#9E7B3B;font-weight:700;}
+  .pl-picker-list .pl-medida{display:block;font-size:14px;color:var(--ink-soft);margin-top:2px;}
+  .pl-picker-list .vacio{padding:18px;color:var(--ink-soft);font-size:16px;text-align:center;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
   .field input, .field select{
@@ -1106,7 +1127,6 @@
         <div class="nav-dropdown-menu">
           <button class="nav-dropdown-item active" data-nav="resumen" type="button">Resumen</button>
           <button class="nav-dropdown-item" data-nav="despachos" type="button">Despachos</button>
-          <button class="nav-dropdown-item" data-nav="facturas" type="button">Facturas</button>
           <button class="nav-dropdown-item" data-nav="ventassiigo" type="button">Ventas Siigo</button>
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
@@ -1765,7 +1785,7 @@
         <!-- Pestaña: Resumen del mes -->
         <div class="page-tab-panel" data-tab-panel="resumen">
           <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
-            <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes</div></div>
+            <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Cobro de servicios del mes</div></div>
             <div class="prod-stat"><div class="num" id="utilMesFijos">–</div><div class="lbl">Centro de Costos</div></div>
             <div class="prod-stat"><div class="num" id="utilMesVariables">–</div><div class="lbl">Costos variables</div></div>
             <div class="prod-stat"><div class="num" id="utilMesGastosAdicionales">–</div><div class="lbl">Gastos adicionales</div></div>
@@ -1775,16 +1795,16 @@
             <h3>Por etapa</h3>
             <div class="prod-table-wrap">
               <table class="prod-table">
-                <thead><tr><th>Etapa</th><th class="num">Producción</th><th class="num">Costo variable</th><th class="num">Centro de Costos</th><th class="num">Gastos adicionales</th><th class="num">Utilidad estimada</th></tr></thead>
+                <thead><tr><th>Etapa</th><th class="num">Producción</th><th class="num">Cobro del servicio</th><th class="num">Costo variable</th><th class="num">Centro de Costos</th><th class="num">Gastos adicionales</th><th class="num">Utilidad estimada</th></tr></thead>
                 <tbody>
-                  <tr><td><strong>Corte</strong></td><td class="num" id="utilMesProdCorte">–</td><td class="num" id="utilMesCostoCorte">–</td><td class="num" id="utilMesFijosCorte">–</td><td class="num" id="utilMesGastosCorte">–</td><td class="num" id="utilMesUtilCorte" style="font-weight:700;">–</td></tr>
-                  <tr><td><strong>Taller (Confección)</strong></td><td class="num" id="utilMesProdTaller">–</td><td class="num" id="utilMesCostoTaller">–</td><td class="num" id="utilMesFijosTaller">–</td><td class="num" id="utilMesGastosTaller">–</td><td class="num" id="utilMesUtilTaller" style="font-weight:700;">–</td></tr>
-                  <tr><td><strong>Ultrasonido</strong></td><td class="num" id="utilMesProdUltrasonido">–</td><td class="num" id="utilMesCostoUltrasonido">–</td><td class="num" id="utilMesFijosUltrasonido">–</td><td class="num" id="utilMesGastosUltrasonido">–</td><td class="num" id="utilMesUtilUltrasonido" style="font-weight:700;">–</td></tr>
-                  <tr><td><strong>Confortadora</strong></td><td class="num" id="utilMesProdConfortadora">–</td><td class="num" id="utilMesCostoConfortadora">–</td><td class="num" id="utilMesFijosConfortadora">–</td><td class="num" id="utilMesGastosConfortadora">–</td><td class="num" id="utilMesUtilConfortadora" style="font-weight:700;">–</td></tr>
+                  <tr><td><strong>Corte</strong></td><td class="num" id="utilMesProdCorte">–</td><td class="num" id="utilMesCobroCorte">–</td><td class="num" id="utilMesCostoCorte">–</td><td class="num" id="utilMesFijosCorte">–</td><td class="num" id="utilMesGastosCorte">–</td><td class="num" id="utilMesUtilCorte" style="font-weight:700;">–</td></tr>
+                  <tr><td><strong>Taller (Confección)</strong></td><td class="num" id="utilMesProdTaller">–</td><td class="num" id="utilMesCobroTaller">–</td><td class="num" id="utilMesCostoTaller">–</td><td class="num" id="utilMesFijosTaller">–</td><td class="num" id="utilMesGastosTaller">–</td><td class="num" id="utilMesUtilTaller" style="font-weight:700;">–</td></tr>
+                  <tr><td><strong>Ultrasonido</strong></td><td class="num" id="utilMesProdUltrasonido">–</td><td class="num" id="utilMesCobroUltrasonido">–</td><td class="num" id="utilMesCostoUltrasonido">–</td><td class="num" id="utilMesFijosUltrasonido">–</td><td class="num" id="utilMesGastosUltrasonido">–</td><td class="num" id="utilMesUtilUltrasonido" style="font-weight:700;">–</td></tr>
+                  <tr><td><strong>Confortadora</strong></td><td class="num" id="utilMesProdConfortadora">–</td><td class="num" id="utilMesCobroConfortadora">–</td><td class="num" id="utilMesCostoConfortadora">–</td><td class="num" id="utilMesFijosConfortadora">–</td><td class="num" id="utilMesGastosConfortadora">–</td><td class="num" id="utilMesUtilConfortadora" style="font-weight:700;">–</td></tr>
                 </tbody>
               </table>
             </div>
-            <div class="hint" style="margin-top:8px;">Utilidad = facturación de producción − Centro de Costos − costos variables − gastos adicionales. Por etapa es un estimado.</div>
+            <div class="hint" style="margin-top:8px;">Utilidad = cobro del servicio (unidades × precio de servicio de cada registro) − Centro de Costos − costos variables − gastos adicionales. Por etapa es un estimado.</div>
           </div>
         </div>
 
@@ -1841,14 +1861,14 @@
             <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
               <h3 style="margin:0;">Producción del mes por producto</h3>
               <select id="utilMesOrden" class="inv-precio-input" style="width:auto;text-align:left;padding:6px 10px;">
-                <option value="desc">Costo variable: mayor a menor</option>
-                <option value="asc">Costo variable: menor a mayor</option>
+                <option value="desc">Cobro del servicio: mayor a menor</option>
+                <option value="asc">Cobro del servicio: menor a mayor</option>
               </select>
             </div>
             <div class="prod-table-wrap tabla-limitada">
               <table class="prod-table" id="utilMesTable">
                 <thead>
-                  <tr><th>Producto</th><th>Producción del mes</th><th>Facturación de producción</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
+                  <tr><th>Producto</th><th>Producción del mes</th><th>Precio servicio (promedio)</th><th>Cobro del servicio</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
                 </thead>
                 <tbody></tbody>
               </table>
@@ -1882,7 +1902,10 @@
       <div class="page-card">
         <div class="page-card-header">
           <div><h2>Precios de servicio sugeridos</h2><div class="sub">Lo que cobra cada etapa (Corte, Taller, Ultrasonido, Confortadora) por cada unidad producida. Un precio por producto o familia, por ejemplo: Taller · Sábanas · $3.000. Son solo SUGERENCIAS: al agregar producción en Producción Diaria, el precio aparece marcado como "sugerido" y lo puedes cambiar para ese producto en ese registro. Cambiarlo aquí NO modifica ningún registro ya guardado (el precio de un registro se cambia en su desglose o al editarlo). Es una lista aparte de los precios de venta.</div></div>
-          <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="filter-btn no-print" id="btnPromediarServicios" title="Pone como precio de cada producto el promedio de los precios escritos a mano en Producción Diaria">≈ Promediar precios de producción</button>
+            <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
+          </div>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -3786,7 +3809,11 @@ function computeDebtGroups(){
     });
   });
   const rows = Object.values(grupos).map(g => ({...g, nDist: g.nDist.size}));
-  rows.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
+  // De mayor a menor en UNIDADES pendientes: primero las categorías que más se deben y, dentro de
+  // cada una, los productos con más unidades por entregar.
+  const totCat = {};
+  rows.forEach(r => { totCat[r.categoria] = (totCat[r.categoria] || 0) + r.pend; });
+  rows.sort((a,b)=> (totCat[b.categoria] - totCat[a.categoria]) || a.categoria.localeCompare(b.categoria) || (b.pend - a.pend) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
   return rows;
 }
 function renderPedidosView(){
@@ -4255,7 +4282,7 @@ function renderInventarioView(){
       <td class="row-actions">
         <button class="icon-btn icon-edit inv-edit-btn" data-idx="${idx}" title="Editar producto">✎</button>
         ${isOverridden ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
-        ${isCustom ? `<button class="icon-btn inv-tosvc-btn" data-idx="${idx}" title="Mover a Precios de servicio">⇢</button>` : ''}
+        ${isCustom ? `<button class="icon-btn inv-tosvc-btn" data-idx="${idx}" title="Copiar a Precios de servicio (el producto sigue en Inventario y en los pedidos)">⇢</button>` : ''}
         ${isCustom ? `<button class="icon-btn icon-delete inv-delete-btn" data-idx="${idx}" title="Eliminar producto">🗑</button>` : ''}
       </td>
     </tr>`;
@@ -4290,13 +4317,15 @@ function renderInventarioView(){
       const idx = parseInt(btn.dataset.idx, 10);
       const p = getAllProducts()[idx];
       if(!p) return;
-      if(!confirm('¿Mover "' + p.producto + '" a Precios de servicio? Saldrá del Inventario y de los pedidos de clientes donde se haya usado.')) return;
+      // Solo COPIA: el producto sigue en Inventario y en los pedidos de los clientes (antes se borraba de todo).
       if(!APPDATA.plantaServiciosMaquila) APPDATA.plantaServiciosMaquila = [];
+      const ya = APPDATA.plantaServiciosMaquila.some(x => normalizeText(x.servicio) === normalizeText(p.producto) && normalizeText(x.medida || '') === normalizeText(p.medida || ''));
+      if(ya){ showToast('"' + p.producto + '" ya está en Precios de servicio'); return; }
+      if(!confirm('¿Copiar "' + p.producto + '" a Precios de servicio? Seguirá también en Inventario y en los pedidos.')) return;
       APPDATA.plantaServiciosMaquila.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2,6), categoria: p.categoria || '', servicio: p.producto, medida: p.medida || '', precio: Number(p.precio) || 0 });
-      deleteCustomProduct(idx - baseLen);
       await saveAppData(APPDATA);
       renderAll();
-      showToast('Movido a Precios de servicio');
+      showToast('Copiado a Precios de servicio (sigue en Inventario)');
     });
   });
   body.querySelectorAll('.inv-delete-btn').forEach(btn=>{
@@ -5861,7 +5890,9 @@ function openTotalDebtReport(){
     });
   });
   const rows = Object.values(grupos).map(g => ({...g, nDist: g.nDist.size}));
-  rows.sort((a,b)=> a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
+  const totCat = {};
+  rows.forEach(r => { totCat[r.categoria] = (totCat[r.categoria] || 0) + r.pend; });
+  rows.sort((a,b)=> (totCat[b.categoria] - totCat[a.categoria]) || a.categoria.localeCompare(b.categoria) || (b.pend - a.pend) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
   const totalVal = rows.reduce((s,r)=>s+r.pendVal, 0);
   const totalUnid = rows.reduce((s,r)=>s+r.pend, 0);
 
@@ -6041,6 +6072,13 @@ document.getElementById('searchTop').addEventListener('input', (e)=>{
 });
 document.getElementById('btnNuevoDist').addEventListener('click', () => openNuevoClienteModal());
 document.getElementById('btnNuevoPedido').addEventListener('click', openNewDistModal);
+document.getElementById('btnPromediarServicios').addEventListener('click', async () => {
+  if(!confirm('¿Actualizar los precios de servicio con el promedio de los precios escritos a mano en Producción Diaria? Se reemplazan los precios de los productos que tengan registros.')) return;
+  const n = promediarPreciosServicioManuales();
+  await saveAppData(APPDATA);
+  renderPlantaModule('serviciosmaquila');
+  showToast(n ? `Listo: ${n} precio${n>1?'s':''} actualizado${n>1?'s':''} con el promedio` : 'No hay precios escritos a mano en Producción Diaria', 4000);
+});
 
 // El "Panel de Control" (barra superior) refleja los mismos filtros de orden/vendedor
 // que ya existían en el desplegable "Resumen y filtros", sincronizados en ambos sentidos.
@@ -6516,14 +6554,17 @@ const PLANTA_MODULES = {
     dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
     title:'precio de servicio', titleCap:'Precio de Servicio',
     fields:[
-      {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:'Taller', options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
+      {key:'etapa', label:'Etapa que presta el servicio', type:'select', default:'', options:[{value:'',label:'Todas las etapas'}, ...ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))]},
       {key:'servicio', label:'Producto o familia (ej. Sábanas, Tendidos)', type:'text', required:true, placeholder:'Ej. Sábanas'},
       {key:'precio', label:'Precio del servicio por unidad', type:'number', required:true, placeholder:'Ej. 3000'}
     ],
     columns:[
       {key:'etapa', label:'Etapa', html:true, format:v=> v ? `<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>` : 'Todas'},
       {key:'servicio', label:'Producto / familia'},
-      {key:'precio', label:'Precio por unidad', editable:'precioServicio'}
+      {key:'precio', label:'Precio por unidad', editable:'precioServicio'},
+      {key:'categoria', label:'Inventario', html:true, format:(v, item) => (('categoria' in item || item.medida) && !getAllProducts().some(pr => normalizeText(claveProductoMedida(pr.producto, pr.medida)) === normalizeText(item.servicio) || (normalizeText(pr.producto) === normalizeText(item.servicio) && normalizeText(pr.medida || '') === normalizeText(item.medida || ''))))
+        ? `<button type="button" class="acc-btn no-print" data-svc-a-inv="${escapeAttr(item.id)}" title="Volver a crear este producto en Inventario">↩ Devolver a Inventario</button>`
+        : '<span style="color:var(--ink-soft);">—</span>'}
     ]
   },
   ordenesproduccion:{
@@ -6740,9 +6781,67 @@ function asegurarServiciosUltrasonido(){
       cambio = true;
     });
   });
-  if(!cambio) return;
-  APPDATA.serviciosSembrados = [...sembrados];
-  saveAppData(APPDATA);
+  if(cambio) APPDATA.serviciosSembrados = [...sembrados];
+  // Promedio de los precios puestos a mano en Producción Diaria (una sola vez de forma automática;
+  // después se puede repetir con el botón "Promediar precios de producción").
+  if(!APPDATA.serviciosPromediadosV1){
+    promediarPreciosServicioManuales();
+    APPDATA.serviciosPromediadosV1 = true;
+    cambio = true;
+  }
+  if(asegurarServiciosDeInventario()) cambio = true;
+  if(cambio) saveAppData(APPDATA);
+}
+
+// Todos los productos de Inventario también quedan en "Precios de servicio" como servicio de TALLER
+// (con su propio precio de servicio, distinto del de venta). El nombre es "producto · medida", igual que en Producción.
+function asegurarServiciosDeInventario(){
+  const lista = APPDATA.plantaServiciosMaquila || (APPDATA.plantaServiciosMaquila = []);
+  let agregados = 0;
+  // Los que se copiaron antes sin etapa pasan a Taller.
+  lista.forEach(x => { if(x && x.origen === 'inventario' && !x.etapa){ x.etapa = 'Taller'; agregados++; } });
+  const nombres = new Set(lista.map(x => normalizeText(x.servicio || '')));
+  getAllProducts().forEach((p, i) => {
+    if(!p || !p.producto) return;
+    const nombre = claveProductoMedida(p.producto, p.medida);
+    const k = normalizeText(nombre);
+    if(nombres.has(k)) return;
+    nombres.add(k);
+    lista.push({ id: 's' + Date.now() + i + Math.random().toString(36).slice(2,5), etapa: 'Taller', servicio: nombre, categoria: p.categoria || '', medida: p.medida || '', precio: 0, origen: 'inventario' });
+    agregados++;
+  });
+  return agregados > 0;
+}
+
+// Para cada producto y etapa, promedia los precios de servicio que se escribieron a mano en los
+// registros de Producción Diaria y los deja como precio en "Precios de servicio".
+function promediarPreciosServicioManuales(){
+  const lista = APPDATA.plantaServiciosMaquila || (APPDATA.plantaServiciosMaquila = []);
+  const grupos = new Map();
+  (APPDATA.plantaProduccionDiaria || []).forEach(r => {
+    if(!r || !r.producto || !tienePrecioPropio(r) || !(Number(r.precioServicio) > 0)) return;
+    const etapa = normEtapa(r.etapa);
+    const k = normalizeText(r.producto) + '|' + etapa;
+    if(!grupos.has(k)) grupos.set(k, { producto: r.producto, etapa, suma: 0, n: 0 });
+    const g = grupos.get(k); g.suma += Number(r.precioServicio); g.n++;
+  });
+  let actualizados = 0;
+  grupos.forEach(g => {
+    const promedio = Math.round(g.suma / g.n);
+    const kNom = normalizeText(g.producto);
+    let entry = lista.find(x => normalizeText(x.servicio || '') === kNom && x.etapa === g.etapa);
+    if(!entry){
+      const general = lista.find(x => normalizeText(x.servicio || '') === kNom && !x.etapa);
+      // Si solo hay una etapa con precios, el registro general toma esa etapa; si no, se crea uno por etapa.
+      const etapasDelProducto = [...grupos.values()].filter(o => normalizeText(o.producto) === kNom).length;
+      if(general && etapasDelProducto === 1){ entry = general; entry.etapa = g.etapa; }
+      else { entry = { id: 's' + Date.now() + Math.random().toString(36).slice(2,7), etapa: g.etapa, servicio: g.producto, precio: 0 }; lista.push(entry); }
+    }
+    entry.precio = promedio;
+    entry.promedioDe = g.n;
+    actualizados++;
+  });
+  return actualizados;
 }
 
 // Devuelve una función (etapa, nombreProducto) → precio del servicio por unidad. Busca, en "Precios de servicio",
@@ -6753,7 +6852,7 @@ function crearResolvedorPrecioServicio(){
   const entradas = (APPDATA.plantaServiciosMaquila || []).map(x => {
     const clave = normalizeText(x.servicio);
     return { x, clave, palabras: clave.split(/\s+/).map(stem).filter(w => w.length >= 3) };
-  }).filter(e => e.clave);
+  }).filter(e => e.clave && Number(e.x.precio) > 0); // sin precio (0) no sugiere nada ni tapa otra coincidencia
   const catPorNombre = {};
   (APPDATA.plantaProductos || []).forEach(pp => { catPorNombre[normalizeText(pp.nombre)] = normalizeText(pp.categoria); });
   const memo = new Map();
@@ -7384,10 +7483,18 @@ function openProduccionModal(groupKey, defaultEtapa){
   const hoy = new Date();
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
   asegurarServiciosUltrasonido();
-  const productos = plantaSelectOptions('plantaproductos','nombre','Selecciona un producto');
-  const opcionesPara = (etapa) => SERVICIOS_POR_ETAPA[etapa]
-    ? [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))]
-    : productos;
+  // La lista de productos sale SOLO de "Precios de servicio": los que aplican a todas las etapas o a
+  // la etapa elegida. Ultrasonido y Confortadora siguen mostrando solo sus servicios.
+  const opcionesPara = (etapa) => {
+    if(SERVICIOS_POR_ETAPA[etapa]) return [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))];
+    const vistos = new Set();
+    const nombres = (APPDATA.plantaServiciosMaquila || [])
+      .filter(x => x && x.servicio && (!x.etapa || x.etapa === etapa) && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
+      .map(x => x.servicio)
+      .filter(n => { const k = normalizeText(n); if(vistos.has(k)) return false; vistos.add(k); return true; })
+      .sort((a, b) => a.localeCompare(b, 'es'));
+    return [{value:'', label:'Selecciona un producto'}, ...nombres.map(n => ({value:n, label:n}))];
+  };
   // Al crear desde un Dashboard de etapa arranca en esa etapa; al editar, en la del registro.
   let etapaActual = editing ? normEtapa(record.etapa) : normEtapa(defaultEtapa || record.etapa);
   const precioDe = crearResolvedorPrecioServicio();
@@ -7405,14 +7512,17 @@ function openProduccionModal(groupKey, defaultEtapa){
     const propio = precioPropio !== undefined;
     const valor = propio ? precioPropio : precioValor(prod);
     return `
-    <div class="prod-linea" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-      <select class="pl-producto" style="flex:1;min-width:0;">${optsHtml(prod)}</select>
-      <input type="number" class="pl-cantidad" min="0" placeholder="Cant." value="${escapeAttr(cant ?? '')}" style="width:90px;">
-      <span style="width:104px;flex-shrink:0;display:flex;flex-direction:column;align-items:stretch;">
-        <input type="number" class="pl-precio" min="0" step="1" placeholder="$ precio" data-editado="${propio ? '1' : ''}" title="Precio del servicio de este producto en este registro. El valor sugerido lo puedes cambiar." value="${escapeAttr(valor)}" style="width:100%;">
-        <small class="pl-sugerido" style="font-size:10.5px;color:var(--ink-soft);text-align:right;${!propio && valor !== '' ? '' : 'display:none;'}">sugerido</small>
-      </span>
-      <button type="button" class="icon-btn icon-delete pl-quitar" title="Quitar">✕</button>
+    <div class="prod-linea">
+      <div class="pl-fila1">
+        <select class="pl-producto" hidden style="display:none;" data-ssel-done="1">${optsHtml(prod)}</select>
+        <button type="button" class="pl-elegir ${prod ? '' : 'vacio'}" title="Toca para elegir el producto">${prod ? escapeHtml(prod) : 'Toca aquí para elegir el producto ▾'}</button>
+        <button type="button" class="icon-btn icon-delete pl-quitar" title="Quitar este producto">✕</button>
+      </div>
+      <div class="pl-fila2">
+        <label>Cantidad<input type="number" class="pl-cantidad" min="0" inputmode="numeric" placeholder="0" value="${escapeAttr(cant ?? '')}"></label>
+        <label>Precio del servicio<input type="number" class="pl-precio" min="0" step="1" inputmode="numeric" placeholder="$ precio" data-editado="${propio ? '1' : ''}" title="Precio del servicio de este producto en este registro. El valor sugerido lo puedes cambiar." value="${escapeAttr(valor)}">
+          <small class="pl-sugerido" style="font-size:11.5px;font-weight:500;${!propio && valor !== '' ? '' : 'display:none;'}">sugerido de "Precios de servicio"</small></label>
+      </div>
     </div>`;
   };
   const overlay = openModal(`
@@ -7424,9 +7534,6 @@ function openProduccionModal(groupKey, defaultEtapa){
       </select>
     </div>
     <div class="field"><label>Productos y cantidades *</label>
-      <div style="display:flex;gap:8px;font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:4px;">
-        <span style="flex:1;">PRODUCTO</span><span style="width:90px;">CANTIDAD</span><span style="width:104px;text-align:right;">PRECIO SERVICIO</span><span style="width:28px;"></span>
-      </div>
       <div id="pp_lineas">${editing ? lineasGrupo.map(o => filaHtml(o.it.producto, o.it.cantidad, tienePrecioPropio(o.it) ? Number(o.it.precioServicio) : undefined)).join('') : filaHtml('', '')}</div>
       <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">El precio marcado como <em>sugerido</em> viene de "Precios de servicio"; cámbialo si hoy es distinto. Puedes repetir un producto con otro precio.</div>
       <button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>
@@ -7441,6 +7548,55 @@ function openProduccionModal(groupKey, defaultEtapa){
     </div>
   `);
   const lineasBox = overlay.querySelector('#pp_lineas');
+  const pintarElegir = (linea) => {
+    if(!linea) return;
+    const v = linea.querySelector('.pl-producto').value;
+    const b = linea.querySelector('.pl-elegir');
+    b.textContent = v || 'Toca aquí para elegir el producto ▾';
+    b.classList.toggle('vacio', !v);
+  };
+  // Selector grande con buscador (más fácil de leer y tocar que la lista desplegable).
+  const abrirSelectorProducto = (linea) => {
+    const sel = linea.querySelector('.pl-producto');
+    const ops = [...sel.options].filter(o => o.value);
+    const picker = document.createElement('div');
+    picker.className = 'pl-picker';
+    picker.innerHTML = `<div class="pl-picker-box" role="dialog" aria-label="Elegir producto">
+      <div class="pl-picker-head">
+        <h4><span>Elige el producto <small style="font-weight:500;color:var(--ink-soft);font-size:13px;">(${escapeHtml(normEtapa(etapaActual))})</small></span><button type="button" class="btn-cancel pl-picker-cerrar" style="margin:0;">Cerrar</button></h4>
+        <input type="search" class="pl-picker-buscar" placeholder="Escribe para buscar… (ej. almohada, sábana 140)" autocomplete="off">
+      </div>
+      <div class="pl-picker-list"></div>
+    </div>`;
+    document.body.appendChild(picker);
+    const lista = picker.querySelector('.pl-picker-list');
+    const buscar = picker.querySelector('.pl-picker-buscar');
+    const pintar = () => {
+      const palabras = normalizeText(buscar.value || '').split(/\s+/).filter(Boolean);
+      const vis = ops.filter(o => { const t = normalizeText(o.textContent); return palabras.every(w => t.includes(w)); });
+      lista.innerHTML = vis.length ? vis.map(o => {
+        const [nom, ...med] = o.textContent.split(' · ');
+        return `<button type="button" data-v="${escapeAttr(o.value)}" class="${o.value === sel.value ? 'sel' : ''}">${escapeHtml(nom)}${med.length ? `<span class="pl-medida">${escapeHtml(med.join(' · '))}</span>` : ''}</button>`;
+      }).join('') : `<div class="vacio">${ops.length ? 'No hay productos con ese nombre.' : 'No hay productos para esta etapa. Agrégalos en "Precios de servicio".'}</div>`;
+    };
+    const cerrar = () => { picker.remove(); document.removeEventListener('keydown', onKey, true); };
+    const onKey = (e) => { if(e.key === 'Escape'){ e.stopPropagation(); cerrar(); } };
+    document.addEventListener('keydown', onKey, true);
+    picker.addEventListener('click', (e) => {
+      if(e.target === picker || e.target.closest('.pl-picker-cerrar')){ cerrar(); return; }
+      const b = e.target.closest('button[data-v]');
+      if(!b) return;
+      sel.value = b.dataset.v;
+      pintarElegir(linea);
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      cerrar();
+      const cant = linea.querySelector('.pl-cantidad');
+      if(cant && !cant.value) cant.focus();
+    });
+    buscar.addEventListener('input', pintar);
+    pintar();
+    setTimeout(() => buscar.focus(), 30);
+  };
   const actualizarPrecioFila = (linea, forzar) => {
     const sel = linea.querySelector('.pl-producto');
     const inp = linea.querySelector('.pl-precio');
@@ -7465,6 +7621,7 @@ function openProduccionModal(groupKey, defaultEtapa){
       const ok = validas.some(o => o.value === actual);
       sel.innerHTML = optsHtml(ok ? actual : '');
       if(!ok) sel.value = '';
+      pintarElegir(linea);
       actualizarPrecioFila(linea);
     });
   });
@@ -7484,11 +7641,15 @@ function openProduccionModal(groupKey, defaultEtapa){
       if(tag) tag.style.display = 'none';
     });
     lineasBox.addEventListener('click', (e)=>{
+      const elegir = e.target.closest('.pl-elegir');
+      if(elegir){ abrirSelectorProducto(elegir.closest('.prod-linea')); return; }
       const btn = e.target.closest('.pl-quitar');
       if(!btn) return;
       if(lineasBox.querySelectorAll('.prod-linea').length <= 1){
         lineasBox.querySelector('.pl-producto').value = '';
         lineasBox.querySelector('.pl-cantidad').value = '';
+        pintarElegir(lineasBox.querySelector('.prod-linea'));
+        actualizarPrecioFila(lineasBox.querySelector('.prod-linea'), true);
         return;
       }
       btn.closest('.prod-linea').remove();
@@ -7963,7 +8124,7 @@ function renderCostosUtilidadesView(){
 // ---------- Utilidad Real del Mes (Producción × Mes × Producto → Facturación − Costos Fijos − Costos Variables) ----------
 // Sigue el flujo del diagrama: Producción x Mes x Producto (Órdenes de Producción)
 // × Costo variable por producto (desglose de insumos + mano de obra) = Costos Variables del mes.
-// Utilidad = Facturación de producción del mes (unidades × precio de venta) − Costos Fijos mensuales − Costos Variables del mes.
+// Utilidad = cobro del servicio del mes (unidades × precio de servicio) − Costos Fijos mensuales − Costos Variables del mes.
 function currentMonthValue(){
   const now = new Date();
   return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
@@ -7994,7 +8155,11 @@ function ventasPorProductoDelMes(y, m){
 function calcularUtilidadMes(y, m, tallerFiltro){
   const prodPorProducto = {};
   const prodPorProductoEtapa = {}, produccionPorEtapa = {};
-  ETAPAS_PRODUCCION.forEach(e => { prodPorProductoEtapa[e.key] = {}; produccionPorEtapa[e.key] = 0; });
+  // Lo que se factura por la producción es el COBRO DEL SERVICIO (unidades × precio de servicio de
+  // cada registro), no el precio de venta.
+  const cobroPorProducto = {}, cobroPorEtapa = {}, desdeOrdenes = new Set();
+  const precioServ = crearResolvedorPrecioServicio();
+  ETAPAS_PRODUCCION.forEach(e => { prodPorProductoEtapa[e.key] = {}; produccionPorEtapa[e.key] = 0; cobroPorEtapa[e.key] = 0; });
   (APPDATA.plantaProduccionDiaria || []).forEach(r => {
     const t = parseFechaToTime(r.fecha);
     if(t === null) return;
@@ -8007,6 +8172,9 @@ function calcularUtilidadMes(y, m, tallerFiltro){
     prodPorProducto[key] = (prodPorProducto[key] || 0) + cant;
     prodPorProductoEtapa[etapa][key] = (prodPorProductoEtapa[etapa][key] || 0) + cant;
     produccionPorEtapa[etapa] += cant;
+    const cobro = cant * precioServicioDeFila(precioServ, etapa, r);
+    cobroPorProducto[key] = (cobroPorProducto[key] || 0) + cobro;
+    cobroPorEtapa[etapa] += cobro;
   });
   if(!tallerFiltro){
     const conDiaria = new Set(Object.keys(prodPorProducto));
@@ -8018,35 +8186,35 @@ function calcularUtilidadMes(y, m, tallerFiltro){
       const d = new Date(t);
       if(d.getFullYear() === y && (d.getMonth()+1) === m){
         prodPorProducto[key] = (prodPorProducto[key] || 0) + (Number(o.cantidad) || 0);
+        cobroPorProducto[key] = (cobroPorProducto[key] || 0) + (Number(o.cantidad) || 0) * precioServ('', key);
+        desdeOrdenes.add(key);
       }
     });
   }
 
   const productos = costeoGetProductos();
   const filas = Object.keys(prodPorProducto).map(nombre => {
-    const prod = productos.find(p => p.nombre === nombre) || { nombre };
-    const c = costeoCalcularProducto(prod);
     const cantidad = prodPorProducto[nombre];
-    const precioVenta = c.precioVenta || 0;
-    // Facturación de producción: unidades producidas × precio de venta del producto.
-    return { nombre, cantidad, costoUnitario: c.total, costoTotal: cantidad * c.total, facturacion: cantidad * precioVenta, precioVenta };
-  }).sort((a,b) => b.costoTotal - a.costoTotal);
+    // Los servicios fijos (Ultrasonido, Confortadora) no son productos con costeo.
+    const c = TODOS_SERVICIOS_PRODUCCION.includes(nombre) ? { total: 0 } : costeoCalcularProducto(productos.find(p => p.nombre === nombre) || { nombre });
+    const costoUnit = c.total || 0;
+    // Facturación de producción: cobro del servicio (unidades × precio de servicio de cada registro).
+    // Solo Taller maneja costos variables (Corte, Ultrasonido y Confortadora no), igual que en los
+    // dashboards por etapa; así un producto que pasa por Corte y Taller no se costea dos veces.
+    const cantCosto = desdeOrdenes.has(nombre) ? cantidad : (prodPorProductoEtapa.Taller[nombre] || 0);
+    return { nombre, cantidad, costoUnitario: costoUnit, costoTotal: cantCosto * costoUnit, facturacion: cobroPorProducto[nombre] || 0 };
+  }).sort((a,b) => b.facturacion - a.facturacion || b.costoTotal - a.costoTotal);
   const costosVariablesMes = filas.reduce((s,f) => s + f.costoTotal, 0);
   const costosFijosMes = costeoFijosMensuales();
 
   // Desglose de costo variable y valor de producción (cantidad × precio de venta) por etapa —
   // usa el mismo costo/precio unitario por producto que ya se calculó arriba en "filas".
   const costoUnitarioPorNombre = {};
-  const precioVentaPorNombre = {};
-  filas.forEach(f => { costoUnitarioPorNombre[f.nombre] = f.costoUnitario; precioVentaPorNombre[f.nombre] = f.precioVenta; });
+  filas.forEach(f => { costoUnitarioPorNombre[f.nombre] = f.costoUnitario; });
   function sumaEtapa(mapa){
-    let costo = 0, valor = 0;
-    Object.keys(mapa).forEach(nombre => {
-      const cant = mapa[nombre];
-      costo += cant * (costoUnitarioPorNombre[nombre] || 0);
-      valor += cant * (precioVentaPorNombre[nombre] || 0);
-    });
-    return { costo, valor };
+    let costo = 0;
+    Object.keys(mapa).forEach(nombre => { costo += mapa[nombre] * (costoUnitarioPorNombre[nombre] || 0); });
+    return { costo };
   }
   const produccionTotal = ETAPAS_PRODUCCION.reduce((sum, e) => sum + produccionPorEtapa[e.key], 0);
   // Cada etapa tiene sus propios costos fijos, asignados en "Costos Fijos" (campo Etapa).
@@ -8056,11 +8224,12 @@ function calcularUtilidadMes(y, m, tallerFiltro){
     const fijos = costeoFijosMensuales(e.key);
     const gastos = costeoGastosAdicionalesMes(y, m, e.key);
     // Ultrasonido y Confortadora no manejan costos variables propios (igual que en los dashboards por etapa).
-    const costoEtapa = (e.key === 'Ultrasonido' || e.key === 'Confortadora') ? 0 : agg.costo;
-    porEtapa[e.key] = { produccion: produccionPorEtapa[e.key], costo: costoEtapa, valor: agg.valor, fijos, gastos, utilidad: agg.valor - costoEtapa - fijos - gastos };
+    const costoEtapa = e.key === 'Taller' ? agg.costo : 0;
+    const cobro = cobroPorEtapa[e.key];
+    porEtapa[e.key] = { produccion: produccionPorEtapa[e.key], costo: costoEtapa, valor: cobro, fijos, gastos, utilidad: cobro - costoEtapa - fijos - gastos };
   });
 
-  // Facturación del mes = facturación de PRODUCCIÓN (lo producido × precio de venta), ya no las ventas/pedidos.
+  // Facturación del mes = cobro del servicio de lo producido (no el precio de venta ni los pedidos).
   const facturacionMes = filas.reduce((sum, f) => sum + f.facturacion, 0);
 
   const gastosAdicionalesMes = costeoGastosAdicionalesMes(y, m);
@@ -8094,6 +8263,7 @@ function renderUtilidadRealMes(){
   ETAPAS_PRODUCCION.forEach(e => {
     const d = porEtapa[e.key];
     setTxt('utilMesProd' + e.key, fmtNum(d.produccion));
+    setTxt('utilMesCobro' + e.key, fmt(d.valor));
     setTxt('utilMesCosto' + e.key, fmt(d.costo));
     setTxt('utilMesFijos' + e.key, fmt(d.fijos));
     setTxt('utilMesGastos' + e.key, fmt(d.gastos));
@@ -8112,13 +8282,14 @@ function renderUtilidadRealMes(){
       const msg = tallerFiltro
         ? `Sin producción registrada este mes en el taller "${escapeHtml(tallerFiltro)}".`
         : 'Sin producción registrada este mes. Crea registros en "Producción Diaria" (o una Orden de Producción con fecha de entrega en este mes) para verlos aquí.';
-      body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">${msg}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">${msg}</td></tr>`;
     }else{
       const ordenSel = document.getElementById('utilMesOrden');
       const filasTabla = (ordenSel && ordenSel.value === 'asc') ? [...filas].reverse() : filas;
       body.innerHTML = filasTabla.map(f => `<tr>
         <td>${escapeHtml(f.nombre)}</td>
         <td>${fmtNum(f.cantidad)}</td>
+        <td>${f.cantidad && f.facturacion ? fmt(Math.round(f.facturacion / f.cantidad)) : '—'}</td>
         <td>${f.facturacion ? fmt(f.facturacion) : '—'}</td>
         <td>${fmt(f.costoUnitario)}</td>
         <td><strong>${fmt(f.costoTotal)}</strong></td>
@@ -8292,6 +8463,23 @@ function renderUtilPieCostosFijos(){
   });
 }
 
+// "Devolver a Inventario": vuelve a crear como producto propio un producto que se había pasado a
+// Precios de servicio (no borra la fila de Precios de servicio).
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-svc-a-inv]');
+  if(!btn) return;
+  const item = (APPDATA.plantaServiciosMaquila || []).find(x => x && x.id === btn.dataset.svcAInv);
+  if(!item) return;
+  const existe = getAllProducts().some(pr => normalizeText(pr.producto) === normalizeText(item.servicio) && normalizeText(pr.medida || '') === normalizeText(item.medida || ''));
+  if(existe){ showToast('"' + item.servicio + '" ya está en Inventario'); return; }
+  if(!confirm('¿Devolver "' + item.servicio + '" a Inventario? Quedará como producto con precio ' + fmt(Number(item.precio) || 0) + '. Los pedidos de donde se quitó antes no se recuperan: agrégalo de nuevo a esos pedidos.')) return;
+  if(!APPDATA.customProducts) APPDATA.customProducts = [];
+  APPDATA.customProducts.push({ categoria: item.categoria || 'Otros', producto: item.servicio, medida: item.medida || '', precio: Number(item.precio) || 0 });
+  await saveAppData(APPDATA);
+  renderAll();
+  showToast('Devuelto a Inventario');
+});
+
 // Pestañas dentro de una página: muestran una sección a la vez (recuerda la última elegida).
 document.querySelectorAll('.page-tabs').forEach(bar => {
   const cont = bar.parentElement;
@@ -8408,7 +8596,7 @@ function calcularUtilidadEtapa(etapa, desde, hasta, producto){
     // Corte, Ultrasonido y Confortadora no manejan costos variables propios: no se calculan ni se suman a nada (ni al total ni a la utilidad).
     if(etapa === 'Corte' || etapa === 'Ultrasonido' || etapa === 'Confortadora'){ costoUnit = 0; }
     return { nombre, cantidad, precio, costoUnit, valor: cantidad * precio, costoTotal: cantidad * costoUnit, precioServicio, cobro: cobroProd };
-  }).sort((a, b) => (b.cobro + b.valor) - (a.cobro + a.valor));
+  }).sort((a, b) => b.cobro - a.cobro || b.cantidad - a.cantidad);
   const valor = filas.reduce((a, f) => a + f.valor, 0);
   const costoVar = filas.reduce((a, f) => a + f.costoTotal, 0);
   const cobro = filas.reduce((a, f) => a + f.cobro, 0);
@@ -8510,7 +8698,7 @@ function dashEtapaHtml(e){
           </select>
         </div>
         <table class="prod-table" id="${id('tabla')}">
-          <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th><th>Precio de venta</th><th>Valor</th>${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? '<th>Costo variable unit.</th><th>Costo variable total</th>' : ''}<th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
+          <thead><tr><th>${esServ ? 'Servicio' : 'Producto'}</th><th>Cantidad</th>${(k !== 'Corte' && k !== 'Ultrasonido' && k !== 'Confortadora') ? '<th>Costo variable unit.</th><th>Costo variable total</th>' : ''}<th>Precio servicio</th><th>Cobro del servicio</th><th>Utilidad (sin fijos)</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -8578,10 +8766,9 @@ function renderDashEtapa(key){
   const ordenSel = q('orden');
   const filasTabla = (ordenSel && ordenSel.value === 'asc') ? [...d.filas].reverse() : d.filas;
   const tbody = q('tabla').querySelector('tbody');
-  const colspan = sinCostoVariable ? 7 : 9;
+  const colspan = sinCostoVariable ? 5 : 7;
   tbody.innerHTML = filasTabla.length ? filasTabla.map(f => `<tr>
-      <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td><td>${f.precio ? fmt(f.precio) : '—'}</td>
-      <td>${f.valor ? fmt(f.valor) : '—'}</td>${sinCostoVariable ? '' : `<td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>`}
+      <td>${escapeHtml(f.nombre)}</td><td>${fmtNum(f.cantidad)}</td>${sinCostoVariable ? '' : `<td>${fmt(f.costoUnit)}</td><td><strong>${fmt(f.costoTotal)}</strong></td>`}
       <td title="Promedio del periodo. Cada registro tiene su propio precio: cámbialo en el desglose del registro en Producción Diaria.">${f.precioServicio ? fmt(f.precioServicio) : '—'}</td><td><strong>${f.cobro ? fmt(f.cobro) : '—'}</strong></td>
       <td>${fmt(f.cobro - f.costoTotal)}</td></tr>`).join('')
     : `<tr><td colspan="${colspan}" style="text-align:center;color:var(--ink-soft);padding:20px 10px;">Sin producción registrada en esta etapa con estos filtros. Regístrala en "Producción Diaria".</td></tr>`;
