@@ -6546,6 +6546,7 @@ const PLANTA_MODULES = {
     dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
     title:'precio de servicio', titleCap:'Precio de Servicio',
     filterFn: item => item && item.etapa === etapaServiciosActual(), // una pestaña por etapa
+    groupBy: () => categoriasServicios(), // y dentro de cada pestaña, por categoría (Sábanas, Tendidos…)
     fields:[
       {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:()=>etapaServiciosActual(), options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
       {key:'servicio', label:'Producto o familia (ej. Sábanas, Tendidos)', type:'text', required:true, placeholder:'Ej. Sábanas'},
@@ -6688,15 +6689,31 @@ function renderPlantaModule(moduleKey){
   let rows = raw.map((item, idx) => ({item, idx}));
   if(typeof mod.filterFn === 'function') rows = rows.filter(({item}) => mod.filterFn(item));
   if(term){
-    rows = rows.filter(({item}) => mod.columns.some(c => String(item[c.key] ?? '').toLowerCase().includes(term)));
+    const t = normalizeText(term); // sin importar tildes ni mayúsculas
+    rows = rows.filter(({item}) => mod.columns.some(c => normalizeText(String(item[c.key] ?? '')).includes(t)));
   }
   const colCount = mod.columns.length + 1;
+  // Agrupado por categoría (con una fila de título por grupo), si el módulo lo pide.
+  let grupoDe = null;
+  if(typeof mod.groupBy === 'function'){
+    const g = mod.groupBy();
+    grupoDe = g.grupo;
+    rows.forEach(r => { r.grupo = g.grupo(r.item); });
+    rows.sort((a, b) => g.orden(a.grupo) - g.orden(b.grupo) || a.grupo.localeCompare(b.grupo, 'es') || String(a.item.servicio || '').localeCompare(String(b.item.servicio || ''), 'es'));
+  }
+  let grupoPrevio = null;
+  const tituloGrupo = (r) => {
+    if(!grupoDe || r.grupo === grupoPrevio) return '';
+    grupoPrevio = r.grupo;
+    const n = rows.filter(x => x.grupo === r.grupo).length;
+    return `<tr class="cat-row"><td colspan="${colCount}">${escapeHtml(r.grupo)} <span style="font-weight:500;opacity:.7;">(${n})</span></td></tr>`;
+  };
   if(moduleKey === 'produccion'){
     renderProduccionRegistros(body, term);
   }else if(!rows.length){
     body.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">${raw.length ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay registros. Usa el botón "+ Nuevo" para crear el primero.'}</td></tr>`;
   }else{
-    body.innerHTML = rows.map(({item, idx}) => `
+    body.innerHTML = rows.map((r) => { const {item, idx} = r; return tituloGrupo(r) + `
       <tr>
         ${mod.columns.map(c => {
           const rawVal = item[c.key];
@@ -6711,7 +6728,7 @@ function renderPlantaModule(moduleKey){
           <button class="icon-btn icon-delete" data-planta-delete="${moduleKey}" data-idx="${idx}" title="Eliminar">🗑</button>
         </td>
       </tr>
-    `).join('');
+    `; }).join('');
   }
   if(moduleKey === 'serviciosmaquila') actualizarConteoPestanasServicios();
   if(moduleKey === 'produccion'){
@@ -6792,6 +6809,24 @@ const ETAPAS_CON_LISTA_PRODUCTOS = ['Corte', 'Taller', 'Ultrasonido', 'Confortad
 function etapaServiciosActual(){
   const b = document.querySelector('#serviciosTabs .page-tab.active');
   return (b && b.dataset.tab) || 'Corte';
+}
+// Categoría de cada precio de servicio: la que trae, o la del producto de Inventario con ese nombre.
+// Los servicios fijos (Ultrasonido/Confortadora) van en "Servicios"; lo demás en "Otros".
+function categoriasServicios(){
+  const porNombre = new Map(), orden = new Map();
+  getAllProducts().forEach(p => {
+    if(!p || !p.producto) return;
+    const cat = (p.categoria || '').trim() || 'Otros';
+    if(!orden.has(cat)) orden.set(cat, orden.size + 1);
+    porNombre.set(normalizeText(claveProductoMedida(p.producto, p.medida)), cat);
+    if(!porNombre.has(normalizeText(p.producto))) porNombre.set(normalizeText(p.producto), cat);
+  });
+  const grupo = (item) => {
+    if(TODOS_SERVICIOS_PRODUCCION.includes(item.servicio)) return 'Servicios';
+    return (item.categoria || '').trim() || porNombre.get(normalizeText(item.servicio || '')) || 'Otros';
+  };
+  const ordenDe = (g) => g === 'Servicios' ? 0 : (orden.get(g) || (g === 'Otros' ? 9999 : 9000));
+  return { grupo, orden: ordenDe };
 }
 function actualizarConteoPestanasServicios(){
   const lista = APPDATA.plantaServiciosMaquila || [];
