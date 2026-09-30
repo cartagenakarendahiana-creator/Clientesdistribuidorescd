@@ -480,59 +480,43 @@
   .rep-tipos,.rep-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
   .rep-nav input[type=date]{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);}
   .rep-doc{max-width:1000px;margin:0 auto;}
-  .rep-header{display:flex;align-items:center;gap:16px;padding:18px 22px;border-radius:14px;background:linear-gradient(120deg,#6E521E,#A8823F);color:#fff;margin-bottom:16px;}
-  .rep-header img{width:58px;height:58px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;}
+  .rep-header{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:12px;background:#7A5B22;color:#fff;margin-bottom:18px;}
   .rep-header-txt{flex:1;min-width:0;}
   .rep-marca{font-size:11px;letter-spacing:2px;font-weight:700;opacity:.85;}
   .rep-header h2{margin:2px 0 2px;font-size:22px;color:#fff;}
   .rep-periodo{font-size:14px;opacity:.95;}
   .rep-periodo::first-letter{text-transform:uppercase;}
-  .rep-tabla td.fecha{white-space:nowrap;}
   .rep-generado{font-size:11px;text-align:right;opacity:.85;line-height:1.4;}
-  .rep-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px;}
-  .rep-kpis.dos{grid-template-columns:repeat(2,minmax(0,1fr));margin:0;}
-  .rep-kpi{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--white);border-top:3px solid #A8823F;}
-  .rep-kpi-top{display:flex;gap:6px;align-items:center;}
-  .rep-ico{font-size:15px;}
-  .rep-kpi .lab{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);}
-  .rep-kpi .v{display:block;font-size:21px;font-weight:800;margin-top:6px;color:var(--ink);font-variant-numeric:tabular-nums;}
-  .rep-kpi .d{font-size:11.5px;margin-top:3px;color:var(--ink-soft);}
-  .rep-var{font-weight:700;color:var(--ink-soft);}
-  .rep-var.sube{color:#2F6B3A;} .rep-var.baja{color:#B65B2E;}
-  .rep-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
-  .rep-grid2.sin-margen{margin:0;align-items:center;}
-  .rep-grid2 > *, .rep-card, .rep-kpi{min-width:0;}
-  .rep-chart canvas{max-width:100%;}
-  .rep-card{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--white);margin-bottom:14px;}
-  .rep-grid2 > .rep-card{margin-bottom:0;}
-  .rep-card h3{margin:0 0 2px;font-size:15px;display:flex;align-items:center;gap:8px;}
-  .rep-sub{font-size:12px;color:var(--ink-soft);margin-bottom:8px;}
-  .rep-chart{position:relative;height:230px;}
-  .rep-chart.alto{height:280px;}
-  .rep-cuenta{background:#F4ECDD;color:#7A5B22;border-radius:999px;padding:1px 9px;font-size:12px;}
+  .rep-sec{margin:0 0 22px;}
+  .rep-sec h3{display:flex;align-items:center;gap:10px;margin:0 0 8px;padding:0 0 6px;font-size:16px;border-bottom:2px solid #C9A96B;color:#3D3223;}
+  .rep-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#7A5B22;color:#fff;font-size:13px;font-weight:800;flex-shrink:0;}
+  .rep-sub-sec{margin:12px 0 16px;}
+  .rep-sub-sec h4{margin:0 0 4px;font-size:14px;color:#5A4A2E;display:flex;align-items:center;gap:6px;}
+  .rep-cuenta{background:#F4ECDD;color:#7A5B22;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700;}
   .rep-punto{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle;}
-  .rep-tabla{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px;box-shadow:none;}
-  .rep-tabla th{background:#F4ECDD;color:#5A4A2E;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:8px 10px;}
+  .rep-tabla{width:100%;border-collapse:collapse;font-size:13px;box-shadow:none;border:1px solid #E6DCC8;}
+  .rep-tabla th{background:#F4ECDD;color:#5A4A2E;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:8px 10px;border-bottom:1px solid #E6DCC8;}
   .rep-tabla td{padding:7px 10px;border-bottom:1px solid #EFE7D8;}
+  .rep-tabla th.n, .rep-tabla td.n{width:34px;text-align:center;color:#8A7F6A;font-variant-numeric:tabular-nums;}
   .rep-tabla tbody tr:nth-child(even):not(.cat-row):not(.total) td{background:#FCFAF6;}
   .rep-tabla .num{text-align:right;font-variant-numeric:tabular-nums;}
+  .rep-tabla td.fecha{white-space:nowrap;}
   .rep-tabla tr.total td{font-weight:800;border-top:2px solid #C9A96B;border-bottom:none;background:#FBF6EC;}
-  .rep-vacio{color:var(--ink-soft);font-size:13px;padding:10px 0 4px;}
+  .rep-var{font-weight:700;color:var(--ink-soft);white-space:nowrap;}
+  .rep-var.sube{color:#2F6B3A;} .rep-var.baja{color:#B65B2E;}
+  .rep-vacio{color:var(--ink-soft);font-size:13px;padding:6px 2px;}
   .rep-pie{text-align:center;font-size:11px;color:var(--ink-soft);margin:6px 0 4px;}
-  @media (max-width:760px){ .rep-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .rep-grid2{grid-template-columns:1fr;} .rep-header{flex-wrap:wrap;} .rep-generado{text-align:left;} }
+  @media (max-width:760px){ .rep-header{flex-wrap:wrap;} .rep-generado{text-align:left;} .rep-sec{overflow-x:auto;} }
   @media print{
     #viewReportes .rep-doc{max-width:100%;}
-    #viewReportes .rep-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:8px;padding:12px 16px;}
-    #viewReportes .rep-kpis{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;}
-    #viewReportes .rep-kpis.dos{grid-template-columns:repeat(2,minmax(0,1fr));}
-    #viewReportes .rep-kpi{padding:8px 10px;} #viewReportes .rep-kpi .v{font-size:15px;}
-    #viewReportes .rep-grid2{grid-template-columns:1fr 1fr;}
-    #viewReportes .rep-card{break-inside:avoid;page-break-inside:avoid;box-shadow:none;padding:10px 12px;margin-bottom:10px;}
-    #viewReportes .rep-card:has(.rep-tabla tbody tr:nth-child(12)){break-inside:auto;page-break-inside:auto;}
-    #viewReportes .rep-chart{height:200px;} #viewReportes .rep-chart.alto{height:230px;}
-    #viewReportes .rep-tabla{border:none;font-size:10.5px;table-layout:auto;}
-    #viewReportes .rep-tabla th, #viewReportes .rep-tabla tr.total td, #viewReportes .rep-tabla tbody tr:nth-child(even) td, #viewReportes .rep-cuenta, #viewReportes .rep-punto, #viewReportes .rep-kpi, #viewReportes .cat-row td{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    #viewReportes .rep-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:6px;padding:10px 14px;margin-bottom:12px;}
+    #viewReportes .rep-sec{margin-bottom:14px;}
+    #viewReportes .rep-sec h3{break-after:avoid;page-break-after:avoid;font-size:14px;}
+    #viewReportes .rep-sub-sec h4{break-after:avoid;page-break-after:avoid;}
+    #viewReportes .rep-tabla{font-size:10.5px;table-layout:auto;}
     #viewReportes .rep-tabla td, #viewReportes .rep-tabla th{padding:4px 7px;}
+    #viewReportes .rep-tabla tr{break-inside:avoid;page-break-inside:avoid;}
+    #viewReportes .rep-tabla th, #viewReportes .rep-tabla tr.total td, #viewReportes .rep-tabla tbody tr:nth-child(even) td, #viewReportes .rep-cuenta, #viewReportes .rep-punto, #viewReportes .rep-num, #viewReportes .cat-row td{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     #viewReportes .page-card-header{display:none !important;}
   }
   .pl-picker{position:fixed;inset:0;z-index:300;background:rgba(43,38,33,.55);display:flex;align-items:center;justify-content:center;padding:12px;}
@@ -8695,7 +8679,6 @@ function calcularReporte(desde, hasta){
     totalGastos: gastos.reduce((s, g) => s + (Number(g.valor) || 0), 0)
   };
 }
-let repCharts = [];
 function renderReportes(){
   const cont = document.getElementById('repContenido');
   if(!cont) return;
@@ -8706,148 +8689,109 @@ function renderReportes(){
   const ant = repRango(repTipo, repMover(repTipo, r.desde, -1));
   const d = calcularReporte(r.desde, r.hasta), p = calcularReporte(ant.desde, ant.hasta);
   const nombreTipo = { dia: 'Reporte diario', semana: 'Reporte semanal', mes: 'Reporte mensual' }[repTipo];
-  const txtAnt = { dia: 'el día anterior', semana: 'la semana anterior', mes: 'el mes anterior' }[repTipo];
-  const flecha = (a, b) => {
-    if(!a && !b) return '<span class="rep-var">sin cambio</span>';
+  const txtAnt = { dia: 'Día anterior', semana: 'Semana anterior', mes: 'Mes anterior' }[repTipo];
+  const variacion = (a, b) => {
+    if(!a && !b) return '<span class="rep-var">—</span>';
     if(!b) return '<span class="rep-var sube">nuevo</span>';
     const pct = Math.round((a - b) / b * 100);
     return `<span class="rep-var ${pct >= 0 ? 'sube' : 'baja'}">${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct)}%</span>`;
   };
-  const kpi = (icono, lab, v, a, b, extra) => `<div class="rep-kpi"><div class="rep-kpi-top"><span class="rep-ico">${icono}</span><span class="lab">${lab}</span></div><b class="v">${v}</b><div class="d">${a === null ? (extra || '') : flecha(a, b) + ' vs. ' + txtAnt}</div></div>`;
   const pctDe = (x, t) => t ? Math.round(x / t * 100) + '%' : '—';
   const fCorta = (f) => { const t = parseFechaToTime(f); return t === null ? escapeHtml(f || '') : new Date(t).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }); };
   const generado = new Date().toLocaleString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  let nSec = 0;
+  const seccion = (titulo, cuerpo, cuenta) => `<section class="rep-sec"><h3><span class="rep-num">${++nSec}</span>${titulo}${cuenta !== undefined ? ` <span class="rep-cuenta">${cuenta}</span>` : ''}</h3>${cuerpo}</section>`;
+  const vacio = (t) => `<div class="rep-vacio">${t}</div>`;
 
   let html = `<div class="cd-print-head" data-own hidden></div>
   <div class="rep-doc">
     <div class="rep-header">
-      <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="" onerror="this.style.display='none'">
       <div class="rep-header-txt"><div class="rep-marca">CASA DORADA</div><h2>${nombreTipo}</h2><div class="rep-periodo">${escapeHtml(repTitulo(repTipo, r))}</div></div>
       <div class="rep-generado">Generado el<br>${escapeHtml(generado)}</div>
-    </div>
-    <div class="rep-kpis">
-      ${kpi('🏭', 'Unidades producidas', fmtNum(d.totalUnidades), d.totalUnidades, p.totalUnidades)}
-      ${kpi('💰', 'Cobro de servicios', fmt(d.totalCobro), d.totalCobro, p.totalCobro)}
-      ${kpi('🧾', 'Pedidos nuevos', fmtNum(d.pedidos.length), null, null, fmt(d.valorPedidos) + ' en pedidos')}
-      ${kpi('🚚', 'Despachos', fmtNum(d.despachos.length), null, null, fmt(d.valorDespachos) + ' facturado')}
-      ${kpi('📉', 'Gastos adicionales', fmt(d.totalGastos), d.totalGastos, p.totalGastos)}
-    </div>
-    <div class="rep-grid2">
-      <div class="rep-card"><h3>Unidades por etapa</h3><div class="rep-sub">Este período vs. ${txtAnt}</div><div class="rep-chart"><canvas id="repChUnidades"></canvas></div></div>
-      <div class="rep-card"><h3>Cobro del servicio por etapa</h3><div class="rep-sub">Total ${fmt(d.totalCobro)}</div><div class="rep-chart"><canvas id="repChCobro"></canvas></div></div>
-    </div>
-    <div class="rep-card">${repTipo === 'dia'
-      ? `<h3>Productos más producidos del día</h3><div class="rep-sub">Top 10 por unidades, todas las etapas</div><div class="rep-chart alto"><canvas id="repChTop"></canvas></div>`
-      : `<h3>Producción día a día</h3><div class="rep-sub">Unidades por etapa en cada día del período</div><div class="rep-chart alto"><canvas id="repChDias"></canvas></div>`}</div>`;
+    </div>`;
+
+  // 1. Resumen
+  const filasRes = [
+    ['Unidades producidas', fmtNum(d.totalUnidades), fmtNum(p.totalUnidades), variacion(d.totalUnidades, p.totalUnidades)],
+    ['Cobro de servicios', fmt(d.totalCobro), fmt(p.totalCobro), variacion(d.totalCobro, p.totalCobro)],
+    ['Pedidos nuevos', `${fmtNum(d.pedidos.length)} · ${fmt(d.valorPedidos)}`, `${fmtNum(p.pedidos.length)} · ${fmt(p.valorPedidos)}`, variacion(d.valorPedidos, p.valorPedidos)],
+    ['Despachos', `${fmtNum(d.despachos.length)} · ${fmt(d.valorDespachos)}`, `${fmtNum(p.despachos.length)} · ${fmt(p.valorDespachos)}`, variacion(d.valorDespachos, p.valorDespachos)],
+    ['Fletes', fmt(d.fletes), fmt(p.fletes), variacion(d.fletes, p.fletes)],
+    ['Gastos adicionales', fmt(d.totalGastos), fmt(p.totalGastos), variacion(d.totalGastos, p.totalGastos)]
+  ];
+  html += seccion('Resumen', `<table class="rep-tabla">
+    <thead><tr><th class="n">#</th><th>Indicador</th><th class="num">Este período</th><th class="num">${txtAnt}</th><th class="num">Variación</th></tr></thead><tbody>
+    ${filasRes.map((f, k) => `<tr><td class="n">${k + 1}</td><td><b>${f[0]}</b></td><td class="num"><b>${f[1]}</b></td><td class="num">${f[2]}</td><td class="num">${f[3]}</td></tr>`).join('')}
+    </tbody></table>`);
 
   if(repTipo === 'mes'){
     const [y, m] = r.desde.split('-').map(Number);
     const u = calcularUtilidadMes(y, m, '');
-    html += `<div class="rep-card rep-cierre"><h3>Cierre del mes</h3><div class="rep-grid2 sin-margen">
-      <table class="rep-tabla"><tbody>
-        <tr><td>Cobro de servicios</td><td class="num">${fmt(u.facturacionMes)}</td></tr>
-        <tr><td>(−) Centro de costos</td><td class="num">${fmt(u.costosFijosMes)}</td></tr>
-        <tr><td>(−) Costos variables</td><td class="num">${fmt(u.costosVariablesMes)}</td></tr>
-        <tr><td>(−) Gastos adicionales</td><td class="num">${fmt(u.gastosAdicionalesMes)}</td></tr>
-        <tr class="total"><td>Utilidad neta</td><td class="num" style="color:${u.utilidadNeta >= 0 ? '#2F6B3A' : '#B65B2E'};">${fmt(u.utilidadNeta)}</td></tr>
-      </tbody></table>
-      <div class="rep-chart"><canvas id="repChCierre"></canvas></div></div></div>`;
+    html += seccion('Cierre del mes', `<table class="rep-tabla">
+      <thead><tr><th class="n">#</th><th>Concepto</th><th class="num">Valor</th></tr></thead><tbody>
+      <tr><td class="n">1</td><td>Cobro de servicios</td><td class="num">${fmt(u.facturacionMes)}</td></tr>
+      <tr><td class="n">2</td><td>(−) Centro de costos</td><td class="num">${fmt(u.costosFijosMes)}</td></tr>
+      <tr><td class="n">3</td><td>(−) Costos variables</td><td class="num">${fmt(u.costosVariablesMes)}</td></tr>
+      <tr><td class="n">4</td><td>(−) Gastos adicionales</td><td class="num">${fmt(u.gastosAdicionalesMes)}</td></tr>
+      <tr class="total"><td></td><td>Utilidad neta</td><td class="num" style="color:${u.utilidadNeta >= 0 ? '#2F6B3A' : '#B65B2E'};">${fmt(u.utilidadNeta)}</td></tr>
+      </tbody></table>`);
   }
 
-  html += `<div class="rep-card"><h3>Producción por etapa</h3><table class="rep-tabla">
-    <thead><tr><th>Etapa</th><th class="num">Registros</th><th class="num">Unidades</th><th class="num">% del total</th><th class="num">Cobro del servicio</th><th class="num">Precio prom.</th><th class="num">Vs. ${txtAnt}</th></tr></thead><tbody>
-    ${ETAPAS_PRODUCCION.map(e => { const x = d.etapas[e.key], y = p.etapas[e.key]; return `<tr><td><span class="rep-punto" style="background:${e.color}"></span>${escapeHtml(e.label)}</td><td class="num">${fmtNum(x.registros.size)}</td><td class="num">${fmtNum(x.unidades)}</td><td class="num">${pctDe(x.unidades, d.totalUnidades)}</td><td class="num">${fmt(x.cobro)}</td><td class="num">${x.unidades ? fmt(x.cobro / x.unidades) : '—'}</td><td class="num">${flecha(x.unidades, y.unidades)}</td></tr>`; }).join('')}
-    <tr class="total"><td>Total</td><td class="num">${fmtNum(ETAPAS_PRODUCCION.reduce((s, e) => s + d.etapas[e.key].registros.size, 0))}</td><td class="num">${fmtNum(d.totalUnidades)}</td><td class="num">100%</td><td class="num">${fmt(d.totalCobro)}</td><td class="num">${d.totalUnidades ? fmt(d.totalCobro / d.totalUnidades) : '—'}</td><td class="num">${flecha(d.totalUnidades, p.totalUnidades)}</td></tr>
-    </tbody></table></div>`;
+  // Producción por etapa
+  html += seccion('Producción por etapa', `<table class="rep-tabla">
+    <thead><tr><th class="n">#</th><th>Etapa</th><th class="num">Registros</th><th class="num">Unidades</th><th class="num">% del total</th><th class="num">Cobro del servicio</th><th class="num">Precio prom.</th><th class="num">${txtAnt}</th><th class="num">Variación</th></tr></thead><tbody>
+    ${ETAPAS_PRODUCCION.map((e, k) => { const x = d.etapas[e.key], y = p.etapas[e.key]; return `<tr><td class="n">${k + 1}</td><td><span class="rep-punto" style="background:${e.color}"></span>${escapeHtml(e.label)}</td><td class="num">${fmtNum(x.registros.size)}</td><td class="num">${fmtNum(x.unidades)}</td><td class="num">${pctDe(x.unidades, d.totalUnidades)}</td><td class="num">${fmt(x.cobro)}</td><td class="num">${x.unidades ? fmt(x.cobro / x.unidades) : '—'}</td><td class="num">${fmtNum(y.unidades)}</td><td class="num">${variacion(x.unidades, y.unidades)}</td></tr>`; }).join('')}
+    <tr class="total"><td></td><td>Total</td><td class="num">${fmtNum(ETAPAS_PRODUCCION.reduce((s, e) => s + d.etapas[e.key].registros.size, 0))}</td><td class="num">${fmtNum(d.totalUnidades)}</td><td class="num">100%</td><td class="num">${fmt(d.totalCobro)}</td><td class="num">${d.totalUnidades ? fmt(d.totalCobro / d.totalUnidades) : '—'}</td><td class="num">${fmtNum(p.totalUnidades)}</td><td class="num">${variacion(d.totalUnidades, p.totalUnidades)}</td></tr>
+    </tbody></table>`);
 
-  const MAX_PROD = 15;
+  // Productos de cada etapa (agrupados por categoría y numerados)
+  let prodHtml = '';
+  let nSub = 0;
+  const numSec = nSec + 1;
   ETAPAS_PRODUCCION.forEach(e => {
-    const todas = Object.entries(d.etapas[e.key].productos).sort((a, b) => b[1].cantidad - a[1].cantidad);
-    if(!todas.length) return;
-    const filas = todas.slice(0, MAX_PROD), resto = todas.slice(MAX_PROD);
-    html += `<div class="rep-card"><h3><span class="rep-punto" style="background:${e.color}"></span>${escapeHtml(e.label)} · productos</h3><table class="rep-tabla" data-cat-col="0">
-      <thead><tr><th>Producto</th><th class="num">Unidades</th><th class="num">Precio servicio</th><th class="num">Cobro</th></tr></thead><tbody>
-      ${filas.map(([n, x]) => `<tr><td>${escapeHtml(n)}</td><td class="num">${fmtNum(x.cantidad)}</td><td class="num">${x.cantidad && x.cobro ? fmt(x.cobro / x.cantidad) : '—'}</td><td class="num">${x.cobro ? fmt(x.cobro) : '—'}</td></tr>`).join('')}
-      ${resto.length ? `<tr class="total"><td>Total · y ${resto.length} producto${resto.length > 1 ? 's' : ''} más (${fmtNum(resto.reduce((s, [, x]) => s + x.cantidad, 0))} u)</td><td class="num">${fmtNum(d.etapas[e.key].unidades)}</td><td></td><td class="num">${fmt(d.etapas[e.key].cobro)}</td></tr>`
-        : `<tr class="total"><td>Total</td><td class="num">${fmtNum(d.etapas[e.key].unidades)}</td><td></td><td class="num">${fmt(d.etapas[e.key].cobro)}</td></tr>`}
+    const filas = Object.entries(d.etapas[e.key].productos).sort((a, b) => b[1].cantidad - a[1].cantidad);
+    if(!filas.length) return;
+    prodHtml += `<div class="rep-sub-sec"><h4>${numSec}.${++nSub} <span class="rep-punto" style="background:${e.color}"></span>${escapeHtml(e.label)} <span class="rep-cuenta">${fmtNum(filas.length)} producto${filas.length > 1 ? 's' : ''}</span></h4>
+      <table class="rep-tabla" data-cat-col="1" data-numerar="0">
+      <thead><tr><th class="n">#</th><th>Producto</th><th class="num">Unidades</th><th class="num">Precio servicio</th><th class="num">Cobro</th></tr></thead><tbody>
+      ${filas.map(([n, x]) => `<tr><td class="n"></td><td>${escapeHtml(n)}</td><td class="num">${fmtNum(x.cantidad)}</td><td class="num">${x.cantidad && x.cobro ? fmt(x.cobro / x.cantidad) : '—'}</td><td class="num">${x.cobro ? fmt(x.cobro) : '—'}</td></tr>`).join('')}
+      <tr class="total"><td></td><td>Total ${escapeHtml(e.label)}</td><td class="num">${fmtNum(d.etapas[e.key].unidades)}</td><td></td><td class="num">${fmt(d.etapas[e.key].cobro)}</td></tr>
       </tbody></table></div>`;
   });
+  html += seccion('Productos por etapa', prodHtml || vacio('Sin producción registrada en este período.'));
 
-  html += `<div class="rep-card"><h3>Pedidos nuevos <span class="rep-cuenta">${fmtNum(d.pedidos.length)}</span></h3>` + (d.pedidos.length ? `<table class="rep-tabla">
-    <thead><tr><th>Cliente</th><th>Vendedor</th><th>Fecha</th><th class="num">Unidades</th><th class="num">Valor</th></tr></thead><tbody>
-    ${d.pedidos.map(x => `<tr><td>${escapeHtml(x.nombre)}</td><td>${escapeHtml(x.vendedor || '—')}</td><td class="fecha">${fCorta(x.fecha)}</td><td class="num">${fmtNum(x.unidades)}</td><td class="num">${fmt(x.valor)}</td></tr>`).join('')}
-    <tr class="total"><td colspan="3">Total</td><td class="num">${fmtNum(d.pedidos.reduce((s, x) => s + x.unidades, 0))}</td><td class="num">${fmt(d.valorPedidos)}</td></tr>
-    </tbody></table>` : '<div class="rep-vacio">Sin pedidos nuevos en este período.</div>') + '</div>';
+  html += seccion('Pedidos nuevos', d.pedidos.length ? `<table class="rep-tabla">
+    <thead><tr><th class="n">#</th><th>Cliente</th><th>Vendedor</th><th>Fecha</th><th class="num">Unidades</th><th class="num">Valor</th></tr></thead><tbody>
+    ${d.pedidos.map((x, k) => `<tr><td class="n">${k + 1}</td><td>${escapeHtml(x.nombre)}</td><td>${escapeHtml(x.vendedor || '—')}</td><td class="fecha">${fCorta(x.fecha)}</td><td class="num">${fmtNum(x.unidades)}</td><td class="num">${fmt(x.valor)}</td></tr>`).join('')}
+    <tr class="total"><td></td><td colspan="3">Total</td><td class="num">${fmtNum(d.pedidos.reduce((s, x) => s + x.unidades, 0))}</td><td class="num">${fmt(d.valorPedidos)}</td></tr>
+    </tbody></table>` : vacio('Sin pedidos nuevos en este período.'), fmtNum(d.pedidos.length));
 
-  html += `<div class="rep-card"><h3>Despachos <span class="rep-cuenta">${fmtNum(d.despachos.length)}</span></h3>` + (d.despachos.length ? `<table class="rep-tabla">
-    <thead><tr><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Transportadora</th><th class="num">Valor factura</th><th class="num">Flete</th><th class="num">% flete</th></tr></thead><tbody>
-    ${d.despachos.map(x => { const vf = Number(x.valorFactura) || 0, fl = Number(x.valorFlete) || 0; return `<tr><td class="fecha">${fCorta(x.fecha)}</td><td>${escapeHtml(x.cliente || '')}</td><td>${escapeHtml(x.ciudad || '')}</td><td>${escapeHtml(x.transportadora || '')}</td><td class="num">${fmt(vf)}</td><td class="num">${fmt(fl)}</td><td class="num">${vf ? (fl / vf * 100).toFixed(1) + '%' : '—'}</td></tr>`; }).join('')}
-    <tr class="total"><td colspan="4">Total</td><td class="num">${fmt(d.valorDespachos)}</td><td class="num">${fmt(d.fletes)}</td><td class="num">${d.valorDespachos ? (d.fletes / d.valorDespachos * 100).toFixed(1) + '%' : '—'}</td></tr>
-    </tbody></table>` : '<div class="rep-vacio">Sin despachos en este período.</div>') + '</div>';
+  html += seccion('Despachos', d.despachos.length ? `<table class="rep-tabla">
+    <thead><tr><th class="n">#</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Transportadora</th><th class="num">Valor factura</th><th class="num">Flete</th><th class="num">% flete</th></tr></thead><tbody>
+    ${d.despachos.map((x, k) => { const vf = Number(x.valorFactura) || 0, fl = Number(x.valorFlete) || 0; return `<tr><td class="n">${k + 1}</td><td class="fecha">${fCorta(x.fecha)}</td><td>${escapeHtml(x.cliente || '')}</td><td>${escapeHtml(x.ciudad || '')}</td><td>${escapeHtml(x.transportadora || '')}</td><td class="num">${fmt(vf)}</td><td class="num">${fmt(fl)}</td><td class="num">${vf ? (fl / vf * 100).toFixed(1) + '%' : '—'}</td></tr>`; }).join('')}
+    <tr class="total"><td></td><td colspan="4">Total</td><td class="num">${fmt(d.valorDespachos)}</td><td class="num">${fmt(d.fletes)}</td><td class="num">${d.valorDespachos ? (d.fletes / d.valorDespachos * 100).toFixed(1) + '%' : '—'}</td></tr>
+    </tbody></table>` : vacio('Sin despachos en este período.'), fmtNum(d.despachos.length));
 
-  html += `<div class="rep-card"><h3>Gastos adicionales <span class="rep-cuenta">${fmtNum(d.gastos.length)}</span></h3>` + (d.gastos.length ? `<table class="rep-tabla">
-    <thead><tr><th>Fecha</th><th>Concepto</th><th>Etapa</th><th class="num">Valor</th></tr></thead><tbody>
-    ${d.gastos.map(g => `<tr><td class="fecha">${fCorta(g.fecha)}</td><td>${escapeHtml(g.concepto || '')}</td><td>${escapeHtml(g.etapa ? normEtapa(g.etapa) : '—')}</td><td class="num">${fmt(Number(g.valor) || 0)}</td></tr>`).join('')}
-    <tr class="total"><td colspan="3">Total</td><td class="num">${fmt(d.totalGastos)}</td></tr>
-    </tbody></table>` : '<div class="rep-vacio">Sin gastos adicionales en este período.</div>') + '</div>';
+  html += seccion('Gastos adicionales', d.gastos.length ? `<table class="rep-tabla">
+    <thead><tr><th class="n">#</th><th>Fecha</th><th>Concepto</th><th>Etapa</th><th class="num">Valor</th></tr></thead><tbody>
+    ${d.gastos.map((g, k) => `<tr><td class="n">${k + 1}</td><td class="fecha">${fCorta(g.fecha)}</td><td>${escapeHtml(g.concepto || '')}</td><td>${escapeHtml(g.etapa ? normEtapa(g.etapa) : '—')}</td><td class="num">${fmt(Number(g.valor) || 0)}</td></tr>`).join('')}
+    <tr class="total"><td></td><td colspan="3">Total</td><td class="num">${fmt(d.totalGastos)}</td></tr>
+    </tbody></table>` : vacio('Sin gastos adicionales en este período.'), fmtNum(d.gastos.length));
 
   const pend = computeGlobalUnitTotals();
   const debe = getAllDistributors().reduce((s, x) => s + distTotals(x.id).totalPendienteVal, 0);
-  html += `<div class="rep-card rep-estado"><h3>Estado actual (hoy)</h3><div class="rep-kpis dos">
-      <div class="rep-kpi"><div class="rep-kpi-top"><span class="rep-ico">📦</span><span class="lab">Unidades pendientes por entregar</span></div><b class="v">${fmtNum(pend.totalUnidadesPendientes)}</b></div>
-      <div class="rep-kpi"><div class="rep-kpi-top"><span class="rep-ico">💵</span><span class="lab">Valor pendiente por entregar</span></div><b class="v">${fmt(debe)}</b></div>
-    </div></div>
-    <div class="rep-pie">Casa Dorada · ${nombreTipo} · ${escapeHtml(repTitulo(repTipo, r))}</div>
-  </div>`;
+  html += seccion('Estado actual (hoy)', `<table class="rep-tabla">
+    <thead><tr><th class="n">#</th><th>Indicador</th><th class="num">Valor</th></tr></thead><tbody>
+    <tr><td class="n">1</td><td>Unidades pendientes por entregar</td><td class="num"><b>${fmtNum(pend.totalUnidadesPendientes)}</b></td></tr>
+    <tr><td class="n">2</td><td>Valor pendiente por entregar</td><td class="num"><b>${fmt(debe)}</b></td></tr>
+    </tbody></table>`);
+  html += `<div class="rep-pie">Casa Dorada · ${nombreTipo} · ${escapeHtml(repTitulo(repTipo, r))}</div></div>`;
   cont.innerHTML = html;
-  repPintarGraficas(d, p, r);
-}
-// Al imprimir, las gráficas se ajustan al ancho de la hoja.
-window.addEventListener('beforeprint', () => repCharts.forEach(c => { try{ c.resize(); }catch(e){} }));
-function repPintarGraficas(d, p, r){
-  repCharts.forEach(c => { try{ c.destroy(); }catch(e){} });
-  repCharts = [];
-  if(typeof Chart === 'undefined') return;
-  const colores = ETAPAS_PRODUCCION.map(e => e.color);
-  const etiquetas = ETAPAS_PRODUCCION.map(e => e.label.replace(' (Confección)', ''));
-  const base = { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } } };
-  const pesos = v => '$' + Number(v).toLocaleString('es-CO');
-  const nuevo = (id, cfg) => { const el = document.getElementById(id); if(el) repCharts.push(new Chart(el, cfg)); };
-  nuevo('repChUnidades', { type: 'bar', data: { labels: etiquetas, datasets: [
-      { label: 'Este período', data: ETAPAS_PRODUCCION.map(e => d.etapas[e.key].unidades), backgroundColor: colores, borderRadius: 5 },
-      { label: 'Período anterior', data: ETAPAS_PRODUCCION.map(e => p.etapas[e.key].unidades), backgroundColor: colores.map(c => c + '55'), borderRadius: 5 }
-    ] }, options: { ...base, scales: { y: { beginAtZero: true, ticks: { callback: v => Number(v).toLocaleString('es-CO') } } } } });
-  const hayCobro = d.totalCobro > 0;
-  nuevo('repChCobro', { type: 'doughnut', data: { labels: etiquetas, datasets: [{ data: hayCobro ? ETAPAS_PRODUCCION.map(e => Math.round(d.etapas[e.key].cobro)) : [1], backgroundColor: hayCobro ? colores : ['#E8E1D3'], borderWidth: 2, borderColor: '#fff' }] },
-    options: { ...base, cutout: '58%', plugins: { ...base.plugins, legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => hayCobro ? `${c.label}: ${pesos(c.raw)}` : 'Sin cobro' } } } } });
-  if(document.getElementById('repChTop')){
-    const agg = {};
-    ETAPAS_PRODUCCION.forEach(e => Object.entries(d.etapas[e.key].productos).forEach(([n, x]) => { agg[n] = (agg[n] || 0) + x.cantidad; }));
-    const top = Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 10);
-    nuevo('repChTop', { type: 'bar', data: { labels: top.map(([n]) => n.length > 48 ? n.slice(0, 46) + '…' : n), datasets: [{ label: 'Unidades', data: top.map(([, v]) => v), backgroundColor: '#9E7B3B', borderRadius: 4 }] },
-      options: { ...base, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { callback: v => Number(v).toLocaleString('es-CO') } }, y: { ticks: { font: { size: 10 } } } } } });
-  }
-  if(document.getElementById('repChDias')){
-    const dias = [];
-    for(let f = r.desde; f <= r.hasta; f = repMover('dia', f, 1)) dias.push(f);
-    const porDia = {};
-    const tD = parseFechaToTime(r.desde), tH = parseFechaToTime(r.hasta);
-    (APPDATA.plantaProduccionDiaria || []).forEach(x => {
-      const t = parseFechaToTime(x.fecha); if(t === null || t < tD || t > tH) return;
-      const k = repIso(new Date(t)); const e = normEtapa(x.etapa);
-      (porDia[k] = porDia[k] || {})[e] = ((porDia[k] || {})[e] || 0) + (Number(x.cantidad) || 0);
-    });
-    nuevo('repChDias', { type: 'bar', data: { labels: dias.map(f => { const [y, m, dd] = f.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('es-CO', repTipo === 'semana' ? { weekday: 'short', day: 'numeric' } : { day: 'numeric' }); }),
-      datasets: ETAPAS_PRODUCCION.map(e => ({ label: e.label.replace(' (Confección)', ''), data: dias.map(f => (porDia[f] || {})[e.key] || 0), backgroundColor: e.color, borderRadius: 3 })) },
-      options: { ...base, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { callback: v => Number(v).toLocaleString('es-CO') } } } } });
-  }
-  if(document.getElementById('repChCierre')){
-    const [y, m] = r.desde.split('-').map(Number);
-    const u = calcularUtilidadMes(y, m, '');
-    nuevo('repChCierre', { type: 'bar', data: { labels: ['Cobro', 'Centro de costos', 'Costos variables', 'Gastos', 'Utilidad'],
-      datasets: [{ data: [u.facturacionMes, u.costosFijosMes, u.costosVariablesMes, u.gastosAdicionalesMes, u.utilidadNeta], backgroundColor: ['#6B8CAE', '#B65B2E', '#9E7B3B', '#8C6DAA', u.utilidadNeta >= 0 ? '#4C7A52' : '#B65B2E'], borderRadius: 5 }] },
-      options: { ...base, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => pesos(c.raw) } } }, scales: { y: { ticks: { callback: v => '$' + (Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('es-CO') + ' M' : Number(v).toLocaleString('es-CO')) } } } } });
-  }
+  // Numeración de los productos (después de agruparlos por categoría).
+  requestAnimationFrame(() => cont.querySelectorAll('table[data-numerar] tbody').forEach(tb => {
+    let k = 0;
+    tb.querySelectorAll(':scope > tr:not(.cat-row):not(.total) > td.n').forEach(td => { td.textContent = ++k; });
+  }));
 }
 document.querySelectorAll('[data-rep-tipo]').forEach(b => b.addEventListener('click', () => { repTipo = b.dataset.repTipo; renderReportes(); }));
 document.getElementById('repFecha').addEventListener('change', renderReportes);
@@ -8896,7 +8840,7 @@ function agruparTablaPorCategoria(tbody, buscador){
     const celdas = tr.children;
     const primera = celdas[0];
     // Mensajes ("sin datos") y filas de total quedan al final, sin agrupar.
-    if(celdas.length < 2 || (primera && /^total/i.test(primera.textContent.trim()))){ resto.push(tr); return; }
+    if(celdas.length < 2 || tr.classList.contains('total') || (primera && /^total/i.test(primera.textContent.trim()))){ resto.push(tr); return; }
     const celda = celdas[col];
     datos.push({ tr, i, cat: buscador.categoria(celda ? celda.textContent : '') });
   });
