@@ -49,19 +49,6 @@ jobs:
           fi
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
 
-      - name: Guardar la clave de facturación en Siigo (si está en GitHub)
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
-          FACTURACION_CLAVE: ${{ secrets.FACTURACION_CLAVE }}
-        run: |
-          if [ -z "$FACTURACION_CLAVE" ]; then
-            echo "::warning::No está el secreto FACTURACION_CLAVE en GitHub. Si nunca se guardó, la publicación fallará: agrégalo en Settings → Secrets and variables → Actions (ver functions/README.md)."
-            exit 0
-          fi
-          printf '%s' "$FACTURACION_CLAVE" > "$RUNNER_TEMP/facturacion-clave.txt"
-          npx --yes firebase-tools@latest functions:secrets:set FACTURACION_CLAVE --data-file "$RUNNER_TEMP/facturacion-clave.txt" --project pedidos-nuevo --non-interactive --force
-          rm -f "$RUNNER_TEMP/facturacion-clave.txt"
-
       - name: Publicar funciones
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
@@ -69,4 +56,4 @@ jobs:
 
       - name: Borrar credenciales
         if: always()
-        run: rm -f "$RUNNER_TEMP/firebase-sa.json" "$RUNNER_TEMP/facturacion-clave.txt"
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"
