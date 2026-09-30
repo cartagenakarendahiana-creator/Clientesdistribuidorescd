@@ -2713,10 +2713,19 @@ function registerVendedor(nombre){
 }
 
 // Lista combinada de nombres de clientes: los creados manualmente (registro) + los que ya tienen algún pedido
+// Un cliente es el mismo aunque su nombre cambie en tildes, mayúsculas o espacios
+// ("Media Naranja" = "MEDIA NARANJA" = "Media  Narañja"): se agrupan por clienteKey y se
+// muestra un solo nombre (el del registro de Clientes si existe; si no, el del pedido más reciente).
 function getAllDistribuidorNombres(){
-  const existentes = getAllDistributors().map(d=>d.nombre).filter(Boolean);
-  const registro = APPDATA.distribuidoresRegistry || [];
-  return Array.from(new Set([...registro, ...existentes])).sort((a,b)=>a.localeCompare(b));
+  const porClave = new Map();
+  (APPDATA.distribuidoresRegistry || []).forEach(n => { const k = clienteKey(n); if(k && !porClave.has(k)) porClave.set(k, n); });
+  getAllDistributors().slice().reverse().forEach(d => { const k = clienteKey(d.nombre); if(k && !porClave.has(k)) porClave.set(k, d.nombre); });
+  return [...porClave.values()].sort((a,b)=>a.localeCompare(b));
+}
+// Nombre con el que ya existe un cliente (si lo hay) para un nombre escrito a mano.
+function nombreClienteCanonico(nombre){
+  const k = clienteKey(nombre);
+  return (k && getAllDistribuidorNombres().find(n => clienteKey(n) === k)) || String(nombre || '').trim();
 }
 
 // Un pedido está "vencido" si ya pasó su fecha máxima de despacho y todavía queda algo por entregar
@@ -2830,7 +2839,24 @@ let ordenFiltro = 'fecha_desc'; // 'fecha_asc' | 'fecha_desc' | 'nombre'
 let vendedorFiltro = '';     // '' = todos
 let sidebarTab = 'todos';    // 'todos' | 'porsaldar' | 'saldados' | 'urgentes' | 'vencidos'
 
+// Para cada pedido: número de pedido dentro de su cliente ("Pedido 2 de 3"), por fecha.
+let _ordenPedidosCache = null;
+function ordenPedidoDeCliente(d){
+  if(!_ordenPedidosCache){
+    const grupos = new Map();
+    getAllDistributors().forEach(x => { const k = clienteKey(x.nombre); if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(x); });
+    _ordenPedidosCache = new Map();
+    grupos.forEach(lista => {
+      const t = x => parseFechaToTime(x.fecha) ?? Number.MAX_SAFE_INTEGER; // sin fecha = el más reciente
+      lista.sort((a,b) => t(a) - t(b));
+      lista.forEach((x, i) => _ordenPedidosCache.set(x.id, { n: i + 1, total: lista.length }));
+    });
+    setTimeout(() => { _ordenPedidosCache = null; }, 0); // se recalcula en el siguiente dibujado
+  }
+  return _ordenPedidosCache.get(d.id) || { n: 1, total: 1 };
+}
 function renderDistItemHtml(d){
+  const orden = ordenPedidoDeCliente(d);
   const debe = d.t.totalPendienteVal > 0;
   const vencido = isVencido(d, d.t.totalPendienteVal);
   return `<div class="dist-item ${d.id===selectedDistId?'active':''} ${vencido?'vencido':''}" data-id="${escapeAttr(d.id)}">
@@ -2842,6 +2868,7 @@ function renderDistItemHtml(d){
         <button class="icon-btn icon-edit rename-dist-btn" data-id="${escapeAttr(d.id)}" title="Editar cliente">✎</button>
       </div>
       <div class="dist-meta">
+        ${orden.total > 1 ? `<span class="meta-chip" style="background:var(--gold-pale);color:var(--gold-dark);" title="Este cliente tiene ${orden.total} pedidos">Pedido ${orden.n} de ${orden.total}</span>` : ''}
         <span class="meta-chip">${d.t.numLines} producto(s)</span>
         ${d.fecha ? `<span class="meta-chip">Pedido: ${escapeHtml(String(d.fecha))}</span>` : ''}
         ${d.ciudad ? `<span class="meta-chip">📍 ${escapeHtml(d.ciudad)}</span>` : ''}
@@ -2976,7 +3003,7 @@ function renderSummaryStrip(){
   const unidades = computeGlobalUnitTotals();
   const setKpi = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
   const mes = new Date().toLocaleDateString('es-CO', { month: 'long' });
-  setKpi('kpiDistribuidores', fmtNum(dists.length));
+  setKpi('kpiDistribuidores', fmtNum(new Set(dists.map(d => clienteKey(d.nombre)).filter(Boolean)).size));
   setKpi('kpiFacturadoLbl', 'Total Facturado · ' + mes);
   setKpi('kpiFacturado', fmt(totalFactMes));
   setKpi('kpiPendiente', fmt(totalDeuda));
@@ -3850,7 +3877,7 @@ function renderDistribuidoresView(){
   const listEl = document.getElementById('distribuidoresListView');
   if(!listEl) return;
   cdRenderDupBanner();
-  const conPedidos = new Set(getAllDistributors().map(d=>d.nombre));
+  const conPedidos = new Set(getAllDistributors().map(d=>clienteKey(d.nombre)));
   const term = normalizeText(clientesViewTerm.trim());
   const todos = getAllDistribuidorNombres().filter(n=>{
     if(!term) return true;
@@ -3864,14 +3891,14 @@ function renderDistribuidoresView(){
     <div class="registry-item">
       <span>${escapeHtml(n)}${det ? `<br><small style="color:var(--ink-soft);">${escapeHtml(det)}</small>` : ''}</span>
       <span style="display:flex;align-items:center;gap:8px;">
-        ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
+        ${conPedidos.has(clienteKey(n)) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
         <button class="icon-btn icon-edit no-print" data-edit="${escapeAttr(n)}" title="Editar datos del cliente">✎</button>
         <button class="icon-btn icon-delete no-print" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
       </span>
     </div>`;}).join('') : `<div class="registry-empty">${clientesViewTerm ? 'Sin coincidencias.' : 'Aún no has creado clientes.'}</div>`;
   listEl.querySelectorAll('button[data-n]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
+      APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>clienteKey(n)!==clienteKey(btn.dataset.n));
       await saveAppData(APPDATA);
       renderAll();
     });
@@ -5721,9 +5748,9 @@ function openDuplicatePedidoModal(dist){
   `);
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
-    const nombre = overlay.querySelector('#inpNombreDup').value.trim();
+    const nombre = nombreClienteCanonico(overlay.querySelector('#inpNombreDup').value);
     if(!nombre){ showToast('Escribe el nombre del nuevo cliente'); return; }
-    if(normalizeText(nombre) === normalizeText(dist.nombre)){
+    if(clienteKey(nombre) === clienteKey(dist.nombre)){
       showToast('Escribe el nombre de un cliente distinto al original');
       return;
     }
@@ -5895,20 +5922,20 @@ function openManageDistribuidoresModal(){
     </div>
   `);
   function paint(){
-    const conPedidos = new Set(getAllDistributors().map(d=>d.nombre));
+    const conPedidos = new Set(getAllDistributors().map(d=>clienteKey(d.nombre)));
     const todos = getAllDistribuidorNombres();
     const listEl = overlay.querySelector('#distribuidoresList');
     listEl.innerHTML = todos.length ? todos.map(n => `
       <div class="registry-item">
         <span>${escapeHtml(n)}</span>
         <span style="display:flex;align-items:center;gap:8px;">
-          ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
+          ${conPedidos.has(clienteKey(n)) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
           <button class="icon-btn icon-delete" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
         </span>
       </div>`).join('') : `<div class="registry-empty">Aún no has creado clientes.</div>`;
     listEl.querySelectorAll('button[data-n]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
-        APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
+        APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>clienteKey(n)!==clienteKey(btn.dataset.n));
         await saveAppData(APPDATA);
         paint();
       });
@@ -5921,7 +5948,8 @@ function openManageDistribuidoresModal(){
     const val = inp.value.trim();
     if(!val){ showToast('Escribe un nombre'); return; }
     if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
-    if(!APPDATA.distribuidoresRegistry.includes(val)) APPDATA.distribuidoresRegistry.push(val);
+    if(getAllDistribuidorNombres().some(n => clienteKey(n) === clienteKey(val))){ showToast('Ese cliente ya existe: ' + nombreClienteCanonico(val)); return; }
+    APPDATA.distribuidoresRegistry.push(val);
     await saveAppData(APPDATA);
     inp.value = '';
     paint();
