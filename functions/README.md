@@ -36,7 +36,7 @@ Necesita, una sola vez:
    *Cuentas de servicio* → **Generar nueva clave privada**. Se descarga un archivo `.json`.
 2. **Permisos de esa cuenta:** en [Google Cloud → IAM](https://console.cloud.google.com/iam-admin/iam?project=pedidos-nuevo),
    busca la cuenta `firebase-adminsdk-…@pedidos-nuevo.iam.gserviceaccount.com`, pulsa el lápiz y agrégale los roles
-   **Editor** y **Secret Manager Secret Accessor**.
+   **Editor**, **Cloud Functions Admin** (*Administrador de Cloud Functions*) y **Secret Manager Secret Accessor** (*Usuario con acceso a secretos de Secret Manager*).
 3. **Secreto en GitHub:** en GitHub → *Settings* → *Secrets and variables* → *Actions* → **New repository secret**.
    Nombre: `FIREBASE_SERVICE_ACCOUNT`. Valor: todo el contenido del archivo `.json` (ábrelo con el Bloc de notas,
    copia y pega). Después borra el archivo de tu computador.
