@@ -1035,6 +1035,8 @@
     .page-tab:hover{color:var(--ink);}
     .page-tab.active{color:var(--gold-dark);border-bottom-color:var(--gold);}
     .page-tab-panel[hidden]{display:none !important;}
+    .page-tab .svc-count{font-size:11.5px;font-weight:500;color:var(--ink-soft);margin-left:2px;}
+    .page-tab .svc-count b{color:#B65B2E;font-weight:600;}
     .prod-stat-destacado{border-color:var(--gold) !important;background:var(--gold-pale) !important;}
     /* Tablas largas: altura máxima con desplazamiento y encabezado fijo */
     .tabla-limitada{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:12px;}
@@ -1907,13 +1909,19 @@
             <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
           </div>
         </div>
+        <div class="page-tabs" role="tablist" data-tabs-id="servicios" id="serviciosTabs">
+          <button type="button" class="page-tab active" data-tab="Corte">Corte <span class="svc-count"></span></button>
+          <button type="button" class="page-tab" data-tab="Taller">Taller <span class="svc-count"></span></button>
+          <button type="button" class="page-tab" data-tab="Ultrasonido">Ultrasonido <span class="svc-count"></span></button>
+          <button type="button" class="page-tab" data-tab="Confortadora">Confortadora <span class="svc-count"></span></button>
+        </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="serviciosmaquilaSearch" placeholder="Buscar etapa o producto...">
+          <input type="text" id="serviciosmaquilaSearch" placeholder="Buscar producto en esta pestaña...">
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Etapa</th><th>Producto / familia</th><th class="num">Precio por unidad</th><th></th></tr></thead>
+            <thead><tr><th>Producto / familia</th><th class="num">Precio de servicio por unidad</th><th>Inventario</th><th></th></tr></thead>
             <tbody id="serviciosmaquilaBody"></tbody>
           </table>
         </div>
@@ -6537,13 +6545,13 @@ const PLANTA_MODULES = {
   serviciosmaquila:{
     dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
     title:'precio de servicio', titleCap:'Precio de Servicio',
+    filterFn: item => item && item.etapa === etapaServiciosActual(), // una pestaña por etapa
     fields:[
-      {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:'Taller', options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
+      {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:()=>etapaServiciosActual(), options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
       {key:'servicio', label:'Producto o familia (ej. Sábanas, Tendidos)', type:'text', required:true, placeholder:'Ej. Sábanas'},
       {key:'precio', label:'Precio del servicio por unidad', type:'number', required:true, placeholder:'Ej. 3000'}
     ],
     columns:[
-      {key:'etapa', label:'Etapa', html:true, format:v=> v ? `<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>` : 'Todas'},
       {key:'servicio', label:'Producto / familia'},
       {key:'precio', label:'Precio por unidad', editable:'precioServicio'},
       {key:'categoria', label:'Inventario', html:true, format:(v, item) => (('categoria' in item || item.medida) && !getAllProducts().some(pr => normalizeText(claveProductoMedida(pr.producto, pr.medida)) === normalizeText(item.servicio) || (normalizeText(pr.producto) === normalizeText(item.servicio) && normalizeText(pr.medida || '') === normalizeText(item.medida || ''))))
@@ -6705,6 +6713,7 @@ function renderPlantaModule(moduleKey){
       </tr>
     `).join('');
   }
+  if(moduleKey === 'serviciosmaquila') actualizarConteoPestanasServicios();
   if(moduleKey === 'produccion'){
     actualizarProduccionProductoFiltroOptions();
     actualizarEtiquetasUnidadProduccion();
@@ -6777,8 +6786,22 @@ function asegurarServiciosUltrasonido(){
   if(cambio) saveAppData(APPDATA);
 }
 
-// Cada etapa tiene SU PROPIA lista de precios de servicio: Corte usa la de Corte y Taller la de Taller.
-const ETAPAS_CON_LISTA_PRODUCTOS = ['Corte', 'Taller'];
+// Cada etapa tiene SU PROPIA lista de precios de servicio (Corte usa la de Corte, Taller la de Taller,
+// etc.) y en "Precios de servicio" cada una va en su propia pestaña.
+const ETAPAS_CON_LISTA_PRODUCTOS = ['Corte', 'Taller', 'Ultrasonido', 'Confortadora'];
+function etapaServiciosActual(){
+  const b = document.querySelector('#serviciosTabs .page-tab.active');
+  return (b && b.dataset.tab) || 'Corte';
+}
+function actualizarConteoPestanasServicios(){
+  const lista = APPDATA.plantaServiciosMaquila || [];
+  document.querySelectorAll('#serviciosTabs .page-tab').forEach(b => {
+    const n = lista.filter(x => x && x.etapa === b.dataset.tab).length;
+    const sinPrecio = lista.filter(x => x && x.etapa === b.dataset.tab && !(Number(x.precio) > 0)).length;
+    const s = b.querySelector('.svc-count');
+    if(s) s.innerHTML = n + (sinPrecio ? ' · <b>' + sinPrecio + ' sin precio</b>' : '');
+  });
+}
 // Todos los productos de Inventario quedan en "Precios de servicio" una vez para Corte y otra para
 // Taller, cada uno con su propio precio (distinto del de venta). El nombre es "producto · medida".
 // Los precios que estaban "para todas las etapas" se copian a Corte y a Taller con el mismo valor.
@@ -7479,16 +7502,17 @@ function openProduccionModal(groupKey, defaultEtapa){
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
   asegurarServiciosUltrasonido();
   // La lista de productos sale SOLO de "Precios de servicio" de LA ETAPA elegida (Corte → Corte,
-  // Taller → Taller). Ultrasonido y Confortadora siguen mostrando solo sus servicios.
+  // Taller → Taller, Ultrasonido → Ultrasonido, Confortadora → Confortadora).
   const opcionesPara = (etapa) => {
-    if(SERVICIOS_POR_ETAPA[etapa]) return [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))];
-    const vistos = new Set();
+    // Ultrasonido y Confortadora: primero sus servicios fijos y luego los productos de su lista.
+    const fijos = SERVICIOS_POR_ETAPA[etapa] || [];
+    const vistos = new Set(fijos.map(normalizeText));
     const nombres = (APPDATA.plantaServiciosMaquila || [])
       .filter(x => x && x.servicio && x.etapa === etapa && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
       .map(x => x.servicio)
       .filter(n => { const k = normalizeText(n); if(vistos.has(k)) return false; vistos.add(k); return true; })
       .sort((a, b) => a.localeCompare(b, 'es'));
-    return [{value:'', label:'Selecciona un producto'}, ...nombres.map(n => ({value:n, label:n}))];
+    return [{value:'', label: fijos.length ? 'Selecciona un servicio o producto' : 'Selecciona un producto'}, ...fijos.map(n => ({value:n, label:n})), ...nombres.map(n => ({value:n, label:n}))];
   };
   // Al crear desde un Dashboard de etapa arranca en esa etapa; al editar, en la del registro.
   let etapaActual = editing ? normEtapa(record.etapa) : normEtapa(defaultEtapa || record.etapa);
@@ -8487,6 +8511,10 @@ document.querySelectorAll('.page-tabs').forEach(bar => {
   bar.addEventListener('click', (e) => { const b = e.target.closest('.page-tab'); if(b) mostrar(b.dataset.tab); });
   let guardada = null; try{ guardada = localStorage.getItem(clave); }catch(e){}
   if(guardada && bar.querySelector('[data-tab="' + guardada + '"]')) mostrar(guardada);
+});
+// Precios de servicio: al cambiar de pestaña (etapa) se vuelve a pintar la lista de esa etapa.
+document.getElementById('serviciosTabs').addEventListener('click', (e) => {
+  if(e.target.closest('.page-tab')) renderPlantaModule('serviciosmaquila');
 });
 // Buscador que filtra las filas de una tabla (atributo data-filtra = id de la tabla).
 document.addEventListener('input', (e) => {
