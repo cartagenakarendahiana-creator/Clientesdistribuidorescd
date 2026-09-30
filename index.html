@@ -12,7 +12,10 @@
 <script>window.Chart || document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 <style>
+  /* Letra Inter guardada dentro de la página (vendor/fonts), así se ve igual aunque Google Fonts no cargue. */
+  @font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url('vendor/fonts/inter-latin.woff2') format('woff2');}
   :root{
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
     --cream:#F9FAFB;
     --cream-2:#F3F4F6;
     --ink:#111827;
@@ -31,12 +34,12 @@
   *{box-sizing:border-box;}
   body{
     margin:0;
-    font-family:'Inter',sans-serif;
+    font-family:var(--font);
     background:var(--cream);
     color:var(--ink);
     -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3{font-family:'Inter',system-ui,sans-serif;font-weight:700;letter-spacing:-.01em;}
+  h1,h2,h3{font-family:var(--font);font-weight:700;letter-spacing:-.01em;}
   .topbar{
     background:var(--white);
     color:var(--ink);
@@ -66,7 +69,7 @@
   .nav-tabs{background:var(--white);border-bottom:1px solid var(--line);}
   .nav-tabs-inner{display:flex;gap:4px;flex-wrap:wrap;}
   .nav-tab{
-    background:none;border:none;cursor:pointer;font-family:'Inter';
+    background:none;border:none;cursor:pointer;font-family:var(--font);
     font-size:13.5px;font-weight:600;color:var(--ink-soft);
     padding:12px 16px 11px;border-bottom:2px solid transparent;
     transition:color .15s,border-color .15s;
@@ -77,7 +80,7 @@
   .global-add-btn{
     background:var(--gold-dark);color:var(--white);border:none;border-radius:8px;
     padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;
-    font-family:'Inter';white-space:nowrap;flex-shrink:0;
+    font-family:var(--font);white-space:nowrap;flex-shrink:0;
     display:flex;align-items:center;gap:6px;
     transition:background .15s, transform .1s;
   }
@@ -93,7 +96,7 @@
     padding:14px 16px;
   }
   .kpi-card .lab{font-size:12px;color:var(--ink-soft);font-weight:500;letter-spacing:0;}
-  .kpi-card .v{display:block;font-size:22px;color:var(--ink);font-family:'Inter';font-weight:700;margin-top:6px;letter-spacing:-.01em;}
+  .kpi-card .v{display:block;font-size:22px;color:var(--ink);font-family:var(--font);font-weight:700;margin-top:6px;letter-spacing:-.01em;}
   .kpi-card.debt .v{color:var(--gold-dark);}
   @media (max-width: 980px){
     .kpi-strip{grid-template-columns:repeat(3, 1fr);}
@@ -116,12 +119,12 @@
   .page-card-header .sub{font-size:13px;color:var(--ink-soft);margin-top:4px;}
   .inv-precio-input{
     width:110px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;
-    text-align:right;font-family:'Inter';font-size:13.5px;
+    text-align:right;font-family:var(--font);font-size:13.5px;
   }
   .inv-precio-input:focus{outline:2px solid var(--gold);border-color:var(--gold);}
   .inv-text-input{
     width:100%;padding:6px 8px;border:1px solid transparent;border-radius:6px;
-    font-family:'Inter';font-size:13.5px;background:transparent;
+    font-family:var(--font);font-size:13.5px;background:transparent;
   }
   .inv-text-input:hover{border-color:var(--line);background:var(--cream-2);}
   .inv-text-input:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
@@ -141,13 +144,13 @@
   }
   .control-search svg{flex-shrink:0;color:var(--ink-soft);}
   .control-search input{
-    flex:1;border:none;background:transparent;padding:9px 0;font-family:'Inter';
+    flex:1;border:none;background:transparent;padding:9px 0;font-family:var(--font);
     font-size:13.5px;color:var(--ink);outline:none;
   }
   .control-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   .control-filters select{
     padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--white);
-    font-family:'Inter';font-size:13px;color:var(--ink);
+    font-family:var(--font);font-size:13px;color:var(--ink);
   }
   .control-filters select:focus{outline:2px solid var(--gold);border-color:var(--gold);}
 
@@ -160,12 +163,12 @@
   .filter-group label{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;}
   .filter-group select, .filter-group input[type="date"]{
     padding:8px 10px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:13px;background:var(--white);color:var(--ink);
+    font-family:var(--font);font-size:13px;background:var(--white);color:var(--ink);
   }
   .filter-group select:focus, .filter-group input[type="date"]:focus{outline:2px solid var(--gold);border-color:var(--gold);}
   .filter-clear-btn{
     background:var(--cream-2);color:var(--gold-dark);border:1px solid var(--line-gold);border-radius:8px;
-    padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:'Inter';
+    padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font);
     height:36px;white-space:nowrap;
   }
   .filter-clear-btn:hover{background:var(--gold-pale);}
@@ -186,13 +189,13 @@
   .login-field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
   .login-field input{
     width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:14px;background:var(--cream-2);color:var(--ink);
+    font-family:var(--font);font-size:14px;background:var(--cream-2);color:var(--ink);
   }
   .login-field input:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
   .login-error{font-size:12px;color:#B3261E;font-weight:600;margin:-2px 0 12px;text-align:left;}
   .login-btn{
     width:100%;margin-top:6px;padding:11px;border:none;border-radius:8px;
-    background:var(--gold);color:var(--white);font-family:'Inter';font-size:14px;font-weight:700;
+    background:var(--gold);color:var(--white);font-family:var(--font);font-size:14px;font-weight:700;
     cursor:pointer;transition:background .15s;
   }
   .login-btn:hover{background:var(--gold-dark);}
@@ -205,19 +208,19 @@
   .search-box{padding:14px;border-bottom:1px solid var(--line);}
   .search-box input{
     width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:14px;background:var(--cream-2);
+    font-family:var(--font);font-size:14px;background:var(--cream-2);
   }
   .new-dist-btn{
     width:100%;margin-top:8px;padding:9px;border:none;
     background:var(--gold-dark);color:var(--white);border-radius:8px;font-size:13px;
-    cursor:pointer;font-weight:600;font-family:'Inter';transition:background .15s;
+    cursor:pointer;font-weight:600;font-family:var(--font);transition:background .15s;
   }
   .new-dist-btn:hover{background:#644c22;}
   .dist-list{max-height:calc(100vh - 320px);overflow-y:auto;padding:8px 8px 16px;}
   .sidebar-tabs{display:flex;gap:6px;padding:0 14px 12px;flex-wrap:wrap;}
   .sidebar-tab-btn{
     flex:0 1 auto;min-width:0;padding:7px 10px;border-radius:20px;border:1px solid var(--line);background:var(--cream-2);
-    color:var(--ink-soft);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter';white-space:nowrap;
+    color:var(--ink-soft);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;
     display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:background .15s,border-color .15s,color .15s;
   }
   .sidebar-tab-btn:hover{background:var(--line);}
@@ -313,13 +316,13 @@
   .info-chip.despacho b{color:var(--gold-dark);}
   .info-chip.despacho input[type="date"]{
     border:1px solid var(--line-gold);border-radius:6px;background:var(--white);
-    color:var(--gold-dark);font-family:'Inter';font-size:12px;font-weight:700;padding:3px 6px;
+    color:var(--gold-dark);font-family:var(--font);font-size:12px;font-weight:700;padding:3px 6px;
   }
   .info-chip.despacho input[type="date"]:focus{outline:2px solid var(--gold);}
   .info-chip .icon-btn{padding:1px 3px;font-size:11px;}
   .info-chip.pedido input[type="date"]{
     border:1px solid var(--line);border-radius:6px;background:var(--white);
-    color:var(--ink);font-family:'Inter';font-size:12px;font-weight:700;padding:3px 6px;
+    color:var(--ink);font-family:var(--font);font-size:12px;font-weight:700;padding:3px 6px;
   }
   .info-chip.pedido input[type="date"]:focus{outline:2px solid var(--gold);}
   .info-chip.urgente-toggle{
@@ -334,7 +337,7 @@
     text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
   .observaciones-block textarea{
     width:100%;min-height:64px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:13.5px;background:var(--cream);resize:vertical;color:var(--ink);
+    font-family:var(--font);font-size:13.5px;background:var(--cream);resize:vertical;color:var(--ink);
   }
   .observaciones-block textarea:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
   .obs-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
@@ -349,13 +352,13 @@
   .obs-add-row{display:flex;gap:8px;}
   .obs-add-row input{
     flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:13.5px;background:var(--cream);color:var(--ink);
+    font-family:var(--font);font-size:13.5px;background:var(--cream);color:var(--ink);
   }
   .obs-add-row input:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
   .obs-add-row button{flex:0 0 auto;}
   .btn-nuevo-pedido{
     background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);border-radius:8px;
-    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter';white-space:nowrap;
+    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;
     transition:background .15s;
   }
   .btn-nuevo-pedido:hover{background:var(--gold-pale);}
@@ -390,16 +393,16 @@
   .debt-report-totals{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .debt-report-totals .pd-card{flex:1;min-width:130px;background:var(--cream-2);border-radius:8px;padding:10px 12px;}
   .debt-report-totals .pd-card .lab{font-size:10.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;}
-  .debt-report-totals .pd-card .v{font-family:'Inter';font-size:17px;font-weight:700;margin-top:3px;color:var(--ink);}
+  .debt-report-totals .pd-card .v{font-family:var(--font);font-size:17px;font-weight:700;margin-top:3px;color:var(--ink);}
   .print-btn-modal{
     background:var(--gold);color:var(--white);border:none;border-radius:8px;padding:9px 14px;
-    font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter';white-space:nowrap;
+    font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;
   }
   .print-btn-modal:hover{background:var(--gold-dark);}
   .add-btn{
     background:var(--gold);color:var(--white);border:none;border-radius:8px;
     padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
-    font-family:'Inter';white-space:nowrap;box-shadow:var(--shadow-sm);
+    font-family:var(--font);white-space:nowrap;box-shadow:var(--shadow-sm);
     transition:background .15s, transform .1s;
   }
   .add-btn:hover{background:var(--gold-dark);}
@@ -411,7 +414,7 @@
     border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);
   }
   .tcard .label{font-size:11.5px;color:var(--ink-soft);text-transform:none;font-weight:600;}
-  .tcard .val{font-family:'Inter';font-size:21px;margin-top:5px;font-weight:700;}
+  .tcard .val{font-family:var(--font);font-size:21px;margin-top:5px;font-weight:700;}
   .tcard.debe{border-color:var(--line-gold);background:var(--gold-pale);}
   .tcard.debe .val{color:var(--gold-dark);}
   .tcard.ok .val{color:var(--ink);}
@@ -440,7 +443,7 @@
   .num{text-align:right;font-variant-numeric:tabular-nums;}
   .entregado-input{
     width:64px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;
-    text-align:right;font-family:'Inter';font-size:13.5px;
+    text-align:right;font-family:var(--font);font-size:13.5px;
   }
   .entregado-input:focus{outline:2px solid var(--gold);border-color:var(--gold);}
   .entregado-print{display:none;}
@@ -466,7 +469,7 @@
   .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
   .field input, .field select{
     width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:14px;background:var(--cream);
+    font-family:var(--font);font-size:14px;background:var(--cream);
   }
   .field input:focus, .field select:focus{outline:2px solid var(--gold);border-color:var(--gold);background:var(--white);}
   .field-checkbox{display:flex;align-items:center;}
@@ -481,7 +484,7 @@
   .img-field-preview img{max-width:100%;max-height:220px;border-radius:8px;border:1px solid var(--line);display:block;}
   .img-field-remove{
     margin-top:6px;background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;
-    font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:'Inter';
+    font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:var(--font);
   }
   .img-field-remove:hover{background:var(--cream-2);color:var(--ink);}
   .guia-thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:pointer;display:block;}
@@ -498,7 +501,7 @@
   .modal-actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;}
   .modal-actions button{
     flex:1;min-width:100px;padding:10px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;
-    font-family:'Inter';border:none;transition:filter .15s;
+    font-family:var(--font);border:none;transition:filter .15s;
   }
   .modal-actions button:hover{filter:brightness(.95);}
   .btn-cancel{background:var(--cream-2);color:var(--ink);}
@@ -527,7 +530,7 @@
   /* ---- Filtro por producto (topbar) ---- */
   .filter-btn{
     background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);border-radius:8px;
-    padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter';
+    padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);
     white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s;
   }
   .filter-btn:hover{background:var(--gold-pale);}
@@ -558,7 +561,7 @@
     flex:1;min-width:110px;background:var(--cream-2);border-radius:8px;padding:10px 12px;
   }
   .product-debt-summary .pd-card .lab{font-size:10.5px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;}
-  .product-debt-summary .pd-card .v{font-family:'Inter';font-size:17px;font-weight:700;margin-top:3px;color:var(--ink);}
+  .product-debt-summary .pd-card .v{font-family:var(--font);font-size:17px;font-weight:700;margin-top:3px;color:var(--ink);}
   .product-debt-summary table{box-shadow:none;}
   .product-debt-summary th, .product-debt-summary td{font-size:12.5px;}
 
@@ -566,7 +569,7 @@
   .order-search-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
   .order-search-row input{
     flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:13.5px;background:var(--white);
+    font-family:var(--font);font-size:13.5px;background:var(--white);
   }
   .order-search-row input:focus{outline:2px solid var(--gold);border-color:var(--gold);}
   .no-match{padding:16px;color:var(--ink-soft);font-size:13px;text-align:center;}
@@ -574,7 +577,7 @@
   /* ---- Buscador de producto dentro de los modales (agregar/editar línea) ---- */
   .select-search-input{
     width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px 8px 0 0;
-    font-family:'Inter';font-size:13.5px;background:var(--cream);border-bottom:none;
+    font-family:var(--font);font-size:13.5px;background:var(--cream);border-bottom:none;
   }
   .select-search-input:focus{outline:none;border-color:var(--gold);}
   .field select.searchable-select{border-radius:0 0 8px 8px;}
@@ -586,7 +589,7 @@
   .ssel-native{position:absolute;opacity:0;pointer-events:none;height:1px;width:1px;overflow:hidden;}
   .ssel-input{
     width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
-    font-family:'Inter';font-size:13px;color:var(--ink);background:var(--white);
+    font-family:var(--font);font-size:13px;color:var(--ink);background:var(--white);
     box-sizing:border-box;cursor:pointer;
   }
   .ssel-input:focus{outline:2px solid var(--gold);border-color:var(--gold);cursor:text;}
@@ -604,7 +607,7 @@
   /* ---- Imprimir pedido ---- */
   .print-btn{
     background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:8px;
-    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter';
+    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font);
     white-space:nowrap;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:6px;
   }
   .print-btn:hover{background:var(--cream-2);}
@@ -813,12 +816,12 @@
   .prod-view .prod-field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;}
   .prod-view .prod-field input, .prod-view .prod-field select{
     border:1px solid var(--line); border-radius:8px; padding:8px 10px;
-    font-family:'Inter',sans-serif; font-size:13.5px; background:var(--white); color:var(--ink); min-width:150px;
+    font-family:var(--font); font-size:13.5px; background:var(--white); color:var(--ink); min-width:150px;
   }
   .prod-view .prod-field input:focus, .prod-view .prod-field select:focus{outline:2px solid var(--gold); border-color:var(--gold);}
   .prod-view .prod-btn{
     border-radius:8px; padding:9px 16px; font-size:13.5px; cursor:pointer; border:1px solid transparent;
-    font-family:'Inter',sans-serif; font-weight:600;
+    font-family:var(--font); font-weight:600;
   }
   .prod-view .prod-btn-primary{background:var(--gold-dark); border-color:var(--gold-dark); color:var(--white);}
   .prod-view .prod-btn-primary:hover{background:#644c22;}
@@ -867,7 +870,7 @@
   .nav-dropdown{position:relative;}
   .nav-dropdown-btn{
     display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;
-    font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;color:var(--ink-soft);
+    font-family:var(--font);font-size:13.5px;font-weight:600;color:var(--ink-soft);
     padding:12px 14px 11px;border-bottom:2px solid transparent;
     transition:color .15s,border-color .15s;
   }
@@ -885,7 +888,7 @@
   .nav-dropdown.open .nav-dropdown-menu{display:block;}
   .nav-dropdown-item{
     display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;
-    font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);
+    font-family:var(--font);font-size:13.5px;color:var(--ink);
     padding:9px 12px;border-radius:8px;
   }
   .nav-dropdown-item:hover{background:var(--cream-2);}
@@ -893,7 +896,7 @@
   /* Submenú "Dashboard": una sola entrada que despliega cada dashboard */
   .nav-dropdown-sub-toggle{
     display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:none;border:none;cursor:pointer;
-    font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);padding:9px 12px;border-radius:8px;
+    font-family:var(--font);font-size:13.5px;color:var(--ink);padding:9px 12px;border-radius:8px;
   }
   .nav-dropdown-sub-toggle:hover{background:var(--cream-2);}
   .nav-dropdown-sub-toggle .chev{flex-shrink:0;color:var(--ink-soft);transition:transform .15s;}
@@ -903,6 +906,137 @@
   .nav-dropdown-sub-group.open .nav-dropdown-sub{display:block;}
   .nav-dropdown-sub .nav-dropdown-item{font-size:13px;padding:7px 10px;}
   @media print{ .nav-tabs{display:none;} }
+
+  /* ================= Rediseño visual (solo pantalla; la impresión no cambia) ================= */
+  @media screen{
+    :root{
+      --cream:#F6F7F9; --cream-2:#EFF1F4; --line:#E4E7EC; --ink:#101828; --ink-soft:#667085;
+      --gold:#A07C3A; --gold-dark:#7A5B26; --gold-pale:#F8F1E3;
+      --radius:14px;
+      --shadow:0 1px 2px rgba(16,24,40,.04), 0 2px 8px rgba(16,24,40,.05);
+      --shadow-sm:0 1px 2px rgba(16,24,40,.06);
+    }
+    body{background:var(--cream);font-size:14px;line-height:1.45;}
+    button,input,select,textarea{font-family:inherit;}
+    .num, .v, .val, .prod-stat .num, td.num, .kpi-card .v{font-variant-numeric:tabular-nums;}
+
+    /* Encabezado */
+    .topbar{box-shadow:0 1px 0 var(--line);border-bottom:none;}
+    .topbar-top{padding:12px 0;}
+    .brand-logo-img{height:38px;}
+    .topbar h1{font-size:17px;letter-spacing:-.01em;}
+    .topbar .tag{font-size:12px;}
+    .nav-tabs{box-shadow:0 1px 0 var(--line);border-bottom:none;position:sticky;top:0;z-index:15;}
+    .nav-dropdown-btn, .nav-tab{font-size:14px !important;}
+    .nav-dropdown-menu{border-radius:12px !important;box-shadow:0 12px 32px rgba(16,24,40,.14) !important;border:1px solid var(--line) !important;padding:6px !important;}
+    .nav-dropdown-item{border-radius:8px !important;}
+
+    /* Botones: misma altura, esquinas y letra en toda la app */
+    .global-add-btn, .filter-btn, .prod-btn, .print-btn, .print-btn-modal, .add-btn, .btn-confirm, .btn-cancel, .btn-danger,
+    .filter-clear-btn, .new-dist-btn, .login-btn, .btn-nuevo-pedido{
+      font-family:var(--font) !important;border-radius:10px !important;font-weight:600 !important;
+      min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      transition:background .15s, box-shadow .15s, border-color .15s, color .15s;
+    }
+    .global-add-btn, .btn-confirm, .prod-btn-primary, .new-dist-btn, .login-btn, .btn-nuevo-pedido{
+      background:var(--gold-dark) !important;color:#fff !important;border:1px solid var(--gold-dark) !important;box-shadow:var(--shadow-sm);
+    }
+    .global-add-btn:hover, .btn-confirm:hover, .prod-btn-primary:hover, .new-dist-btn:hover, .login-btn:hover{filter:brightness(1.08);}
+    .filter-btn, .filter-btn.subtle, .btn-cancel, .prod-btn-outline, .filter-clear-btn{
+      background:#fff !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:var(--shadow-sm);
+    }
+    .filter-btn:hover, .btn-cancel:hover, .prod-btn-outline:hover, .filter-clear-btn:hover{border-color:var(--gold) !important;color:var(--gold-dark) !important;}
+    .print-btn, .print-btn-modal{background:var(--gold-pale) !important;color:var(--gold-dark) !important;border:1px solid var(--line-gold) !important;box-shadow:none !important;}
+    .icon-btn{border-radius:8px !important;}
+
+    /* Campos */
+    input[type=text], input[type=search], input[type=number], input[type=date], input[type=month], input[type=password], select, textarea{
+      border-radius:10px !important;border-color:var(--line) !important;
+    }
+    input:focus, select:focus, textarea:focus{outline:none;border-color:var(--gold) !important;box-shadow:0 0 0 3px rgba(160,124,58,.15) !important;}
+
+    /* Tarjetas de resumen (pantalla principal) */
+    .kpi-strip{gap:14px;padding-top:20px;}
+    .kpi-card{border-radius:var(--radius) !important;padding:16px 18px !important;border:1px solid var(--line) !important;box-shadow:var(--shadow) !important;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;}
+    .kpi-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold);}
+    .kpi-card.debt::before{background:#C2692E;}
+    .kpi-card .lab{font-size:11.5px !important;text-transform:uppercase;letter-spacing:.04em !important;font-weight:600 !important;color:var(--ink-soft) !important;}
+    .kpi-card .v{font-size:24px !important;margin-top:8px !important;letter-spacing:-.02em !important;}
+
+    /* Panel de control: una sola fila compacta */
+    .control-panel{padding-top:18px;}
+    .control-panel-title{font-size:12px !important;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft) !important;}
+    .control-panel-row{display:flex !important;flex-wrap:wrap;align-items:center;gap:10px !important;padding:12px !important;border-radius:var(--radius) !important;}
+    .control-search{flex:1 1 260px !important;min-width:220px;}
+    .control-filters{display:flex !important;flex-wrap:wrap;gap:10px !important;align-items:center;flex:2 1 420px;}
+    .control-filters select{flex:1 1 200px;min-height:38px;}
+    .control-filters .ssel-wrap{flex:1 1 200px;width:auto !important;min-width:180px;}
+    @media (min-width:900px){ .control-filters{flex-wrap:nowrap !important;} .control-filters .filter-clear-btn{flex:0 0 auto;} }
+
+    /* Tarjetas y páginas */
+    .page-card, .main-card, .prod-view .prod-card, .sidebar{border-radius:var(--radius) !important;border:1px solid var(--line) !important;box-shadow:var(--shadow) !important;}
+    .page-card-header h2, .prod-page-head h2{font-size:20px !important;letter-spacing:-.02em;}
+    .page-card-header .sub, .prod-page-head .sub{font-size:13px !important;color:var(--ink-soft);max-width:720px;}
+    .prod-view .prod-card h3{font-size:15px !important;letter-spacing:-.01em;}
+
+    /* Indicadores (Producción, Costos, Dashboards): etiqueta arriba, número debajo, a la izquierda */
+    .prod-view .prod-stat{display:flex;flex-direction:column-reverse;justify-content:flex-start;gap:6px;text-align:left !important;
+      background:#fff !important;border:1px solid var(--line) !important;border-radius:12px !important;padding:14px 16px !important;box-shadow:var(--shadow-sm);}
+    .prod-view .prod-stat .num{font-size:22px !important;text-align:left !important;letter-spacing:-.02em;line-height:1.15;}
+    .prod-view .prod-stat .lbl{margin-top:0 !important;font-size:11.5px !important;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+
+    /* Botones del pedido: acciones principales a la izquierda, secundarias agrupadas a la derecha */
+    .acciones-pedido{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+      padding:12px;border:1px solid var(--line);border-radius:12px;background:#FAFBFC;}
+    .acciones-grupo{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .acc-btn{font:600 13px var(--font);min-height:36px;padding:0 14px;border-radius:10px;cursor:pointer;
+      background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow-sm);transition:border-color .15s,color .15s;}
+    .acc-btn:hover{border-color:var(--gold);color:var(--gold-dark);}
+    .acc-btn.acc-primary{background:var(--gold-dark);color:#fff;border-color:var(--gold-dark);}
+    .acc-btn.acc-primary:hover{filter:brightness(1.08);color:#fff;}
+    .acc-btn.acc-danger{color:#B3261E;}
+    .acc-btn.acc-danger:hover{border-color:#B3261E;color:#B3261E;background:#FEF3F2;}
+    /* Tabla del pedido: nombre del producto con espacio suficiente (filas más bajas) */
+    #mainPanel .table-scroll td:first-child{min-width:210px;}
+    #mainPanel .table-scroll td, #mainPanel .table-scroll th{padding-left:10px;padding-right:10px;}
+    #mainPanel .table-scroll th{white-space:nowrap;}
+    .entregado-input{width:56px !important;}
+    @media (min-width:821px){ .dist-list{max-height:calc(100vh - 230px) !important;min-height:320px;} }
+    .dist-item{padding:10px 12px !important;}
+    #mainPanel .table-scroll td, #mainPanel .table-scroll th{padding-top:9px;padding-bottom:9px;}
+    .control-panel-title{display:none;}
+    /* Pestañas dentro de una página (divide pantallas largas en secciones) */
+    .page-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:4px 0 18px;}
+    .page-tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 16px;font:600 14px var(--font);color:var(--ink-soft);cursor:pointer;margin-bottom:-1px;}
+    .page-tab:hover{color:var(--ink);}
+    .page-tab.active{color:var(--gold-dark);border-bottom-color:var(--gold);}
+    .page-tab-panel[hidden]{display:none !important;}
+    .prod-stat-destacado{border-color:var(--gold) !important;background:var(--gold-pale) !important;}
+    /* Tablas largas: altura máxima con desplazamiento y encabezado fijo */
+    .tabla-limitada{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:12px;}
+    .tabla-limitada table{border:none !important;box-shadow:none !important;}
+    .tabla-limitada thead th{position:sticky;top:0;z-index:1;}
+    td.num, th.num{text-align:right;}
+    /* Gráficas: tamaño contenido */
+    .prod-view .prod-chart-box{height:240px !important;}
+
+    /* Tablas */
+    table{border-radius:12px !important;}
+    thead th, .prod-view table.prod-table th{background:#F8F9FB !important;color:var(--ink-soft) !important;font-size:11px !important;
+      text-transform:uppercase;letter-spacing:.05em;font-weight:700 !important;border-bottom:1px solid var(--line) !important;}
+    tbody tr:hover td{background:#FBF8F1;}
+    .prod-view table.prod-table td, .prod-view table.prod-table th{padding:10px 12px !important;}
+
+    /* Lista de clientes (izquierda) */
+    .dist-item{border-radius:12px !important;transition:background .15s, border-color .15s;}
+    .sidebar-tab-btn{border-radius:999px !important;font-family:var(--font) !important;}
+
+    /* Ventanas emergentes */
+    .modal{border-radius:16px !important;box-shadow:0 24px 64px rgba(16,24,40,.22) !important;}
+    .modal-overlay{backdrop-filter:blur(2px);}
+    .badge{border-radius:999px !important;font-weight:600;}
+    .toast{border-radius:12px !important;box-shadow:0 12px 32px rgba(16,24,40,.2) !important;}
+  }
 </style>
 </head>
 <body>
@@ -1605,94 +1739,107 @@
       <div class="page-card">
         <div class="prod-page-head">
           <div>
-            <h2>Dashboard de Costos y Utilidades</h2>
-            <div class="sub">Costos fijos, costo variable, utilidad y margen por producto.</div>
+            <h2>Costos y Utilidades</h2>
+            <div class="sub">Utilidad real del mes, costos por etapa y margen por producto.</div>
+          </div>
+          <div class="prod-filters">
+            <div class="prod-field">
+              <label for="utilMesSelector">Mes</label>
+              <input type="month" id="utilMesSelector">
+            </div>
           </div>
         </div>
 
-        <div class="prod-grid">
-          <div class="prod-card col-12">
-            <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
-              <div>
-                <h3 style="margin:0;">Utilidad Real del Mes</h3>
-                <div class="sub" style="margin-top:2px;">Facturación de Producción − Centro de Costos − Costos Variables (Producción × Mes × Producto) − Gastos Adicionales</div>
-              </div>
-              <div class="prod-field">
-                <label for="utilMesSelector">Mes</label>
-                <input type="month" id="utilMesSelector">
-              </div>
+        <div class="page-tabs" role="tablist" data-tabs-id="costos">
+          <button type="button" class="page-tab active" data-tab="resumen">Resumen del mes</button>
+          <button type="button" class="page-tab" data-tab="graficas">Gráficas</button>
+          <button type="button" class="page-tab" data-tab="productos">Por producto</button>
+        </div>
+
+        <!-- Pestaña: Resumen del mes -->
+        <div class="page-tab-panel" data-tab-panel="resumen">
+          <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
+            <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes</div></div>
+            <div class="prod-stat"><div class="num" id="utilMesFijos">–</div><div class="lbl">Centro de Costos</div></div>
+            <div class="prod-stat"><div class="num" id="utilMesVariables">–</div><div class="lbl">Costos variables</div></div>
+            <div class="prod-stat"><div class="num" id="utilMesGastosAdicionales">–</div><div class="lbl">Gastos adicionales</div></div>
+            <div class="prod-stat prod-stat-destacado"><div class="num" id="utilMesNeta">–</div><div class="lbl">Utilidad neta</div></div>
+          </div>
+          <div class="prod-card" style="margin-top:16px;">
+            <h3>Por etapa</h3>
+            <div class="prod-table-wrap">
+              <table class="prod-table">
+                <thead><tr><th>Etapa</th><th class="num">Producción</th><th class="num">Costo variable</th><th class="num">Centro de Costos</th><th class="num">Gastos adicionales</th><th class="num">Utilidad estimada</th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Corte</strong></td><td class="num" id="utilMesProdCorte">–</td><td class="num" id="utilMesCostoCorte">–</td><td class="num" id="utilMesFijosCorte">–</td><td class="num" id="utilMesGastosCorte">–</td><td class="num" id="utilMesUtilCorte" style="font-weight:700;">–</td></tr>
+                  <tr><td><strong>Taller (Confección)</strong></td><td class="num" id="utilMesProdTaller">–</td><td class="num" id="utilMesCostoTaller">–</td><td class="num" id="utilMesFijosTaller">–</td><td class="num" id="utilMesGastosTaller">–</td><td class="num" id="utilMesUtilTaller" style="font-weight:700;">–</td></tr>
+                  <tr><td><strong>Ultrasonido</strong></td><td class="num" id="utilMesProdUltrasonido">–</td><td class="num" id="utilMesCostoUltrasonido">–</td><td class="num" id="utilMesFijosUltrasonido">–</td><td class="num" id="utilMesGastosUltrasonido">–</td><td class="num" id="utilMesUtilUltrasonido" style="font-weight:700;">–</td></tr>
+                  <tr><td><strong>Confortadora</strong></td><td class="num" id="utilMesProdConfortadora">–</td><td class="num" id="utilMesCostoConfortadora">–</td><td class="num" id="utilMesFijosConfortadora">–</td><td class="num" id="utilMesGastosConfortadora">–</td><td class="num" id="utilMesUtilConfortadora" style="font-weight:700;">–</td></tr>
+                </tbody>
+              </table>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
-              <div class="prod-stat"><div class="num" id="utilMesFacturacion">–</div><div class="lbl">Facturación del mes (Producción)</div></div>
-              <div class="prod-stat prod-stat-clickable" id="statUtilMesFijos" data-detalle="detalleUtilMesFijos"><div class="num" id="utilMesFijos">–</div><div class="lbl">Centro de Costos <span class="chev">▾</span></div></div>
-              <div class="prod-stat"><div class="num" id="utilMesVariables">–</div><div class="lbl">Costos Variables (producción real)</div></div>
-              <div class="prod-stat prod-stat-clickable" id="statUtilMesGastos" data-detalle="detalleUtilMesGastos"><div class="num" id="utilMesGastosAdicionales">–</div><div class="lbl">Gastos Adicionales <span class="chev">▾</span></div></div>
-              <div class="prod-stat"><div class="num" id="utilMesNeta">–</div><div class="lbl">Utilidad Neta</div></div>
+            <div class="hint" style="margin-top:8px;">Utilidad = facturación de producción − Centro de Costos − costos variables − gastos adicionales. Por etapa es un estimado.</div>
+          </div>
+        </div>
+
+        <!-- Pestaña: Gráficas -->
+        <div class="page-tab-panel" data-tab-panel="graficas" hidden>
+          <div class="prod-grid">
+            <div class="prod-card col-6">
+              <h3>Facturación, costos y utilidad del mes</h3>
+              <div class="prod-chart-box"><canvas id="utilMesResumenChart"></canvas></div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
-              <div class="prod-stat"><div class="num" id="utilMesProdCorte">–</div><div class="lbl">Producción de Corte</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesProdTaller">–</div><div class="lbl">Producción de Taller (Confección)</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesProdUltrasonido">–</div><div class="lbl">Producción de Ultrasonido</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesProdConfortadora">–</div><div class="lbl">Producción de Confortadora</div></div>
+            <div class="prod-card col-6">
+              <h3>Costo y utilidad por etapa</h3>
+              <div class="prod-chart-box"><canvas id="utilMesComparativoEtapaChart"></canvas></div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
-              <div class="prod-stat"><div class="num" id="utilMesCostoCorte">–</div><div class="lbl">Costo variable · Corte</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesCostoTaller">–</div><div class="lbl">Costo variable · Taller</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesCostoUltrasonido">–</div><div class="lbl">Costo variable · Ultrasonido</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesCostoConfortadora">–</div><div class="lbl">Costo variable · Confortadora</div></div>
+            <div class="prod-card col-6">
+              <h3>Producción por etapa</h3>
+              <div class="prod-chart-box"><canvas id="utilMesEtapaChart"></canvas></div>
             </div>
-            <div class="prod-stat-grid" id="detalleUtilMesFijos" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;display:none;">
-              <div class="prod-stat"><div class="num" id="utilMesFijosCorte">–</div><div class="lbl">Centro de Costos · Corte</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesFijosTaller">–</div><div class="lbl">Centro de Costos · Taller</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesFijosUltrasonido">–</div><div class="lbl">Centro de Costos · Ultrasonido</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesFijosConfortadora">–</div><div class="lbl">Centro de Costos · Confortadora</div></div>
+            <div class="prod-card col-6">
+              <h3>Costo variable por etapa</h3>
+              <div class="prod-chart-box"><canvas id="utilMesCostoEtapaChart"></canvas></div>
             </div>
-            <div class="prod-stat-grid" id="detalleUtilMesGastos" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;display:none;">
-              <div class="prod-stat"><div class="num" id="utilMesGastosCorte">–</div><div class="lbl">Gastos Adicionales · Corte</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesGastosTaller">–</div><div class="lbl">Gastos Adicionales · Taller</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesGastosUltrasonido">–</div><div class="lbl">Gastos Adicionales · Ultrasonido</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesGastosConfortadora">–</div><div class="lbl">Gastos Adicionales · Confortadora</div></div>
+            <div class="prod-card col-6">
+              <h3>Costo variable por producto (top 8)</h3>
+              <div class="prod-chart-box"><canvas id="utilMesProductoChart"></canvas></div>
             </div>
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px;">
-              <div class="prod-stat"><div class="num" id="utilMesUtilCorte">–</div><div class="lbl">Utilidad estimada · Corte</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesUtilTaller">–</div><div class="lbl">Utilidad estimada · Taller</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesUtilUltrasonido">–</div><div class="lbl">Utilidad estimada · Ultrasonido</div></div>
-              <div class="prod-stat"><div class="num" id="utilMesUtilConfortadora">–</div><div class="lbl">Utilidad estimada · Confortadora</div></div>
+            <div class="prod-card col-6">
+              <h3>Tendencia de utilidad (6 meses)</h3>
+              <div class="prod-chart-box"><canvas id="utilTendenciaChart"></canvas></div>
             </div>
-            <div class="sub" style="margin-top:6px;">La utilidad por etapa es un estimado: prorratea los costos fijos del mes según qué parte de la producción (en unidades) hizo cada etapa.</div>
-            <div class="prod-grid" style="margin-top:14px;">
-              <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Facturación, Costos y Utilidad del Mes</h3>
-                <div class="prod-chart-box"><canvas id="utilMesResumenChart"></canvas></div>
-              </div>
-              <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Costo Variable por Producto (top 8 del mes)</h3>
-                <div class="prod-chart-box"><canvas id="utilMesProductoChart"></canvas></div>
-              </div>
-              <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Producción por Etapa</h3>
-                <div class="prod-chart-box"><canvas id="utilMesEtapaChart"></canvas></div>
-              </div>
-              <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Costo Variable por Etapa</h3>
-                <div class="prod-chart-box"><canvas id="utilMesCostoEtapaChart"></canvas></div>
-              </div>
-              <div class="prod-card col-12" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Comparativo por Etapa: Costo y Utilidad Estimada</h3>
-                <div class="prod-chart-box"><canvas id="utilMesComparativoEtapaChart"></canvas></div>
-              </div>
-              <div class="prod-card col-12" style="box-shadow:none;border:1px solid var(--line);">
-                <h3>Tendencia de Utilidad (últimos 6 meses)</h3>
-                <div class="prod-chart-box"><canvas id="utilTendenciaChart"></canvas></div>
-              </div>
+            <div class="prod-card col-6">
+              <h3>Costo total vs precio de venta</h3>
+              <div class="prod-chart-box"><canvas id="utilChartCostoVsPrecio"></canvas></div>
             </div>
-            <div class="prod-table-wrap" style="margin-top:14px;">
-              <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-                <select id="utilMesOrden" class="inv-precio-input" style="width:auto;text-align:left;padding:6px 10px;">
-                  <option value="desc">Costo variable total: mayor a menor</option>
-                  <option value="asc">Costo variable total: menor a mayor</option>
-                </select>
-              </div>
+            <div class="prod-card col-6">
+              <h3>Centro de Costos por categoría</h3>
+              <div class="prod-chart-box"><canvas id="utilChartFijos"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestaña: Por producto -->
+        <div class="page-tab-panel" data-tab-panel="productos" hidden>
+          <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
+            <div class="prod-stat"><div class="num" id="utilStatFijos">–</div><div class="lbl">Costos fijos mensuales</div></div>
+            <div class="prod-stat"><div class="num" id="utilStatVariable">–</div><div class="lbl">Costo variable promedio</div></div>
+            <div class="prod-stat"><div class="num" id="utilStatUtilidad">–</div><div class="lbl">Utilidad promedio</div></div>
+            <div class="prod-stat"><div class="num" id="utilStatMargen">–</div><div class="lbl">Margen promedio</div></div>
+            <div class="prod-stat"><div class="num" id="utilStatMejor" style="font-size:15px !important;">–</div><div class="lbl">Más rentable</div></div>
+            <div class="prod-stat"><div class="num" id="utilStatPeor" style="font-size:15px !important;">–</div><div class="lbl">Menos rentable</div></div>
+          </div>
+
+          <div class="prod-card" style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+              <h3 style="margin:0;">Producción del mes por producto</h3>
+              <select id="utilMesOrden" class="inv-precio-input" style="width:auto;text-align:left;padding:6px 10px;">
+                <option value="desc">Costo variable: mayor a menor</option>
+                <option value="asc">Costo variable: menor a mayor</option>
+              </select>
+            </div>
+            <div class="prod-table-wrap tabla-limitada">
               <table class="prod-table" id="utilMesTable">
                 <thead>
                   <tr><th>Producto</th><th>Producción del mes</th><th>Facturación de producción</th><th>Costo variable unitario</th><th>Costo variable total</th></tr>
@@ -1700,38 +1847,14 @@
                 <tbody></tbody>
               </table>
             </div>
-            <div class="hint" style="margin-top:8px;">La producción del mes sale de "Producción Diaria" (registro por día, etapa y producto); si un producto no tiene registros diarios ese mes, se usa como respaldo "Órdenes de Producción". La facturación de producción es unidades producidas × precio de venta del producto (los productos sin precio de venta suman $0). El costo variable unitario es el desglose de insumos + mano de obra de cada producto.</div>
           </div>
 
-          <div class="prod-card col-12">
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(4,1fr);">
-              <div class="prod-stat"><div class="num" id="utilStatFijos">–</div><div class="lbl">Costos fijos mensuales</div></div>
-              <div class="prod-stat"><div class="num" id="utilStatVariable">–</div><div class="lbl">Costo variable promedio/producto</div></div>
-              <div class="prod-stat"><div class="num" id="utilStatUtilidad">–</div><div class="lbl">Utilidad promedio/producto</div></div>
-              <div class="prod-stat"><div class="num" id="utilStatMargen">–</div><div class="lbl">Margen promedio</div></div>
+          <div class="prod-card" style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+              <h3 style="margin:0;">Utilidad y margen por producto</h3>
+              <input type="search" class="filtro-tabla" data-filtra="utilProductoTable" placeholder="Buscar producto…" style="min-width:220px;padding:8px 12px;border:1px solid var(--line);">
             </div>
-          </div>
-
-          <div class="prod-card col-12">
-            <div class="prod-stat-grid" style="grid-template-columns:repeat(2,1fr);">
-              <div class="prod-stat"><div class="num" id="utilStatMejor" style="font-size:15px;">–</div><div class="lbl">Producto más rentable</div></div>
-              <div class="prod-stat"><div class="num" id="utilStatPeor" style="font-size:15px;">–</div><div class="lbl">Producto menos rentable</div></div>
-            </div>
-          </div>
-
-          <div class="prod-card col-6">
-            <h3>Costo Total vs Precio de Venta</h3>
-            <div class="prod-chart-box"><canvas id="utilChartCostoVsPrecio"></canvas></div>
-          </div>
-
-          <div class="prod-card col-6">
-            <h3>Centro de Costos por Categoría (mensual)</h3>
-            <div class="prod-chart-box"><canvas id="utilChartFijos"></canvas></div>
-          </div>
-
-          <div class="prod-card col-12">
-            <h3>Utilidad y Margen por Producto</h3>
-            <div class="prod-table-wrap">
+            <div class="prod-table-wrap tabla-limitada">
               <table class="prod-table" id="utilProductoTable">
                 <thead>
                   <tr><th>Producto</th><th>Costo total</th><th>Precio venta</th><th>Utilidad</th><th>Margen</th></tr>
@@ -1739,7 +1862,7 @@
                 <tbody></tbody>
               </table>
             </div>
-            <div class="hint" style="margin-top:8px;">Agrega el campo "Precio de venta" a un producto (en la vista Productos) para que aparezca aquí con su utilidad y margen.</div>
+            <div class="hint" style="margin-top:8px;">Los productos sin "Precio de venta" (en Productos) no muestran utilidad ni margen.</div>
           </div>
         </div>
       </div>
@@ -2969,13 +3092,17 @@ function renderMain(){
           ${isVencido(dist, totals.totalPendienteVal) ? `<div class="info-chip" style="background:#B3261E;border-color:#B3261E;color:#fff;">⏰ Pedido vencido: la fecha de despacho ya pasó</div>` : ''}
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="print-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir pedido</button>
-        <button class="btn-nuevo-pedido no-print" id="btnGenerarFactura" title="Generar una factura de venta a partir de este pedido">🧾 Generar factura</button>
-        <button class="btn-nuevo-pedido" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido para este cliente</button>
-        <button class="btn-nuevo-pedido" id="btnDuplicarPedido" title="Copiar todas las líneas de este pedido a un cliente NUEVO y distinto">⧉ Duplicar pedido para otro cliente</button>
-        <button class="add-btn" id="btnAgregarLinea">+ Agregar producto al pedido</button>
-        <button class="icon-btn icon-delete" id="btnEliminarPedido" title="Eliminar este pedido por completo" style="border:1px solid #B3261E;color:#B3261E;padding:8px 14px;border-radius:8px;background:#fff;">🗑 Eliminar pedido</button>
+      <div class="acciones-pedido no-print">
+        <div class="acciones-grupo">
+          <button class="acc-btn acc-primary" id="btnAgregarLinea" title="Agregar un producto a este pedido">+ Agregar producto</button>
+          <button class="acc-btn acc-primary" id="btnGenerarFactura" title="Generar una factura de venta a partir de este pedido">🧾 Generar factura</button>
+        </div>
+        <div class="acciones-grupo">
+          <button class="acc-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir</button>
+          <button class="acc-btn" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido</button>
+          <button class="acc-btn" id="btnDuplicarPedido" title="Copiar todas las líneas de este pedido a un cliente NUEVO y distinto">⧉ Duplicar</button>
+          <button class="acc-btn acc-danger" id="btnEliminarPedido" title="Eliminar este pedido por completo">🗑 Eliminar</button>
+        </div>
       </div>
     </div>
     <div class="observaciones-block">
@@ -4672,7 +4799,7 @@ function facturaModalBodyHtml(lineas, { fecha, impuestoPct, observaciones }, inv
     <div class="field" style="margin-top:14px;"><label>Fecha de la factura</label><input type="date" id="inpFacturaFecha" value="${escapeAttr(fecha || '')}"></div>
     <div class="field"><label>% Impuesto (IVA) — deja 0 si no aplica</label><input type="number" id="inpFacturaImpuesto" value="${impuestoPct || 0}" min="0" step="0.1"></div>
     <div class="field"><label>Observaciones (opcional)</label>
-      <textarea id="inpFacturaObs" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;resize:none;">${escapeHtml(observaciones || '')}</textarea>
+      <textarea id="inpFacturaObs" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;resize:none;">${escapeHtml(observaciones || '')}</textarea>
     </div>
     <div style="text-align:right;font-size:13.5px;color:var(--ink-soft);">Subtotal: <b id="facturaModalSubtotal" style="color:var(--ink);">$0</b></div>
     <div style="text-align:right;font-size:15px;font-weight:800;color:var(--gold-dark);margin-top:2px;">Total: <span id="facturaModalTotalConImp">$0</span></div>
@@ -5420,7 +5547,7 @@ function openNewDistModal(){
     </div>
     <div class="field">
       <label>Observaciones (opcional)</label>
-      <textarea id="inpObservacionesNuevo" style="width:100%;min-height:56px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:14px;background:var(--cream);" placeholder="Ej. Prefiere entrega los viernes..."></textarea>
+      <textarea id="inpObservacionesNuevo" style="width:100%;min-height:56px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:14px;background:var(--cream);" placeholder="Ej. Prefiere entrega los viernes..."></textarea>
     </div>
     <div class="hint">Después de crearlo podrás agregarle los productos de su primer pedido.</div>
     <div class="modal-actions">
@@ -5529,7 +5656,7 @@ function openNewOrderForClientModal(dist){
     </div>
     <div class="field">
       <label>Observaciones del cliente (opcional, para este nuevo pedido)</label>
-      <textarea id="txtObservacionesNP" style="width:100%;min-height:60px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:14px;background:var(--cream);" placeholder="Ej. Prefiere entrega los viernes...">${dist.observaciones.length ? escapeHtml(dist.observaciones[dist.observaciones.length-1].texto) : ''}</textarea>
+      <textarea id="txtObservacionesNP" style="width:100%;min-height:60px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:14px;background:var(--cream);" placeholder="Ej. Prefiere entrega los viernes...">${dist.observaciones.length ? escapeHtml(dist.observaciones[dist.observaciones.length-1].texto) : ''}</textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
@@ -6978,7 +7105,7 @@ function buildPlantaFieldHtml(f, currentValue){
   }
   if(f.type === 'textarea'){
     return `<div class="field"><label>${escapeHtml(f.label)}${f.required?' *':''}</label>
-      <textarea id="pf_${f.key}" rows="3" placeholder="${escapeAttr(f.placeholder||'')}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:none;max-height:110px;overflow-y:auto;">${escapeHtml(val)}</textarea>
+      <textarea id="pf_${f.key}" rows="3" placeholder="${escapeAttr(f.placeholder||'')}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;color:var(--ink);resize:none;max-height:110px;overflow-y:auto;">${escapeHtml(val)}</textarea>
     </div>`;
   }
   if(f.type === 'checkbox'){
@@ -7207,7 +7334,7 @@ function openProduccionModal(groupKey, defaultEtapa){
       <button type="button" class="btn-cancel" id="pp_agregar" style="margin-top:2px;">+ Agregar otro producto</button>
     </div>
     <div class="field"><label>Observaciones</label>
-      <textarea id="pp_obs" rows="3" placeholder="Detalles del corte o novedades del día" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);resize:none;max-height:110px;overflow-y:auto;">${escapeHtml(record.observaciones || '')}</textarea>
+      <textarea id="pp_obs" rows="3" placeholder="Detalles del corte o novedades del día" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;color:var(--ink);resize:none;max-height:110px;overflow-y:auto;">${escapeHtml(record.observaciones || '')}</textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
@@ -7569,13 +7696,13 @@ function openMaterialesModal(productId){
 
   const filaHtml = (m, i) => `
     <div class="mat-row" data-mat-row="${i}" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-      <select class="mat-insumo" style="flex:1.4;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;">
+      <select class="mat-insumo" style="flex:1.4;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;">
         <option value="">Insumo libre (escribe abajo)</option>
         ${catalogo.map(c => `<option value="${escapeAttr(c.nombre)}" data-costo="${c.costoUnitario}" ${c.nombre===m.insumo?'selected':''}>${escapeHtml(c.nombre)}</option>`).join('')}
       </select>
-      <input class="mat-nombre" type="text" placeholder="Nombre (ej. Elástico)" value="${escapeAttr(m.insumo||'')}" style="flex:1.2;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;">
-      <input class="mat-cantidad" type="number" min="0" step="any" placeholder="Cant." value="${m.cantidad ?? 1}" style="width:64px;padding:8px 8px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;text-align:right;">
-      <input class="mat-costo" type="number" min="0" step="any" placeholder="$ unit." value="${m.costoUnitario ?? ''}" style="width:90px;padding:8px 8px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;text-align:right;">
+      <input class="mat-nombre" type="text" placeholder="Nombre (ej. Elástico)" value="${escapeAttr(m.insumo||'')}" style="flex:1.2;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;">
+      <input class="mat-cantidad" type="number" min="0" step="any" placeholder="Cant." value="${m.cantidad ?? 1}" style="width:64px;padding:8px 8px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;text-align:right;">
+      <input class="mat-costo" type="number" min="0" step="any" placeholder="$ unit." value="${m.costoUnitario ?? ''}" style="width:90px;padding:8px 8px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;text-align:right;">
       <div class="mat-subtotal" style="width:90px;text-align:right;font-size:13px;font-weight:600;color:var(--ink);">$0</div>
       <button type="button" class="icon-btn icon-delete mat-remove" title="Quitar">🗑</button>
     </div>`;
@@ -8066,6 +8193,29 @@ function renderUtilPieCostosFijos(){
     options: { plugins:{ legend:{ position:'bottom' } } }
   });
 }
+
+// Pestañas dentro de una página: muestran una sección a la vez (recuerda la última elegida).
+document.querySelectorAll('.page-tabs').forEach(bar => {
+  const cont = bar.parentElement;
+  const clave = 'tab_' + (bar.dataset.tabsId || '');
+  const mostrar = (nombre) => {
+    bar.querySelectorAll('.page-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === nombre));
+    cont.querySelectorAll(':scope > .page-tab-panel').forEach(p => { p.hidden = p.dataset.tabPanel !== nombre; });
+    try{ localStorage.setItem(clave, nombre); }catch(e){}
+  };
+  bar.addEventListener('click', (e) => { const b = e.target.closest('.page-tab'); if(b) mostrar(b.dataset.tab); });
+  let guardada = null; try{ guardada = localStorage.getItem(clave); }catch(e){}
+  if(guardada && bar.querySelector('[data-tab="' + guardada + '"]')) mostrar(guardada);
+});
+// Buscador que filtra las filas de una tabla (atributo data-filtra = id de la tabla).
+document.addEventListener('input', (e) => {
+  const inp = e.target.closest('.filtro-tabla');
+  if(!inp) return;
+  const tabla = document.getElementById(inp.dataset.filtra);
+  if(!tabla) return;
+  const q = normalizeText(inp.value || '');
+  tabla.querySelectorAll('tbody tr').forEach(tr => { tr.style.display = !q || normalizeText(tr.textContent).includes(q) ? '' : 'none'; });
+});
 
 // Tarjetas "Costos Fijos" y "Gastos Adicionales" del Dashboard de Costos y Utilidades:
 // al hacer clic despliegan hacia abajo su propio desglose por etapa (Corte, Taller, Ultrasonido, Confortadora).
