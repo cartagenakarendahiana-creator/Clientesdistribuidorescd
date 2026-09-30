@@ -1005,6 +1005,9 @@
     .dist-item{padding:10px 12px !important;}
     #mainPanel .table-scroll td, #mainPanel .table-scroll th{padding-top:9px;padding-bottom:9px;}
     .control-panel-title{display:none;}
+    .sidebar-acciones{display:flex;gap:8px;margin-top:10px;}
+    .sidebar-acciones .new-dist-btn{flex:1;margin:0 !important;width:auto !important;}
+    .new-dist-btn.new-dist-btn-sec{background:#fff !important;color:var(--gold-dark) !important;border:1px solid var(--gold) !important;}
     /* Pestañas dentro de una página (divide pantallas largas en secciones) */
     .page-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:4px 0 18px;}
     .page-tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 16px;font:600 14px var(--font);color:var(--ink-soft);cursor:pointer;margin-bottom:-1px;}
@@ -1241,7 +1244,10 @@
   <div class="sidebar">
     <div class="search-box">
       <input type="text" id="searchDist" placeholder="Buscar cliente...">
-      <button class="new-dist-btn" id="btnNuevoDist">+ Nuevo cliente</button>
+      <div class="sidebar-acciones">
+        <button class="new-dist-btn" id="btnNuevoPedido" title="Crear un pedido para un cliente existente">+ Nuevo pedido</button>
+        <button class="new-dist-btn new-dist-btn-sec" id="btnNuevoDist" title="Registrar un cliente nuevo (sin pedido)">+ Nuevo cliente</button>
+      </div>
     </div>
     <div class="sidebar-tabs">
       <button class="sidebar-tab-btn" id="tabTodos" data-tab="todos">Todos <span class="count" id="countTodos">0</span></button>
@@ -2713,10 +2719,19 @@ function registerVendedor(nombre){
 }
 
 // Lista combinada de nombres de clientes: los creados manualmente (registro) + los que ya tienen algún pedido
+// Un cliente es el mismo aunque su nombre cambie en tildes, mayúsculas o espacios
+// ("Media Naranja" = "MEDIA NARANJA" = "Media  Narañja"): se agrupan por clienteKey y se
+// muestra un solo nombre (el del registro de Clientes si existe; si no, el del pedido más reciente).
 function getAllDistribuidorNombres(){
-  const existentes = getAllDistributors().map(d=>d.nombre).filter(Boolean);
-  const registro = APPDATA.distribuidoresRegistry || [];
-  return Array.from(new Set([...registro, ...existentes])).sort((a,b)=>a.localeCompare(b));
+  const porClave = new Map();
+  (APPDATA.distribuidoresRegistry || []).forEach(n => { const k = clienteKey(n); if(k && !porClave.has(k)) porClave.set(k, n); });
+  getAllDistributors().slice().reverse().forEach(d => { const k = clienteKey(d.nombre); if(k && !porClave.has(k)) porClave.set(k, d.nombre); });
+  return [...porClave.values()].sort((a,b)=>a.localeCompare(b));
+}
+// Nombre con el que ya existe un cliente (si lo hay) para un nombre escrito a mano.
+function nombreClienteCanonico(nombre){
+  const k = clienteKey(nombre);
+  return (k && getAllDistribuidorNombres().find(n => clienteKey(n) === k)) || String(nombre || '').trim();
 }
 
 // Un pedido está "vencido" si ya pasó su fecha máxima de despacho y todavía queda algo por entregar
@@ -2830,7 +2845,24 @@ let ordenFiltro = 'fecha_desc'; // 'fecha_asc' | 'fecha_desc' | 'nombre'
 let vendedorFiltro = '';     // '' = todos
 let sidebarTab = 'todos';    // 'todos' | 'porsaldar' | 'saldados' | 'urgentes' | 'vencidos'
 
+// Para cada pedido: número de pedido dentro de su cliente ("Pedido 2 de 3"), por fecha.
+let _ordenPedidosCache = null;
+function ordenPedidoDeCliente(d){
+  if(!_ordenPedidosCache){
+    const grupos = new Map();
+    getAllDistributors().forEach(x => { const k = clienteKey(x.nombre); if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(x); });
+    _ordenPedidosCache = new Map();
+    grupos.forEach(lista => {
+      const t = x => parseFechaToTime(x.fecha) ?? Number.MAX_SAFE_INTEGER; // sin fecha = el más reciente
+      lista.sort((a,b) => t(a) - t(b));
+      lista.forEach((x, i) => _ordenPedidosCache.set(x.id, { n: i + 1, total: lista.length }));
+    });
+    setTimeout(() => { _ordenPedidosCache = null; }, 0); // se recalcula en el siguiente dibujado
+  }
+  return _ordenPedidosCache.get(d.id) || { n: 1, total: 1 };
+}
 function renderDistItemHtml(d){
+  const orden = ordenPedidoDeCliente(d);
   const debe = d.t.totalPendienteVal > 0;
   const vencido = isVencido(d, d.t.totalPendienteVal);
   return `<div class="dist-item ${d.id===selectedDistId?'active':''} ${vencido?'vencido':''}" data-id="${escapeAttr(d.id)}">
@@ -2842,6 +2874,7 @@ function renderDistItemHtml(d){
         <button class="icon-btn icon-edit rename-dist-btn" data-id="${escapeAttr(d.id)}" title="Editar cliente">✎</button>
       </div>
       <div class="dist-meta">
+        ${orden.total > 1 ? `<span class="meta-chip" style="background:var(--gold-pale);color:var(--gold-dark);" title="Este cliente tiene ${orden.total} pedidos">Pedido ${orden.n} de ${orden.total}</span>` : ''}
         <span class="meta-chip">${d.t.numLines} producto(s)</span>
         ${d.fecha ? `<span class="meta-chip">Pedido: ${escapeHtml(String(d.fecha))}</span>` : ''}
         ${d.ciudad ? `<span class="meta-chip">📍 ${escapeHtml(d.ciudad)}</span>` : ''}
@@ -2976,7 +3009,7 @@ function renderSummaryStrip(){
   const unidades = computeGlobalUnitTotals();
   const setKpi = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
   const mes = new Date().toLocaleDateString('es-CO', { month: 'long' });
-  setKpi('kpiDistribuidores', fmtNum(dists.length));
+  setKpi('kpiDistribuidores', fmtNum(new Set(dists.map(d => clienteKey(d.nombre)).filter(Boolean)).size));
   setKpi('kpiFacturadoLbl', 'Total Facturado · ' + mes);
   setKpi('kpiFacturado', fmt(totalFactMes));
   setKpi('kpiPendiente', fmt(totalDeuda));
@@ -3850,7 +3883,7 @@ function renderDistribuidoresView(){
   const listEl = document.getElementById('distribuidoresListView');
   if(!listEl) return;
   cdRenderDupBanner();
-  const conPedidos = new Set(getAllDistributors().map(d=>d.nombre));
+  const conPedidos = new Set(getAllDistributors().map(d=>clienteKey(d.nombre)));
   const term = normalizeText(clientesViewTerm.trim());
   const todos = getAllDistribuidorNombres().filter(n=>{
     if(!term) return true;
@@ -3864,14 +3897,14 @@ function renderDistribuidoresView(){
     <div class="registry-item">
       <span>${escapeHtml(n)}${det ? `<br><small style="color:var(--ink-soft);">${escapeHtml(det)}</small>` : ''}</span>
       <span style="display:flex;align-items:center;gap:8px;">
-        ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
+        ${conPedidos.has(clienteKey(n)) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
         <button class="icon-btn icon-edit no-print" data-edit="${escapeAttr(n)}" title="Editar datos del cliente">✎</button>
         <button class="icon-btn icon-delete no-print" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
       </span>
     </div>`;}).join('') : `<div class="registry-empty">${clientesViewTerm ? 'Sin coincidencias.' : 'Aún no has creado clientes.'}</div>`;
   listEl.querySelectorAll('button[data-n]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
+      APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>clienteKey(n)!==clienteKey(btn.dataset.n));
       await saveAppData(APPDATA);
       renderAll();
     });
@@ -5517,15 +5550,69 @@ function openProductDebtFilter(){
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
 }
 
-function openNewDistModal(){
-  const vendedoresExistentes = getAllVendedores();
+function opcionesClientesHtml(seleccionado){
+  return '<option value="">Selecciona un cliente…</option>' + getAllDistribuidorNombres()
+    .map(n => `<option value="${escapeAttr(n)}" ${n === seleccionado ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('');
+}
+
+// Registrar un cliente NUEVO (sin pedido). Si ya existe (aunque cambie en tildes o mayúsculas)
+// no se duplica. onCreado(nombre) se llama al terminar (ej. para elegirlo en "Nuevo pedido").
+function openNuevoClienteModal(onCreado){
   const overlay = openModal(`
     <h3>Nuevo cliente</h3>
     <div class="field">
-      <label>Nombre del cliente / tienda</label>
-      <input type="text" id="inpNombre" list="dlDistribuidoresRegistro" placeholder="Ej. Almacén El Progreso" autocomplete="off">
-      <datalist id="dlDistribuidoresRegistro">${getAllDistribuidorNombres().map(n=>`<option value="${escapeAttr(n)}">`).join('')}</datalist>
-      <div class="hint" style="margin-top:5px;margin-bottom:0;">Escribe uno nuevo o elige uno ya creado en "🏬 Clientes".</div>
+      <label>Nombre del cliente / tienda *</label>
+      <input type="text" id="inpNombreNuevoCliente" placeholder="Ej. Almacén El Progreso" autocomplete="off">
+      <div class="hint" id="avisoYaExiste" style="display:none;margin-top:6px;margin-bottom:0;color:#B65B2E;font-weight:600;"></div>
+    </div>
+    ${clienteInfoFieldsHtml(getClienteInfo(''))}
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Crear cliente</button>
+    </div>
+  `);
+  const inp = overlay.querySelector('#inpNombreNuevoCliente');
+  const aviso = overlay.querySelector('#avisoYaExiste');
+  const existente = () => { const k = clienteKey(inp.value); return k ? getAllDistribuidorNombres().find(n => clienteKey(n) === k) : null; };
+  inp.addEventListener('input', () => {
+    const ex = existente();
+    aviso.style.display = ex ? '' : 'none';
+    aviso.textContent = ex ? `Ese cliente ya existe como "${ex}". No se creará otro.` : '';
+  });
+  setTimeout(() => inp.focus(), 50);
+  overlay.querySelector('#btnCancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async () => {
+    const nombre = inp.value.trim().replace(/\s+/g, ' ');
+    if(!nombre){ showToast('Escribe el nombre del cliente'); inp.focus(); return; }
+    const ex = existente();
+    if(ex){
+      showToast('Ese cliente ya existe: ' + ex);
+      overlay.remove();
+      if(typeof onCreado === 'function') onCreado(ex);
+      return;
+    }
+    if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
+    APPDATA.distribuidoresRegistry.push(nombre);
+    const inf = readClienteInfoFields(overlay);
+    if(inf.nit.trim()||inf.telefono.trim()||inf.direccion.trim()||inf.ciudad.trim()) setClienteInfo(nombre, inf);
+    await saveAppData(APPDATA);
+    overlay.remove();
+    if(typeof onCreado === 'function') onCreado(nombre);
+    else { renderAll(); showToast('Cliente creado. Ya puedes crearle un pedido con "+ Nuevo pedido".', 4000); }
+  });
+}
+
+function openNewDistModal(){
+  const vendedoresExistentes = getAllVendedores();
+  const overlay = openModal(`
+    <h3>Nuevo pedido</h3>
+    <div class="field">
+      <label>Cliente *</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div style="flex:1;min-width:0;"><select id="inpNombre">${opcionesClientesHtml('')}</select></div>
+        <button type="button" class="btn-cancel" id="btnClienteNuevoDesdePedido" style="white-space:nowrap;">+ Cliente nuevo</button>
+      </div>
+      <div class="hint" style="margin-top:5px;margin-bottom:0;">Elige el cliente de la lista (escribe para buscarlo). Si no existe, créalo con "+ Cliente nuevo".</div>
       <div class="hint" id="avisoClienteExistente" style="display:none;margin-top:6px;margin-bottom:0;color:var(--gold-dark);font-weight:600;">✓ Cliente existente: se cargaron sus datos guardados (puedes corregirlos).</div>
     </div>
     ${clienteInfoFieldsHtml(getClienteInfo(''))}
@@ -5602,10 +5689,19 @@ function openNewDistModal(){
     inpNombre.addEventListener('input', aplicar);
     inpNombre.addEventListener('change', aplicar);
   })();
+  overlay.querySelector('#btnClienteNuevoDesdePedido').addEventListener('click', () => {
+    openNuevoClienteModal((nombreCreado) => {
+      const sel = overlay.querySelector('#inpNombre');
+      sel.innerHTML = opcionesClientesHtml(nombreCreado);
+      sel.value = nombreCreado;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
 
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
     let nombre = overlay.querySelector('#inpNombre').value.trim();
-    { const canon = getAllDistribuidorNombres().find(n => clienteKey(n) === clienteKey(nombre)); if(canon) nombre = canon; }
+    if(!nombre){ showToast('Elige el cliente del pedido (o créalo con "+ Cliente nuevo")'); return; }
+    nombre = nombreClienteCanonico(nombre);
     const vendedor = overlay.querySelector('#inpVendedor').value.trim();
     const fecha = overlay.querySelector('#inpFecha').value;
     const fechaDespacho = overlay.querySelector('#inpFechaDespacho').value;
@@ -5721,9 +5817,9 @@ function openDuplicatePedidoModal(dist){
   `);
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
-    const nombre = overlay.querySelector('#inpNombreDup').value.trim();
+    const nombre = nombreClienteCanonico(overlay.querySelector('#inpNombreDup').value);
     if(!nombre){ showToast('Escribe el nombre del nuevo cliente'); return; }
-    if(normalizeText(nombre) === normalizeText(dist.nombre)){
+    if(clienteKey(nombre) === clienteKey(dist.nombre)){
       showToast('Escribe el nombre de un cliente distinto al original');
       return;
     }
@@ -5895,20 +5991,20 @@ function openManageDistribuidoresModal(){
     </div>
   `);
   function paint(){
-    const conPedidos = new Set(getAllDistributors().map(d=>d.nombre));
+    const conPedidos = new Set(getAllDistributors().map(d=>clienteKey(d.nombre)));
     const todos = getAllDistribuidorNombres();
     const listEl = overlay.querySelector('#distribuidoresList');
     listEl.innerHTML = todos.length ? todos.map(n => `
       <div class="registry-item">
         <span>${escapeHtml(n)}</span>
         <span style="display:flex;align-items:center;gap:8px;">
-          ${conPedidos.has(n) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
+          ${conPedidos.has(clienteKey(n)) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
           <button class="icon-btn icon-delete" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
         </span>
       </div>`).join('') : `<div class="registry-empty">Aún no has creado clientes.</div>`;
     listEl.querySelectorAll('button[data-n]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
-        APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>n!==btn.dataset.n);
+        APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>clienteKey(n)!==clienteKey(btn.dataset.n));
         await saveAppData(APPDATA);
         paint();
       });
@@ -5921,7 +6017,8 @@ function openManageDistribuidoresModal(){
     const val = inp.value.trim();
     if(!val){ showToast('Escribe un nombre'); return; }
     if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
-    if(!APPDATA.distribuidoresRegistry.includes(val)) APPDATA.distribuidoresRegistry.push(val);
+    if(getAllDistribuidorNombres().some(n => clienteKey(n) === clienteKey(val))){ showToast('Ese cliente ya existe: ' + nombreClienteCanonico(val)); return; }
+    APPDATA.distribuidoresRegistry.push(val);
     await saveAppData(APPDATA);
     inp.value = '';
     paint();
@@ -5942,7 +6039,8 @@ document.getElementById('searchTop').addEventListener('input', (e)=>{
   if(side && side.value !== searchTerm) side.value = searchTerm;
   renderSidebar();
 });
-document.getElementById('btnNuevoDist').addEventListener('click', openNewDistModal);
+document.getElementById('btnNuevoDist').addEventListener('click', () => openNuevoClienteModal());
+document.getElementById('btnNuevoPedido').addEventListener('click', openNewDistModal);
 
 // El "Panel de Control" (barra superior) refleja los mismos filtros de orden/vendedor
 // que ya existían en el desplegable "Resumen y filtros", sincronizados en ambos sentidos.
