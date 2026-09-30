@@ -1882,7 +1882,10 @@
       <div class="page-card">
         <div class="page-card-header">
           <div><h2>Precios de servicio sugeridos</h2><div class="sub">Lo que cobra cada etapa (Corte, Taller, Ultrasonido, Confortadora) por cada unidad producida. Un precio por producto o familia, por ejemplo: Taller · Sábanas · $3.000. Son solo SUGERENCIAS: al agregar producción en Producción Diaria, el precio aparece marcado como "sugerido" y lo puedes cambiar para ese producto en ese registro. Cambiarlo aquí NO modifica ningún registro ya guardado (el precio de un registro se cambia en su desglose o al editarlo). Es una lista aparte de los precios de venta.</div></div>
-          <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="filter-btn no-print" id="btnPromediarServicios" title="Pone como precio de cada producto el promedio de los precios escritos a mano en Producción Diaria">≈ Promediar precios de producción</button>
+            <button class="global-add-btn no-print" id="btnNuevoServicioMaquila">+ Nuevo servicio</button>
+          </div>
         </div>
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -6043,6 +6046,13 @@ document.getElementById('searchTop').addEventListener('input', (e)=>{
 });
 document.getElementById('btnNuevoDist').addEventListener('click', () => openNuevoClienteModal());
 document.getElementById('btnNuevoPedido').addEventListener('click', openNewDistModal);
+document.getElementById('btnPromediarServicios').addEventListener('click', async () => {
+  if(!confirm('¿Actualizar los precios de servicio con el promedio de los precios escritos a mano en Producción Diaria? Se reemplazan los precios de los productos que tengan registros.')) return;
+  const n = promediarPreciosServicioManuales();
+  await saveAppData(APPDATA);
+  renderPlantaModule('serviciosmaquila');
+  showToast(n ? `Listo: ${n} precio${n>1?'s':''} actualizado${n>1?'s':''} con el promedio` : 'No hay precios escritos a mano en Producción Diaria', 4000);
+});
 
 // El "Panel de Control" (barra superior) refleja los mismos filtros de orden/vendedor
 // que ya existían en el desplegable "Resumen y filtros", sincronizados en ambos sentidos.
@@ -6518,7 +6528,7 @@ const PLANTA_MODULES = {
     dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
     title:'precio de servicio', titleCap:'Precio de Servicio',
     fields:[
-      {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:'Taller', options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
+      {key:'etapa', label:'Etapa que presta el servicio', type:'select', default:'', options:[{value:'',label:'Todas las etapas'}, ...ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))]},
       {key:'servicio', label:'Producto o familia (ej. Sábanas, Tendidos)', type:'text', required:true, placeholder:'Ej. Sábanas'},
       {key:'precio', label:'Precio del servicio por unidad', type:'number', required:true, placeholder:'Ej. 3000'}
     ],
@@ -6526,7 +6536,7 @@ const PLANTA_MODULES = {
       {key:'etapa', label:'Etapa', html:true, format:v=> v ? `<span class="badge ${v==='Corte'?'debe':'saldado'}">${escapeHtml(normEtapa(v))}</span>` : 'Todas'},
       {key:'servicio', label:'Producto / familia'},
       {key:'precio', label:'Precio por unidad', editable:'precioServicio'},
-      {key:'categoria', label:'Inventario', html:true, format:(v, item) => ('categoria' in item || item.medida)
+      {key:'categoria', label:'Inventario', html:true, format:(v, item) => (('categoria' in item || item.medida) && !getAllProducts().some(pr => normalizeText(claveProductoMedida(pr.producto, pr.medida)) === normalizeText(item.servicio) || (normalizeText(pr.producto) === normalizeText(item.servicio) && normalizeText(pr.medida || '') === normalizeText(item.medida || ''))))
         ? `<button type="button" class="acc-btn no-print" data-svc-a-inv="${escapeAttr(item.id)}" title="Volver a crear este producto en Inventario">↩ Devolver a Inventario</button>`
         : '<span style="color:var(--ink-soft);">—</span>'}
     ]
@@ -6745,9 +6755,65 @@ function asegurarServiciosUltrasonido(){
       cambio = true;
     });
   });
-  if(!cambio) return;
-  APPDATA.serviciosSembrados = [...sembrados];
-  saveAppData(APPDATA);
+  if(cambio) APPDATA.serviciosSembrados = [...sembrados];
+  // Promedio de los precios puestos a mano en Producción Diaria (una sola vez de forma automática;
+  // después se puede repetir con el botón "Promediar precios de producción").
+  if(!APPDATA.serviciosPromediadosV1){
+    promediarPreciosServicioManuales();
+    APPDATA.serviciosPromediadosV1 = true;
+    cambio = true;
+  }
+  if(asegurarServiciosDeInventario()) cambio = true;
+  if(cambio) saveAppData(APPDATA);
+}
+
+// Todos los productos de Inventario también quedan en "Precios de servicio" (con su propio precio de
+// servicio, distinto del de venta). El nombre es "producto · medida", igual que en Producción.
+function asegurarServiciosDeInventario(){
+  const lista = APPDATA.plantaServiciosMaquila || (APPDATA.plantaServiciosMaquila = []);
+  const nombres = new Set(lista.map(x => normalizeText(x.servicio || '')));
+  let agregados = 0;
+  getAllProducts().forEach((p, i) => {
+    if(!p || !p.producto) return;
+    const nombre = claveProductoMedida(p.producto, p.medida);
+    const k = normalizeText(nombre);
+    if(nombres.has(k)) return;
+    nombres.add(k);
+    lista.push({ id: 's' + Date.now() + i + Math.random().toString(36).slice(2,5), etapa: '', servicio: nombre, categoria: p.categoria || '', medida: p.medida || '', precio: 0, origen: 'inventario' });
+    agregados++;
+  });
+  return agregados > 0;
+}
+
+// Para cada producto y etapa, promedia los precios de servicio que se escribieron a mano en los
+// registros de Producción Diaria y los deja como precio en "Precios de servicio".
+function promediarPreciosServicioManuales(){
+  const lista = APPDATA.plantaServiciosMaquila || (APPDATA.plantaServiciosMaquila = []);
+  const grupos = new Map();
+  (APPDATA.plantaProduccionDiaria || []).forEach(r => {
+    if(!r || !r.producto || !tienePrecioPropio(r) || !(Number(r.precioServicio) > 0)) return;
+    const etapa = normEtapa(r.etapa);
+    const k = normalizeText(r.producto) + '|' + etapa;
+    if(!grupos.has(k)) grupos.set(k, { producto: r.producto, etapa, suma: 0, n: 0 });
+    const g = grupos.get(k); g.suma += Number(r.precioServicio); g.n++;
+  });
+  let actualizados = 0;
+  grupos.forEach(g => {
+    const promedio = Math.round(g.suma / g.n);
+    const kNom = normalizeText(g.producto);
+    let entry = lista.find(x => normalizeText(x.servicio || '') === kNom && x.etapa === g.etapa);
+    if(!entry){
+      const general = lista.find(x => normalizeText(x.servicio || '') === kNom && !x.etapa);
+      // Si solo hay una etapa con precios, el registro general toma esa etapa; si no, se crea uno por etapa.
+      const etapasDelProducto = [...grupos.values()].filter(o => normalizeText(o.producto) === kNom).length;
+      if(general && etapasDelProducto === 1){ entry = general; entry.etapa = g.etapa; }
+      else { entry = { id: 's' + Date.now() + Math.random().toString(36).slice(2,7), etapa: g.etapa, servicio: g.producto, precio: 0 }; lista.push(entry); }
+    }
+    entry.precio = promedio;
+    entry.promedioDe = g.n;
+    actualizados++;
+  });
+  return actualizados;
 }
 
 // Devuelve una función (etapa, nombreProducto) → precio del servicio por unidad. Busca, en "Precios de servicio",
@@ -6758,7 +6824,7 @@ function crearResolvedorPrecioServicio(){
   const entradas = (APPDATA.plantaServiciosMaquila || []).map(x => {
     const clave = normalizeText(x.servicio);
     return { x, clave, palabras: clave.split(/\s+/).map(stem).filter(w => w.length >= 3) };
-  }).filter(e => e.clave);
+  }).filter(e => e.clave && Number(e.x.precio) > 0); // sin precio (0) no sugiere nada ni tapa otra coincidencia
   const catPorNombre = {};
   (APPDATA.plantaProductos || []).forEach(pp => { catPorNombre[normalizeText(pp.nombre)] = normalizeText(pp.categoria); });
   const memo = new Map();
@@ -7389,10 +7455,18 @@ function openProduccionModal(groupKey, defaultEtapa){
   const hoy = new Date();
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
   asegurarServiciosUltrasonido();
-  const productos = plantaSelectOptions('plantaproductos','nombre','Selecciona un producto');
-  const opcionesPara = (etapa) => SERVICIOS_POR_ETAPA[etapa]
-    ? [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))]
-    : productos;
+  // La lista de productos sale SOLO de "Precios de servicio": los que aplican a todas las etapas o a
+  // la etapa elegida. Ultrasonido y Confortadora siguen mostrando solo sus servicios.
+  const opcionesPara = (etapa) => {
+    if(SERVICIOS_POR_ETAPA[etapa]) return [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))];
+    const vistos = new Set();
+    const nombres = (APPDATA.plantaServiciosMaquila || [])
+      .filter(x => x && x.servicio && (!x.etapa || x.etapa === etapa) && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
+      .map(x => x.servicio)
+      .filter(n => { const k = normalizeText(n); if(vistos.has(k)) return false; vistos.add(k); return true; })
+      .sort((a, b) => a.localeCompare(b, 'es'));
+    return [{value:'', label:'Selecciona un producto'}, ...nombres.map(n => ({value:n, label:n}))];
+  };
   // Al crear desde un Dashboard de etapa arranca en esa etapa; al editar, en la del registro.
   let etapaActual = editing ? normEtapa(record.etapa) : normEtapa(defaultEtapa || record.etapa);
   const precioDe = crearResolvedorPrecioServicio();
