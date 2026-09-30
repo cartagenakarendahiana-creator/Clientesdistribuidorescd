@@ -1,0 +1,59 @@
+# Publica las funciones de Firebase (sincronización con Siigo) sin usar la terminal.
+#
+# Se ejecuta:
+#   - a mano: GitHub → pestaña "Actions" → "Publicar funciones de Siigo" → "Run workflow"
+#   - sola, cada vez que se une a main un cambio dentro de functions/
+#
+# Necesita UNA vez el secreto FIREBASE_SERVICE_ACCOUNT (clave de cuenta de servicio de Firebase,
+# en formato JSON) en GitHub → Settings → Secrets and variables → Actions. Ver functions/README.md.
+name: Publicar funciones de Siigo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'firebase.json'
+      - '.github/workflows/publicar-funciones.yml'
+
+concurrency:
+  group: publicar-funciones
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias
+        working-directory: functions
+        run: npm ci
+
+      - name: Pruebas
+        working-directory: functions
+        run: npm test
+
+      - name: Preparar credenciales de Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT. Agrégalo en Settings → Secrets and variables → Actions (instrucciones en functions/README.md)."
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+
+      - name: Publicar funciones
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: npx --yes firebase-tools@latest deploy --only functions --project pedidos-nuevo --non-interactive --force
+
+      - name: Borrar credenciales
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"
