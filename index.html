@@ -1005,6 +1005,9 @@
     .dist-item{padding:10px 12px !important;}
     #mainPanel .table-scroll td, #mainPanel .table-scroll th{padding-top:9px;padding-bottom:9px;}
     .control-panel-title{display:none;}
+    .sidebar-acciones{display:flex;gap:8px;margin-top:10px;}
+    .sidebar-acciones .new-dist-btn{flex:1;margin:0 !important;width:auto !important;}
+    .new-dist-btn.new-dist-btn-sec{background:#fff !important;color:var(--gold-dark) !important;border:1px solid var(--gold) !important;}
     /* Pestañas dentro de una página (divide pantallas largas en secciones) */
     .page-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:4px 0 18px;}
     .page-tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 16px;font:600 14px var(--font);color:var(--ink-soft);cursor:pointer;margin-bottom:-1px;}
@@ -1241,7 +1244,10 @@
   <div class="sidebar">
     <div class="search-box">
       <input type="text" id="searchDist" placeholder="Buscar cliente...">
-      <button class="new-dist-btn" id="btnNuevoDist">+ Nuevo cliente</button>
+      <div class="sidebar-acciones">
+        <button class="new-dist-btn" id="btnNuevoPedido" title="Crear un pedido para un cliente existente">+ Nuevo pedido</button>
+        <button class="new-dist-btn new-dist-btn-sec" id="btnNuevoDist" title="Registrar un cliente nuevo (sin pedido)">+ Nuevo cliente</button>
+      </div>
     </div>
     <div class="sidebar-tabs">
       <button class="sidebar-tab-btn" id="tabTodos" data-tab="todos">Todos <span class="count" id="countTodos">0</span></button>
@@ -5544,15 +5550,69 @@ function openProductDebtFilter(){
   overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
 }
 
-function openNewDistModal(){
-  const vendedoresExistentes = getAllVendedores();
+function opcionesClientesHtml(seleccionado){
+  return '<option value="">Selecciona un cliente…</option>' + getAllDistribuidorNombres()
+    .map(n => `<option value="${escapeAttr(n)}" ${n === seleccionado ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('');
+}
+
+// Registrar un cliente NUEVO (sin pedido). Si ya existe (aunque cambie en tildes o mayúsculas)
+// no se duplica. onCreado(nombre) se llama al terminar (ej. para elegirlo en "Nuevo pedido").
+function openNuevoClienteModal(onCreado){
   const overlay = openModal(`
     <h3>Nuevo cliente</h3>
     <div class="field">
-      <label>Nombre del cliente / tienda</label>
-      <input type="text" id="inpNombre" list="dlDistribuidoresRegistro" placeholder="Ej. Almacén El Progreso" autocomplete="off">
-      <datalist id="dlDistribuidoresRegistro">${getAllDistribuidorNombres().map(n=>`<option value="${escapeAttr(n)}">`).join('')}</datalist>
-      <div class="hint" style="margin-top:5px;margin-bottom:0;">Escribe uno nuevo o elige uno ya creado en "🏬 Clientes".</div>
+      <label>Nombre del cliente / tienda *</label>
+      <input type="text" id="inpNombreNuevoCliente" placeholder="Ej. Almacén El Progreso" autocomplete="off">
+      <div class="hint" id="avisoYaExiste" style="display:none;margin-top:6px;margin-bottom:0;color:#B65B2E;font-weight:600;"></div>
+    </div>
+    ${clienteInfoFieldsHtml(getClienteInfo(''))}
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm">Crear cliente</button>
+    </div>
+  `);
+  const inp = overlay.querySelector('#inpNombreNuevoCliente');
+  const aviso = overlay.querySelector('#avisoYaExiste');
+  const existente = () => { const k = clienteKey(inp.value); return k ? getAllDistribuidorNombres().find(n => clienteKey(n) === k) : null; };
+  inp.addEventListener('input', () => {
+    const ex = existente();
+    aviso.style.display = ex ? '' : 'none';
+    aviso.textContent = ex ? `Ese cliente ya existe como "${ex}". No se creará otro.` : '';
+  });
+  setTimeout(() => inp.focus(), 50);
+  overlay.querySelector('#btnCancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#btnConfirm').addEventListener('click', async () => {
+    const nombre = inp.value.trim().replace(/\s+/g, ' ');
+    if(!nombre){ showToast('Escribe el nombre del cliente'); inp.focus(); return; }
+    const ex = existente();
+    if(ex){
+      showToast('Ese cliente ya existe: ' + ex);
+      overlay.remove();
+      if(typeof onCreado === 'function') onCreado(ex);
+      return;
+    }
+    if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
+    APPDATA.distribuidoresRegistry.push(nombre);
+    const inf = readClienteInfoFields(overlay);
+    if(inf.nit.trim()||inf.telefono.trim()||inf.direccion.trim()||inf.ciudad.trim()) setClienteInfo(nombre, inf);
+    await saveAppData(APPDATA);
+    overlay.remove();
+    if(typeof onCreado === 'function') onCreado(nombre);
+    else { renderAll(); showToast('Cliente creado. Ya puedes crearle un pedido con "+ Nuevo pedido".', 4000); }
+  });
+}
+
+function openNewDistModal(){
+  const vendedoresExistentes = getAllVendedores();
+  const overlay = openModal(`
+    <h3>Nuevo pedido</h3>
+    <div class="field">
+      <label>Cliente *</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div style="flex:1;min-width:0;"><select id="inpNombre">${opcionesClientesHtml('')}</select></div>
+        <button type="button" class="btn-cancel" id="btnClienteNuevoDesdePedido" style="white-space:nowrap;">+ Cliente nuevo</button>
+      </div>
+      <div class="hint" style="margin-top:5px;margin-bottom:0;">Elige el cliente de la lista (escribe para buscarlo). Si no existe, créalo con "+ Cliente nuevo".</div>
       <div class="hint" id="avisoClienteExistente" style="display:none;margin-top:6px;margin-bottom:0;color:var(--gold-dark);font-weight:600;">✓ Cliente existente: se cargaron sus datos guardados (puedes corregirlos).</div>
     </div>
     ${clienteInfoFieldsHtml(getClienteInfo(''))}
@@ -5629,10 +5689,19 @@ function openNewDistModal(){
     inpNombre.addEventListener('input', aplicar);
     inpNombre.addEventListener('change', aplicar);
   })();
+  overlay.querySelector('#btnClienteNuevoDesdePedido').addEventListener('click', () => {
+    openNuevoClienteModal((nombreCreado) => {
+      const sel = overlay.querySelector('#inpNombre');
+      sel.innerHTML = opcionesClientesHtml(nombreCreado);
+      sel.value = nombreCreado;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
 
   overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
     let nombre = overlay.querySelector('#inpNombre').value.trim();
-    { const canon = getAllDistribuidorNombres().find(n => clienteKey(n) === clienteKey(nombre)); if(canon) nombre = canon; }
+    if(!nombre){ showToast('Elige el cliente del pedido (o créalo con "+ Cliente nuevo")'); return; }
+    nombre = nombreClienteCanonico(nombre);
     const vendedor = overlay.querySelector('#inpVendedor').value.trim();
     const fecha = overlay.querySelector('#inpFecha').value;
     const fechaDespacho = overlay.querySelector('#inpFechaDespacho').value;
@@ -5970,7 +6039,8 @@ document.getElementById('searchTop').addEventListener('input', (e)=>{
   if(side && side.value !== searchTerm) side.value = searchTerm;
   renderSidebar();
 });
-document.getElementById('btnNuevoDist').addEventListener('click', openNewDistModal);
+document.getElementById('btnNuevoDist').addEventListener('click', () => openNuevoClienteModal());
+document.getElementById('btnNuevoPedido').addEventListener('click', openNewDistModal);
 
 // El "Panel de Control" (barra superior) refleja los mismos filtros de orden/vendedor
 // que ya existían en el desplegable "Resumen y filtros", sincronizados en ambos sentidos.
