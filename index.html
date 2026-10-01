@@ -6620,7 +6620,7 @@ const PLANTA_MODULES = {
   serviciosmaquila:{
     dataKey:'plantaServiciosMaquila', bodyId:'serviciosmaquilaBody', searchId:'serviciosmaquilaSearch', addBtnId:'btnNuevoServicioMaquila',
     title:'precio de servicio', titleCap:'Precio de Servicio',
-    filterFn: item => item && item.etapa === etapaServiciosActual(), // una pestaña por etapa
+    filterFn: item => item && item.etapa === etapaServiciosActual() && (!SERVICIOS_POR_ETAPA[item.etapa] || SERVICIOS_POR_ETAPA[item.etapa].includes(item.servicio)), // una pestaña por etapa (Ultrasonido/Confortadora: solo sus servicios)
     groupBy: () => categoriasServicios(), // y dentro de cada pestaña, por categoría (Sábanas, Tendidos…)
     fields:[
       {key:'etapa', label:'Etapa que presta el servicio', type:'select', required:true, default:()=>etapaServiciosActual(), options:ETAPAS_PRODUCCION.map(e=>({value:e.key,label:e.label}))},
@@ -6907,8 +6907,9 @@ function categoriasServicios(){
 function actualizarConteoPestanasServicios(){
   const lista = APPDATA.plantaServiciosMaquila || [];
   document.querySelectorAll('#serviciosTabs .page-tab').forEach(b => {
-    const n = lista.filter(x => x && x.etapa === b.dataset.tab).length;
-    const sinPrecio = lista.filter(x => x && x.etapa === b.dataset.tab && !(Number(x.precio) > 0)).length;
+    const deTab = lista.filter(x => x && x.etapa === b.dataset.tab && (!SERVICIOS_POR_ETAPA[x.etapa] || SERVICIOS_POR_ETAPA[x.etapa].includes(x.servicio)));
+    const n = deTab.length;
+    const sinPrecio = deTab.filter(x => !(Number(x.precio) > 0)).length;
     const s = b.querySelector('.svc-count');
     if(s) s.innerHTML = n + (sinPrecio ? ' · <b>' + sinPrecio + ' sin precio</b>' : '');
   });
@@ -6922,15 +6923,11 @@ function asegurarServiciosDeInventario(){
   const clave = (nombre, etapa) => normalizeText(nombre || '') + '|' + etapa;
   const existentes = new Set(lista.filter(x => x && x.etapa).map(x => clave(x.servicio, x.etapa)));
   const nuevoId = () => 's' + Date.now() + Math.random().toString(36).slice(2,8);
-  // Una sola vez: Ultrasonido y Confortadora se quedan solo con sus servicios fijos (antes se les habían
-  // copiado todos los productos de Inventario). Lo que se agregue a mano después en esas pestañas se respeta.
-  if(!APPDATA.serviciosSoloFijosUltraConfV1){
-    for(let i = lista.length - 1; i >= 0; i--){
-      const x = lista[i];
-      if(x && SERVICIOS_POR_ETAPA[x.etapa] && !SERVICIOS_POR_ETAPA[x.etapa].includes(x.servicio)){ lista.splice(i, 1); cambios++; }
-    }
-    APPDATA.serviciosSoloFijosUltraConfV1 = true;
-    cambios++;
+  // Ultrasonido y Confortadora manejan SOLO sus servicios fijos: si alguna versión vieja de la app (abierta
+  // en otro equipo) les vuelve a copiar productos, se quitan cada vez.
+  for(let i = lista.length - 1; i >= 0; i--){
+    const x = lista[i];
+    if(x && SERVICIOS_POR_ETAPA[x.etapa] && !SERVICIOS_POR_ETAPA[x.etapa].includes(x.servicio)){ lista.splice(i, 1); cambios++; }
   }
   // Entradas sin etapa → una para Corte y otra para Taller (mismo precio); la general se quita.
   for(let i = lista.length - 1; i >= 0; i--){
@@ -7625,8 +7622,9 @@ function openProduccionModal(groupKey, defaultEtapa){
   // La lista de productos sale SOLO de "Precios de servicio" de LA ETAPA elegida (Corte → Corte,
   // Taller → Taller, Ultrasonido → Ultrasonido, Confortadora → Confortadora).
   const opcionesPara = (etapa) => {
-    // Ultrasonido y Confortadora: primero sus servicios fijos y luego los productos de su lista.
-    const fijos = SERVICIOS_POR_ETAPA[etapa] || [];
+    // Ultrasonido y Confortadora: SOLO sus servicios fijos.
+    if(SERVICIOS_POR_ETAPA[etapa]) return [{value:'', label:'Selecciona un servicio'}, ...SERVICIOS_POR_ETAPA[etapa].map(n => ({value:n, label:n}))];
+    const fijos = [];
     const vistos = new Set(fijos.map(normalizeText));
     const nombres = (APPDATA.plantaServiciosMaquila || [])
       .filter(x => x && x.servicio && x.etapa === etapa && !TODOS_SERVICIOS_PRODUCCION.includes(x.servicio))
