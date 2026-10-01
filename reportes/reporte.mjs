@@ -95,7 +95,15 @@ function calcular(datos, r){
   });
   const eliminados = new Set(datos.eliminados);
   const pedidos = datos.nuevos.filter(d => !eliminados.has(d.id) && dentro(datos.fechaOverrides[d.id] || d.fecha))
-    .map(d => ({ nombre: datos.nombreOverrides[d.id] || d.nombre, vendedor: datos.vendedorOverrides[d.id] || d.vendedor || '' }));
+    .map(d => {
+      const lineas = (datos.extras || []).filter(x => x.distId === d.id);
+      return {
+        nombre: datos.nombreOverrides[d.id] || d.nombre, vendedor: datos.vendedorOverrides[d.id] || d.vendedor || '',
+        fecha: fechaIso(datos.fechaOverrides[d.id] || d.fecha),
+        unidades: lineas.reduce((s, x) => s + (Number(x.cantidad) || 0), 0),
+        valor: lineas.reduce((s, x) => s + (Number(x.cantidad) || 0) * (Number(x.precio) || 0), 0)
+      };
+    });
   const despachos = datos.despachos.filter(x => dentro(x.fecha));
   const gastos = datos.gastos.filter(g => dentro(g.fecha));
   return {
@@ -115,25 +123,37 @@ function cambio(a, b){
   return (p >= 0 ? '▲ ' : '▼ ') + Math.abs(p) + '%';
 }
 
-async function main(){
-  const [tipoArg, refArg] = process.argv.slice(2);
+// Período pedido en la línea de comandos (por defecto, el período anterior completo: ayer, la semana o el mes pasado).
+export function periodoDesdeArgs(args){
+  const [tipoArg, refArg] = args;
   const tipo = ['dia', 'semana', 'mes'].includes(tipoArg) ? tipoArg : 'dia';
   let ref = refArg;
+  if(ref === 'hoy') ref = iso(hoyColombia());
   if(!ref){
     const h = hoyColombia();
     if(tipo === 'mes'){ ref = iso(new Date(h.getFullYear(), h.getMonth() - 1, 1)).slice(0, 7); }
-    else { h.setDate(h.getDate() - (tipo === 'semana' ? 7 : 1)); ref = iso(h); } // por defecto: el período anterior completo
+    else { h.setDate(h.getDate() - (tipo === 'semana' ? 7 : 1)); ref = iso(h); }
   }
-  const r = rango(tipo, ref), rAnt = anterior(tipo, r);
-  const [produccion, servicios, despachos, gastos, nuevos, eliminados, fechaOv, nombreOv, vendOv] = await Promise.all([
+  const r = rango(tipo, ref);
+  return { tipo, r, rAnt: anterior(tipo, r) };
+}
+export async function leerDatos(){
+  const [produccion, servicios, despachos, gastos, nuevos, eliminados, fechaOv, nombreOv, vendOv, extras, custom] = await Promise.all([
     leer('plantaProduccionDiaria'), leer('plantaServiciosMaquila'), leer('despachos'), leer('plantaGastosAdicionales'),
-    leer('nuevosDistribuidores'), leer('distribuidoresEliminados'), leer('distFechaOverrides'), leer('distNameOverrides'), leer('distVendedorOverrides')
+    leer('nuevosDistribuidores'), leer('distribuidoresEliminados'), leer('distFechaOverrides'), leer('distNameOverrides'), leer('distVendedorOverrides'),
+    leer('extras'), leer('customProducts')
   ]);
-  const datos = {
+  return {
     produccion: lista(produccion), servicios: lista(servicios), despachos: lista(despachos), gastos: lista(gastos),
-    nuevos: lista(nuevos), eliminados: lista(eliminados),
+    nuevos: lista(nuevos), eliminados: lista(eliminados), extras: lista(extras), custom: lista(custom),
     fechaOverrides: fechaOv || {}, nombreOverrides: nombreOv || {}, vendedorOverrides: vendOv || {}
   };
+}
+export { calcular, ETAPAS, fmt, fmtNum, fechaIso, normEtapa, norm };
+
+async function main(){
+  const { tipo, r, rAnt } = periodoDesdeArgs(process.argv.slice(2));
+  const datos = await leerDatos();
   const d = calcular(datos, r), p = calcular(datos, rAnt);
   const titulo = tipo === 'mes' ? `Mes ${r.desde.slice(0, 7)}` : tipo === 'semana' ? `Semana ${r.desde} a ${r.hasta}` : `Día ${r.desde}`;
   const out = [];
@@ -169,4 +189,7 @@ async function main(){
   console.log(out.join('\n'));
 }
 
-main().catch(err => { console.error('ERROR: ' + err.message); process.exit(1); });
+// Solo se ejecuta cuando se llama directamente (no cuando otro script lo importa).
+if(import.meta.url === `file://${process.argv[1]}`){
+  main().catch(err => { console.error('ERROR: ' + err.message); process.exit(1); });
+}
