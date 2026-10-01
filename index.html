@@ -1190,7 +1190,6 @@
           <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
         </button>
         <div class="nav-dropdown-menu">
-          <button class="nav-dropdown-item" data-nav="productividad" type="button">Productividad</button>
           <button class="nav-dropdown-item" data-nav="produccion" type="button">Producción Diaria</button>
           <button class="nav-dropdown-item" data-nav="produccioncostos" type="button">Producción</button>
           <div class="nav-dropdown-sub-group">
@@ -1215,12 +1214,7 @@
           <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
         </button>
         <div class="nav-dropdown-menu">
-          <button class="nav-dropdown-item" data-nav="operarios" type="button">Operarios</button>
           <button class="nav-dropdown-item" data-nav="plantaproductos" type="button">Productos</button>
-          <button class="nav-dropdown-item" data-nav="insumos" type="button">Insumos</button>
-          <button class="nav-dropdown-item" data-nav="operaciones" type="button">Operaciones</button>
-          <button class="nav-dropdown-item" data-nav="asignaciones" type="button">Asignaciones</button>
-          <button class="nav-dropdown-item" data-nav="ordenesproduccion" type="button">Órdenes de Producción</button>
           <div class="nav-dropdown-sub-group">
             <button class="nav-dropdown-sub-toggle" type="button" aria-expanded="false">
               Centro de Costos
@@ -1247,8 +1241,6 @@
               <button class="nav-dropdown-item" data-nav="gastosadicionales" type="button">General (todas las etapas)</button>
             </div>
           </div>
-          <button class="nav-dropdown-item" data-nav="novedades" type="button">Novedades</button>
-          <button class="nav-dropdown-item" data-nav="jornadalaboral" type="button">Jornada Laboral</button>
         </div>
       </div>
     </div>
@@ -2211,21 +2203,6 @@
           <table data-cat-col="0">
             <thead><tr><th>Producto</th><th class="num" id="produccionUnidadesPorProductoColLabel">Unidades fabricadas</th><th class="num">Registros</th></tr></thead>
             <tbody id="produccionTotalesPorProductoBody"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="page-card" style="margin-top:16px;">
-        <div class="page-card-header">
-          <div><h2>Disponibilidad: Producido vs. Vendido vs. Disponible</h2><div class="sub">Cruza toda la Producción Diaria con lo ya facturado. "Vendido" = unidades incluidas en facturas generadas; "Disponible" = lo producido menos lo vendido, listo para seguir facturando.</div></div>
-        </div>
-        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="produccionDisponibilidadSearch" placeholder="Buscar producto...">
-        </div>
-        <div class="table-scroll">
-          <table data-cat-col="0">
-            <thead><tr><th>Producto</th><th class="num">Producido (total)</th><th class="num">Vendido (facturado)</th><th class="num">Disponible</th></tr></thead>
-            <tbody id="produccionDisponibilidadBody"></tbody>
           </table>
         </div>
       </div>
@@ -3231,7 +3208,6 @@ function renderMain(){
       <div class="acciones-pedido no-print">
         <div class="acciones-grupo">
           <button class="acc-btn acc-primary" id="btnAgregarLinea" title="Agregar un producto a este pedido">+ Agregar producto</button>
-          <button class="acc-btn acc-primary" id="btnGenerarFactura" title="Generar una factura de venta a partir de este pedido">🧾 Generar factura</button>
         </div>
         <div class="acciones-grupo">
           <button class="acc-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir</button>
@@ -3359,7 +3335,7 @@ function renderMain(){
   });
   document.getElementById('btnNuevoPedidoCliente').addEventListener('click', ()=> openNewOrderForClientModal(dist));
   document.getElementById('btnDuplicarPedido').addEventListener('click', ()=> openDuplicatePedidoModal(dist));
-  document.getElementById('btnGenerarFactura').addEventListener('click', ()=> abrirGenerarFacturaModal(dist));
+  document.getElementById('btnGenerarFactura')?.addEventListener('click', ()=> abrirGenerarFacturaModal(dist));
 
   const searchInp = document.getElementById('searchProductoPedido');
   if(searchInp){
@@ -6179,7 +6155,7 @@ document.getElementById('btnImprimirPedidosView').addEventListener('click', ()=>
 
 // Vista "Facturas": búsqueda
 document.getElementById('facturasSearch').addEventListener('input', ()=> renderFacturasView());
-document.getElementById('produccionDisponibilidadSearch').addEventListener('input', (e)=>{
+document.getElementById('produccionDisponibilidadSearch')?.addEventListener('input', (e)=>{
   produccionDisponibilidadSearchTerm = e.target.value;
   renderProduccionDisponibilidad();
 });
