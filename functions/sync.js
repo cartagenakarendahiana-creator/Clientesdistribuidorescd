@@ -79,19 +79,41 @@ function normalizarFactura(f) {
   };
 }
 
+// Nota crédito de Siigo con el mismo formato que una factura, pero en NEGATIVO (total, cantidades y
+// valores), para que al sumarla RESTE de las ventas, las unidades, los clientes, vendedores y productos.
+function normalizarNotaCredito(n) {
+  const base = normalizarFactura(n);
+  const fac = n.invoice || n.document_reference || null;
+  return {
+    ...base,
+    id: `nc_${base.id}`,
+    tipo: 'NC',
+    total: -Math.abs(base.total),
+    saldo: 0,
+    facturaAfectada: fac ? String(fac.name || fac.number || fac.id || '') : '',
+    items: base.items.map((it) => ({ ...it, cantidad: -Math.abs(it.cantidad), valor: -Math.abs(it.valor) })),
+  };
+}
+
 function agregarA(nodo, factura) {
+  const esNC = factura.tipo === 'NC';
   nodo.ventas = redondear(num(nodo.ventas) + factura.total);
-  nodo.facturas = num(nodo.facturas) + 1;
+  if (esNC) {
+    nodo.notasCredito = num(nodo.notasCredito) + 1;
+    nodo.devoluciones = redondear(num(nodo.devoluciones) + Math.abs(factura.total));
+  } else {
+    nodo.facturas = num(nodo.facturas) + 1;
+  }
   nodo.productos = nodo.productos || {};
   nodo.clientes = nodo.clientes || {};
 
   nodo.vendedores = nodo.vendedores || {};
   const ven = (nodo.vendedores[claveSegura(factura.vendedor ?? 'sin_vendedor')] ||= { id: factura.vendedor ?? null, facturas: 0, valor: 0 });
-  ven.facturas += 1;
+  if (!esNC) ven.facturas += 1;
   ven.valor = redondear(ven.valor + factura.total);
 
   const cli = (nodo.clientes[claveSegura(factura.clienteNit)] ||= { nit: factura.clienteNit, facturas: 0, valor: 0 });
-  cli.facturas += 1;
+  if (!esNC) cli.facturas += 1;
   cli.valor = redondear(cli.valor + factura.total);
 
   for (const it of factura.items || []) { // Firebase no guarda arreglos vacíos
@@ -116,6 +138,65 @@ function construirDia(facturas) {
     agregarA((dia[claveCentro(f.centroCosto)] ||= { ventas: 0, facturas: 0, unidades: 0 }), f);
   }
   return dia;
+}
+
+// Guarda facturas y notas crédito por fecha del documento y reconstruye el resumen de cada día afectado
+// (agrega los cambios a `updates`). Devuelve el conjunto de fechas afectadas.
+async function guardarDocumentos({ db, traidas, updates }) {
+  // Fechas afectadas: las de los documentos traídos y, si alguno cambió de fecha, la anterior.
+  const indice = (await db.ref('siigo/facturasIndice').once('value')).val() || {};
+  const afectadas = new Set();
+  for (const f of traidas) {
+    const id = claveSegura(f.id);
+    afectadas.add(f.fecha);
+    if (indice[id] && indice[id] !== f.fecha) afectadas.add(indice[id]);
+    updates[`siigo/facturasIndice/${id}`] = f.fecha;
+  }
+  for (const fecha of afectadas) {
+    const guardadas = (await db.ref(`siigo/facturasDia/${fecha}`).once('value')).val() || {};
+    for (const f of traidas) {
+      const id = claveSegura(f.id);
+      if (f.fecha === fecha) guardadas[id] = f;
+      else delete guardadas[id]; // cambió de fecha
+    }
+    updates[`siigo/facturasDia/${fecha}`] = guardadas;
+    updates[`siigo/resumenDiario/${fecha}`] = construirDia(Object.values(guardadas));
+  }
+  return afectadas;
+}
+
+// Las facturas viejas se cargaron antes de que se leyeran las notas crédito: esto trae SOLO las notas
+// crédito mes a mes hacia atrás (desde el mes actual hasta el mes más antiguo cargado) y las resta de
+// cada día. El avance queda en `siigo/historicoNC`.
+async function avanzarNotasCreditoHistorico({ client, db, tiempoMaxMs = 120000, log = console.log, hoy = hoyColombia() }) {
+  const t0 = Date.now();
+  const ref = db.ref('siigo/historicoNC');
+  let h = (await ref.once('value')).val() || {};
+  const historico = (await db.ref('siigo/historico').once('value')).val() || {};
+  const limite = historico.cargadoDesde && historico.cargadoDesde > HISTORICO_LIMITE ? historico.cargadoDesde : HISTORICO_LIMITE;
+  const inicioMesSiguiente = sumarDias(`${hoy.slice(0, 7)}-01`, 32).slice(0, 7) + '-01';
+  let meses = 0;
+  while (!h.completo && Date.now() - t0 < tiempoMaxMs && meses < 12) {
+    const base = h.cargadoDesde || inicioMesSiguiente;
+    const finMes = sumarDias(base, -1);
+    const iniMes = `${finMes.slice(0, 7)}-01`;
+    if (iniMes < limite) {
+      h = { ...h, completo: true };
+      await ref.set(h);
+      break;
+    }
+    const notas = (await client.notasCredito(iniMes, sumarDias(finMes, MARGEN_DIAS_FIN)))
+      .map(normalizarNotaCredito)
+      .filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(f.fecha));
+    const updates = {};
+    await guardarDocumentos({ db, traidas: notas, updates });
+    if (Object.keys(updates).length) await db.ref().update(updates);
+    h = { cargadoDesde: iniMes, completo: false, notas: (Number(h.notas) || 0) + notas.length, actualizado: new Date().toISOString() };
+    await ref.set(h);
+    log(`Siigo notas crédito: ${iniMes.slice(0, 7)} cargado (${notas.length}).`);
+    meses++;
+  }
+  return h;
 }
 
 function rangoFechas(desde, hasta) {
@@ -174,30 +255,13 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
       activo: p.active !== false,
     })))) updates[`siigo/catalogos/productos/${k}`] = p;
 
-    const traidas = (await client.facturas(desde, sumarDias(hasta, MARGEN_DIAS_FIN)))
-      .map(normalizarFactura)
-      .filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(f.fecha));
+    const facturasTraidas = (await client.facturas(desde, sumarDias(hasta, MARGEN_DIAS_FIN))).map(normalizarFactura);
+    const notasTraidas = (await client.notasCredito(desde, sumarDias(hasta, MARGEN_DIAS_FIN))).map(normalizarNotaCredito);
+    const traidas = [...facturasTraidas, ...notasTraidas].filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(f.fecha));
+    const numFacturas = traidas.filter((f) => f.tipo !== 'NC').length;
+    const numNotas = traidas.length - numFacturas;
 
-    // Fechas afectadas: las de las facturas traídas y, si alguna cambió de fecha, la anterior.
-    const indice = (await db.ref('siigo/facturasIndice').once('value')).val() || {};
-    const afectadas = new Set();
-    for (const f of traidas) {
-      const id = claveSegura(f.id);
-      afectadas.add(f.fecha);
-      if (indice[id] && indice[id] !== f.fecha) afectadas.add(indice[id]);
-      updates[`siigo/facturasIndice/${id}`] = f.fecha;
-    }
-
-    for (const fecha of afectadas) {
-      const guardadas = (await db.ref(`siigo/facturasDia/${fecha}`).once('value')).val() || {};
-      for (const f of traidas) {
-        const id = claveSegura(f.id);
-        if (f.fecha === fecha) guardadas[id] = f;
-        else delete guardadas[id]; // cambió de fecha
-      }
-      updates[`siigo/facturasDia/${fecha}`] = guardadas;
-      updates[`siigo/resumenDiario/${fecha}`] = construirDia(Object.values(guardadas));
-    }
+    const afectadas = await guardarDocumentos({ db, traidas, updates });
 
     // Versión anterior guardaba las facturas sin agrupar en siigo/facturas: ya no se usa.
     if (estado.version !== 2) updates['siigo/facturas'] = null;
@@ -206,15 +270,16 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
       version: 2,
       ultimaSincronizacion: inicio,
       rango: { desde, hasta },
-      facturas: traidas.length,
+      facturas: numFacturas,
+      notasCredito: numNotas,
       diasActualizados: afectadas.size,
       // Fecha de Colombia (no UTC) y un día de traslape, para no saltarse clientes/productos creados esa noche.
       catalogosHasta: sumarDias(hoyColombia(new Date(inicio)), -1),
       ultimoError: null,
     };
     await db.ref().update(updates);
-    log(`Siigo: ${traidas.length} facturas sincronizadas (creadas ${desde} a ${hasta}), ${afectadas.size} días actualizados.`);
-    return { facturas: traidas.length, dias: afectadas.size, clientes: clientes.length, productos: productos.length };
+    log(`Siigo: ${numFacturas} facturas y ${numNotas} notas crédito sincronizadas (creadas ${desde} a ${hasta}), ${afectadas.size} días actualizados.`);
+    return { facturas: numFacturas, notasCredito: numNotas, dias: afectadas.size, clientes: clientes.length, productos: productos.length };
   } catch (err) {
     await estadoRef.update({ ultimoError: { fecha: inicio, mensaje: String(err.message || err) } });
     throw err;
@@ -262,7 +327,9 @@ async function avanzarHistorico({ client, db, tiempoMaxMs = 240000, log = consol
 module.exports = {
   sincronizar,
   avanzarHistorico,
+  avanzarNotasCreditoHistorico,
   normalizarFactura,
+  normalizarNotaCredito,
   construirDia,
   rangoFechas,
   hoyColombia,

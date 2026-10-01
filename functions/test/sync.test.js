@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { SiigoClient } = require('../siigo');
-const { sincronizar, avanzarHistorico, normalizarFactura, construirDia, hoyColombia } = require('../sync');
+const { sincronizar, avanzarHistorico, avanzarNotasCreditoHistorico, normalizarFactura, normalizarNotaCredito, construirDia, hoyColombia } = require('../sync');
 
 // Base de datos falsa con la misma forma que firebase-admin (ref/once/update).
 function dbFalsa() {
@@ -85,6 +85,7 @@ test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', asyn
     '/v1/customers': { pagination: { total_results: 1 }, results: [{ identification: '901759512', name: ['Grupo The Arrow'] }] },
     '/v1/products': { pagination: { total_results: 1 }, results: [{ code: 'A', name: 'Almohada' }] },
     '/v1/invoices': (q) => ({ pagination: { total_results: 101 }, results: q.get('page') === '1' ? pagina1 : pagina2 }),
+    '/v1/credit-notes': { results: [], pagination: { total_results: 0 } },
   });
   const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'CasaDorada', fetchImpl });
   const db = dbFalsa();
@@ -151,6 +152,7 @@ test('hoyColombia usa UTC-5', () => {
 
 test('cuenta facturas con fecha anterior a su creación y mueve las que cambian de fecha', async () => {
   let lote = [];
+  const notas = [];
   const fetchImpl = fetchFalso({
     '/auth': { access_token: 'tok', expires_in: 86400 },
     '/v1/cost-centers': [],
@@ -158,6 +160,7 @@ test('cuenta facturas con fecha anterior a su creación y mueve las que cambian 
     '/v1/customers': { pagination: { total_results: 0 }, results: [] },
     '/v1/products': { pagination: { total_results: 0 }, results: [] },
     '/v1/invoices': () => ({ pagination: { total_results: lote.length }, results: lote }),
+    '/v1/credit-notes': () => ({ pagination: { total_results: notas.length }, results: notas }),
   });
   const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'p', fetchImpl });
   const db = dbFalsa();
@@ -194,6 +197,7 @@ test('avanzarHistorico carga mes a mes hacia atrás y termina tras 6 meses sin f
         : ini === '2026-08-01' ? [factura('a1', '2026-08-05', 1, 50, []), factura('a2', '2026-08-20', 1, 70, [])] : [];
       return { results: res, pagination: { total_results: res.length } };
     },
+    '/v1/credit-notes': { results: [], pagination: { total_results: 0 } },
   });
   const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'p', fetchImpl });
   let h = await avanzarHistorico({ client, db, hoy: '2026-09-29', log: () => {} }); // máx. 6 meses por corrida
@@ -208,4 +212,68 @@ test('avanzarHistorico carga mes a mes hacia atrás y termina tras 6 meses sin f
   const antes = fetchImpl.llamadas.length;
   await avanzarHistorico({ client, db, hoy: '2026-09-29', log: () => {} });
   assert.equal(fetchImpl.llamadas.length, antes);
+});
+
+test('las notas crédito RESTAN de ventas, unidades, clientes, vendedores y productos (no cuentan como factura)', () => {
+  const docs = [
+    normalizarFactura(factura('a', '2026-09-01', 12, 1000, [{ code: 'P1', quantity: 10, price: 100, total: 1000 }])),
+    normalizarNotaCredito(factura('n1', '2026-09-01', 12, 300, [{ code: 'P1', quantity: 3, price: 100, total: 300 }], { invoice: { name: 'FV-1-5' } })),
+  ];
+  assert.equal(docs[1].tipo, 'NC');
+  assert.equal(docs[1].total, -300);
+  assert.equal(docs[1].facturaAfectada, 'FV-1-5');
+  const d = construirDia(docs);
+  assert.equal(d.global.ventas, 700);
+  assert.equal(d.global.facturas, 1);
+  assert.equal(d.global.notasCredito, 1);
+  assert.equal(d.global.devoluciones, 300);
+  assert.equal(d.global.unidades, 7);
+  assert.equal(d.global.productos.P1.cantidad, 7);
+  assert.equal(d.global.productos.P1.valor, 700);
+  assert.equal(d.cc_12.ventas, 700);
+  const cli = Object.values(d.global.clientes)[0];
+  assert.equal(cli.valor, 700);
+  assert.equal(cli.facturas, 1);
+  assert.equal(Object.values(d.global.vendedores)[0].valor, 700);
+});
+
+test('sincronizar trae también las notas crédito y las resta del día', async () => {
+  const fetchImpl = fetchFalso({
+    '/auth': { access_token: 'tok', expires_in: 86400 },
+    '/v1/cost-centers': [],
+    '/v1/users': [],
+    '/v1/customers': { pagination: { total_results: 0 }, results: [] },
+    '/v1/products': { pagination: { total_results: 0 }, results: [] },
+    '/v1/invoices': { pagination: { total_results: 1 }, results: [factura('f1', '2026-09-20', 12, 500, [{ code: 'A', quantity: 5, price: 100 }])] },
+    '/v1/credit-notes': { pagination: { total_results: 1 }, results: [factura('n1', '2026-09-20', 12, 200, [{ code: 'A', quantity: 2, price: 100 }])] },
+  });
+  const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'p', fetchImpl });
+  const db = dbFalsa();
+  const r = await sincronizar({ client, db, desde: '2026-09-20', hasta: '2026-09-20', log: () => {} });
+  assert.equal(r.facturas, 1);
+  assert.equal(r.notasCredito, 1);
+  const dia = db.datos.siigo.resumenDiario['2026-09-20'].global;
+  assert.equal(dia.ventas, 300);
+  assert.equal(dia.unidades, 3);
+  assert.ok(db.datos.siigo.facturasDia['2026-09-20'].nc_n1);
+});
+
+test('avanzarNotasCreditoHistorico resta las notas crédito de meses ya cargados y termina en el mes más antiguo', async () => {
+  const db = dbFalsa();
+  db.datos.siigo = { historico: { cargadoDesde: '2026-07-01', completo: true } };
+  // Agosto ya tenía una factura cargada antes de leer notas crédito.
+  db.datos.siigo.facturasDia = { '2026-08-05': { a1: normalizarFactura(factura('a1', '2026-08-05', 1, 500, [{ code: 'A', quantity: 5, price: 100 }])) } };
+  const fetchImpl = fetchFalso({
+    '/auth': { access_token: 't', expires_in: 3600 },
+    '/v1/credit-notes': (q) => {
+      const res = q.get('date_start') === '2026-08-01' ? [factura('n9', '2026-08-05', 1, 100, [{ code: 'A', quantity: 1, price: 100 }])] : [];
+      return { results: res, pagination: { total_results: res.length } };
+    },
+  });
+  const client = new SiigoClient({ username: 'u', accessKey: 'k', partnerId: 'p', fetchImpl });
+  const h = await avanzarNotasCreditoHistorico({ client, db, hoy: '2026-09-29', log: () => {} });
+  const meses = fetchImpl.llamadas.filter((l) => l.ruta === '/v1/credit-notes').map((l) => l.params.date_start);
+  assert.deepEqual(meses, ['2026-09-01', '2026-08-01', '2026-07-01']);
+  assert.equal(h.completo, true);
+  assert.equal(db.datos.siigo.resumenDiario['2026-08-05'].global.ventas, 400);
 });

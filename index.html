@@ -1547,7 +1547,8 @@
           <div class="prod-card col-12">
             <h3 id="siigoPeriodoTitulo">Período seleccionado</h3>
             <div class="prod-stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
-              <div class="prod-stat"><div class="num" id="siigoKpiVentas">–</div><div class="lbl">Ventas del período</div></div>
+              <div class="prod-stat"><div class="num" id="siigoKpiVentas">–</div><div class="lbl">Ventas netas del período</div></div>
+              <div class="prod-stat"><div class="num" id="siigoKpiNotas" style="color:#B65B2E;">–</div><div class="lbl" id="siigoKpiNotasLbl">Notas crédito (restadas)</div></div>
               <div class="prod-stat"><div class="num" id="siigoKpiFacturas">–</div><div class="lbl">Facturas</div></div>
               <div class="prod-stat"><div class="num" id="siigoKpiUnidades">–</div><div class="lbl">Unidades vendidas</div></div>
               <div class="prod-stat"><div class="num" id="siigoKpiTicket">–</div><div class="lbl">Valor promedio por factura</div></div>
@@ -9515,10 +9516,12 @@ function siigoNombreCentro(clave){
 
 // Suma los resúmenes diarios de un centro (o 'global') en el rango.
 function siigoAgregar(dias, fechas, centro){
-  const total = { ventas: 0, facturas: 0, unidades: 0, porDia: [], clientes: {}, productos: {}, vendedores: {} };
+  const total = { ventas: 0, facturas: 0, unidades: 0, notasCredito: 0, devoluciones: 0, porDia: [], clientes: {}, productos: {}, vendedores: {} };
   fechas.forEach(f => {
     const nodo = (dias[f] || {})[centro] || {};
     total.ventas += Number(nodo.ventas) || 0;
+    total.notasCredito += Number(nodo.notasCredito) || 0;
+    total.devoluciones += Number(nodo.devoluciones) || 0;
     total.facturas += Number(nodo.facturas) || 0;
     total.unidades += Number(nodo.unidades) || 0;
     total.porDia.push(Number(nodo.ventas) || 0);
@@ -9657,6 +9660,8 @@ async function siigoPintar(){
   document.getElementById('siigoPeriodoTitulo').textContent = 'Período seleccionado (' + rangoTxt(desde, hasta) + ')';
 
   document.getElementById('siigoKpiVentas').textContent = fmt(t.ventas);
+  document.getElementById('siigoKpiNotas').textContent = t.devoluciones ? '−' + fmt(t.devoluciones) : fmt(0);
+  document.getElementById('siigoKpiNotasLbl').textContent = `Notas crédito (restadas) · ${fmtNum(t.notasCredito)}`;
   document.getElementById('siigoKpiFacturas').textContent = fmtNum(t.facturas);
   document.getElementById('siigoKpiUnidades').textContent = fmtNum(t.unidades);
   document.getElementById('siigoKpiTicket').textContent = t.facturas ? fmt(t.ventas / t.facturas) : '–';
@@ -9748,13 +9753,18 @@ function siigoPintarFacturas(){
   const q = normalizeText(document.getElementById('siigoFacturasBuscar').value || '');
   const delCentro = siigoFacturas.filter(f => centro === 'global' || claveCentroDe(f) === centro);
   const filas = delCentro.filter(f => !q || siigoCoincide([f.numero, f.clienteNit, siigoNombreCliente(f.clienteNit), ...(f.items || []).map(it => (it.descripcion || '') + ' ' + (it.codigo || ''))].join(' '), q));
-  const validas = delCentro.filter(f => !f.anulada);
-  document.getElementById('siigoFacturasTitulo').textContent = `Facturas del período (${fmtNum(validas.length)}${delCentro.length !== validas.length ? ' + ' + fmtNum(delCentro.length - validas.length) + ' anuladas' : ''})`;
+  const validas = delCentro.filter(f => !f.anulada && f.tipo !== 'NC');
+  const notas = delCentro.filter(f => !f.anulada && f.tipo === 'NC');
+  const anuladas = delCentro.filter(f => f.anulada);
+  document.getElementById('siigoFacturasTitulo').textContent = `Facturas del período (${fmtNum(validas.length)}${notas.length ? ' + ' + fmtNum(notas.length) + ' notas crédito' : ''}${anuladas.length ? ' + ' + fmtNum(anuladas.length) + ' anuladas' : ''})`;
   body.innerHTML = filas.length
     ? filas.slice(0, SIIGO_MAX_FILAS).map(f => {
         const unidades = (f.items || []).reduce((a, it) => a + (Number(it.cantidad) || 0), 0);
-        const estado = f.anulada ? '<span style="color:#B42318;">Anulada</span>' : (Number(f.saldo) > 0 ? '<span style="color:#B65B2E;">Con saldo</span>' : 'Pagada');
-        return `<tr${f.anulada ? ' style="opacity:.55;"' : ''}><td>${escapeHtml(f.fecha || '')}</td><td>${escapeHtml(f.numero || f.id || '')}</td><td>${escapeHtml(siigoNombreCliente(f.clienteNit))}</td><td>${escapeHtml(siigoNombreCentro(claveCentroDe(f)))}</td><td>${escapeHtml(siigoNombreVendedor(f.vendedor))}</td><td style="text-align:right;">${fmtNum(unidades)}</td><td style="text-align:right;">${fmt(Number(f.total) || 0)}</td><td style="text-align:right;">${Number(f.saldo) ? fmt(Number(f.saldo)) : '—'}</td><td>${estado}</td></tr>`;
+        const esNC = f.tipo === 'NC';
+        const estado = f.anulada ? '<span style="color:#B42318;">Anulada</span>'
+          : esNC ? `<span style="color:#B65B2E;font-weight:700;">Nota crédito${f.facturaAfectada ? ' · ' + escapeHtml(f.facturaAfectada) : ''}</span>`
+          : (Number(f.saldo) > 0 ? '<span style="color:#B65B2E;">Con saldo</span>' : 'Pagada');
+        return `<tr${f.anulada ? ' style="opacity:.55;"' : esNC ? ' style="background:#FCF1EC;"' : ''}><td>${escapeHtml(f.fecha || '')}</td><td>${escapeHtml(f.numero || f.id || '')}</td><td>${escapeHtml(siigoNombreCliente(f.clienteNit))}</td><td>${escapeHtml(siigoNombreCentro(claveCentroDe(f)))}</td><td>${escapeHtml(siigoNombreVendedor(f.vendedor))}</td><td style="text-align:right;">${fmtNum(unidades)}</td><td style="text-align:right;">${fmt(Number(f.total) || 0)}</td><td style="text-align:right;">${Number(f.saldo) ? fmt(Number(f.saldo)) : '—'}</td><td>${estado}</td></tr>`;
       }).join('') + (filas.length > SIIGO_MAX_FILAS ? `<tr><td colspan="9" style="color:var(--ink-soft);">Se muestran ${fmtNum(SIIGO_MAX_FILAS)} de ${fmtNum(filas.length)}. Usa el buscador o un período más corto para ver el resto.</td></tr>` : '')
     : `<tr><td colspan="9" style="color:var(--ink-soft);">${delCentro.length ? 'Sin resultados para tu búsqueda.' : 'Sin facturas en el período.'}</td></tr>`;
 }
