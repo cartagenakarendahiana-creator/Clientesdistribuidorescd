@@ -90,6 +90,10 @@ class SiigoClient {
     return this.listarTodo('v1/invoices', { date_start: fechaInicio, date_end: fechaFin });
   }
 
+  notasCredito(fechaInicio, fechaFin) {
+    return this.listarTodo('v1/credit-notes', { date_start: fechaInicio, date_end: fechaFin });
+  }
+
   clientes(actualizadosDesde) {
     return this.listarTodo('v1/customers', { updated_start: actualizadosDesde });
   }
