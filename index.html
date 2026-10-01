@@ -6878,8 +6878,9 @@ function asegurarServiciosUltrasonido(){
 }
 
 // Cada etapa tiene SU PROPIA lista de precios de servicio (Corte usa la de Corte, Taller la de Taller,
-// etc.) y en "Precios de servicio" cada una va en su propia pestaña.
-const ETAPAS_CON_LISTA_PRODUCTOS = ['Corte', 'Taller', 'Ultrasonido', 'Confortadora'];
+// etc.) y en "Precios de servicio" cada una va en su propia pestaña. Los productos de Inventario solo se
+// copian a Corte y Taller; Ultrasonido y Confortadora manejan únicamente sus servicios fijos.
+const ETAPAS_CON_LISTA_PRODUCTOS = ['Corte', 'Taller'];
 function etapaServiciosActual(){
   const b = document.querySelector('#serviciosTabs .page-tab.active');
   return (b && b.dataset.tab) || 'Corte';
@@ -6920,6 +6921,16 @@ function asegurarServiciosDeInventario(){
   const clave = (nombre, etapa) => normalizeText(nombre || '') + '|' + etapa;
   const existentes = new Set(lista.filter(x => x && x.etapa).map(x => clave(x.servicio, x.etapa)));
   const nuevoId = () => 's' + Date.now() + Math.random().toString(36).slice(2,8);
+  // Una sola vez: Ultrasonido y Confortadora se quedan solo con sus servicios fijos (antes se les habían
+  // copiado todos los productos de Inventario). Lo que se agregue a mano después en esas pestañas se respeta.
+  if(!APPDATA.serviciosSoloFijosUltraConfV1){
+    for(let i = lista.length - 1; i >= 0; i--){
+      const x = lista[i];
+      if(x && SERVICIOS_POR_ETAPA[x.etapa] && !SERVICIOS_POR_ETAPA[x.etapa].includes(x.servicio)){ lista.splice(i, 1); cambios++; }
+    }
+    APPDATA.serviciosSoloFijosUltraConfV1 = true;
+    cambios++;
+  }
   // Entradas sin etapa → una para Corte y otra para Taller (mismo precio); la general se quita.
   for(let i = lista.length - 1; i >= 0; i--){
     const x = lista[i];
