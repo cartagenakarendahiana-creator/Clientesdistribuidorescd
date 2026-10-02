@@ -476,6 +476,7 @@
   .prod-linea .pl-fila2 input{font-size:17px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;width:100%;box-sizing:border-box;}
   .prod-linea .pl-quitar{min-width:44px;font-size:18px;}
   .rep-controles{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:16px;}
+  body.rol-trabajador .solo-admin, body.rol-trabajador .oculto-trabajador{display:none !important;}
   .rep-tipos .filter-btn.active{background:var(--gold-dark, #7A5B22);border-color:var(--gold-dark, #7A5B22);color:#fff;}
   .rep-tipos,.rep-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
   .rep-nav input[type=date]{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);}
@@ -1141,7 +1142,8 @@
         </div>
       </div>
       <div class="topbar-session">
-        <button class="filter-btn subtle" id="btnCambiarAcceso" title="Cambiar el usuario y la contraseña de acceso">Acceso</button>
+        <span class="sesion-usuario" id="sesionUsuario" style="font-size:12.5px;color:var(--ink-soft);align-self:center;"></span>
+        <button class="filter-btn subtle solo-admin" id="btnCambiarAcceso" title="Usuarios y contraseñas (administradores y trabajadores)">Usuarios</button>
         <button class="filter-btn subtle" id="btnCerrarSesion" title="Cerrar sesión">Salir</button>
         <button class="global-add-btn" id="btnAgregarProductoGlobal" title="Agregar un producto nuevo al catálogo">+ Nuevo producto</button>
       </div>
@@ -2373,7 +2375,8 @@ const DEFAULT_APPDATA = {
   vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
   distribuidoresRegistry:[], // [nombre, ...] — clientes creados manualmente (aunque no tengan pedidos aún)
   distribuidoresEliminados:[], // [distId, ...] — pedidos/clientes borrados (ej. digitados dos veces por error)
-  auth:{usuario:'admin', password:'CasaDorada2026'}, // usuario y contraseña para entrar a la app
+  auth:{usuario:'admin', password:'CasaDorada2026'}, // administrador principal (la contraseña se cifra al entrar: {usuario, salt, hash})
+  usuarios:[],              // [{usuario, rol:'admin'|'trabajador', salt, hash, activo}] — accesos adicionales
   // ---- Gestión de Planta (guardado real en Firebase, igual que Vendedores/Clientes) ----
   plantaOperarios:[],        // [{id, nombre, cedula, cargo, turno, telefono, fechaIngreso, activo}]
   plantaProductos:[],        // [{id, nombre, categoria, unidad, tiempoEstandar, costoMaterial, materiales:[{insumo,cantidad,costoUnitario}], precioVenta, activo}]
@@ -2963,7 +2966,7 @@ function renderDistItemHtml(d){
         ${d.fechaDespacho ? `<span class="meta-chip despacho">Despacho: ${escapeHtml(String(d.fechaDespacho))}</span>` : ''}
       </div>
     </div>
-    <div class="badge ${debe?'debe':'saldado'}">${debe ? fmt(d.t.totalPendienteVal) : 'Saldado'}</div>
+    <div class="badge ${debe?'debe':'saldado'}">${debe ? (esTrabajador() ? 'Pendiente' : fmt(d.t.totalPendienteVal)) : 'Saldado'}</div>
   </div>`;
 }
 
@@ -3442,6 +3445,7 @@ function syncPlantaProductosFromInventario(){
 
 let currentView = 'resumen';
 function switchView(viewName){
+  if(typeof esTrabajador === 'function' && esTrabajador() && !VISTAS_TRABAJADOR.includes(viewName)) viewName = 'resumen';
   currentView = viewName;
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
@@ -6329,18 +6333,125 @@ function showApp(){
 }
 
 const SESSION_KEY = 'casaDoradaSesionActiva';
+const SESSION_USER_KEY = 'casaDoradaSesionUsuario';
 
-function attemptLogin(){
+// ---------- Usuarios y roles ----------
+// Administrador: ve todo. Trabajador: solo Clientes/Pedidos, Despachos, Inventario, Precios de servicio y
+// Producción Diaria, con precios de productos y de servicios pero SIN totales, deudas, cobros ni facturación.
+const VISTAS_TRABAJADOR = ['resumen', 'pedidos', 'distribuidores', 'despachos', 'inventario', 'serviciosmaquila', 'produccion'];
+let usuarioActual = null; // { usuario, rol }
+const esTrabajador = () => !!usuarioActual && usuarioActual.rol === 'trabajador';
+
+async function hashClave(salt, clave){
+  const datos = new TextEncoder().encode(String(salt) + '|' + String(clave));
+  const buf = await crypto.subtle.digest('SHA-256', datos);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+const nuevaSal = () => [...crypto.getRandomValues(new Uint8Array(12))].map(b => b.toString(16).padStart(2, '0')).join('');
+function listaUsuarios(){ return Array.isArray(APPDATA.usuarios) ? APPDATA.usuarios.filter(Boolean) : []; }
+
+// Busca el usuario y valida la contraseña. El administrador principal es APPDATA.auth (el de siempre);
+// si aún tiene la contraseña sin cifrar, se cifra la primera vez que entra.
+async function validarCredenciales(u, p){
+  const auth = currentAuth();
+  if(u === auth.usuario){
+    if(auth.hash){ if(await hashClave(auth.salt, p) === auth.hash) return { usuario: u, rol: 'admin', firma: auth.hash }; }
+    else if(p === auth.password){
+      const salt = nuevaSal(), hash = await hashClave(salt, p);
+      APPDATA.auth = { usuario: u, salt, hash };
+      saveAppData(APPDATA);
+      return { usuario: u, rol: 'admin', firma: hash };
+    }
+    return null;
+  }
+  const x = listaUsuarios().find(z => z.usuario === u && z.activo !== false);
+  if(x && await hashClave(x.salt, p) === x.hash) return { usuario: x.usuario, rol: x.rol === 'admin' ? 'admin' : 'trabajador', firma: x.hash };
+  return null;
+}
+// Al volver a abrir la app se revisa que la sesión guardada siga siendo válida (y con el rol de hoy).
+function sesionGuardada(){
+  let s = null;
+  try{ s = JSON.parse(localStorage.getItem(SESSION_USER_KEY) || 'null'); }catch(e){}
+  if(!s || !s.usuario) return null;
+  const auth = currentAuth();
+  if(s.usuario === auth.usuario) return (auth.hash ? s.firma === auth.hash : s.firma === 'legacy') ? { usuario: s.usuario, rol: 'admin' } : null;
+  const x = listaUsuarios().find(z => z.usuario === s.usuario && z.activo !== false);
+  return (x && s.firma === x.hash) ? { usuario: x.usuario, rol: x.rol === 'admin' ? 'admin' : 'trabajador' } : null;
+}
+function aplicarRol(){
+  document.body.classList.toggle('rol-trabajador', esTrabajador());
+  const el = document.getElementById('sesionUsuario');
+  if(el) el.textContent = usuarioActual ? `${usuarioActual.usuario} · ${esTrabajador() ? 'Trabajador' : 'Administrador'}` : '';
+  // Menú: el trabajador solo ve sus secciones (y los grupos que quedan vacíos se ocultan).
+  document.querySelectorAll('.nav-dropdown-item[data-nav]').forEach(b => b.classList.toggle('oculto-trabajador', !VISTAS_TRABAJADOR.includes(b.dataset.nav)));
+  document.querySelectorAll('.nav-dropdown-sub-group, .nav-dropdown').forEach(g => {
+    const visibles = [...g.querySelectorAll('.nav-dropdown-item[data-nav]')].some(b => !b.classList.contains('oculto-trabajador'));
+    g.classList.toggle('oculto-trabajador', !visibles);
+  });
+  if(esTrabajador() && !VISTAS_TRABAJADOR.includes(currentView)) switchView('resumen');
+  ocultarValoresTrabajador();
+}
+
+// Oculta montos importantes para el trabajador: columnas de tablas, tarjetas y campos cuyo título habla
+// de dinero (valor, total, debe, cobro, flete, facturado, saldo, ventas…). Los PRECIOS sí se muestran.
+const RE_DINERO = /(valor|debe|deuda|subtotal|impuesto|cobro|flete|saldo|ventas|utilidad|facturad|^total$|total pendiente|total pedido|total entregado|se debe|total del servicio)/i;
+const RE_PERMITIDO = /(precio|unidad|cantidad|fabricad|registro)/i;
+const esDinero = (t) => { const s = String(t || '').replace(/\s+/g, ' ').trim(); return !!s && RE_DINERO.test(s) && !RE_PERMITIDO.test(s); };
+let ocultarPendiente = false;
+function ocultarValoresTrabajador(){
+  ocultarPendiente = false;
+  if(!esTrabajador()) return;
+  const raiz = document.getElementById('appRoot');
+  if(!raiz) return;
+  raiz.querySelectorAll('table').forEach(t => {
+    const ths = t.querySelectorAll(':scope > thead > tr:first-child > th');
+    if(!ths.length) return;
+    const ocultar = new Set();
+    ths.forEach((th, i) => { if(esDinero(th.textContent)){ ocultar.add(i); th.classList.add('oculto-trabajador'); } });
+    if(!ocultar.size) return;
+    t.querySelectorAll(':scope > tbody > tr, :scope > tfoot > tr').forEach(tr => {
+      if(tr.children.length !== ths.length) return; // filas de título o de total con celdas unidas
+      ocultar.forEach(i => tr.children[i] && tr.children[i].classList.add('oculto-trabajador'));
+    });
+  });
+  raiz.querySelectorAll('.kpi-card, .prod-stat, .tcard, .pd-card, .rep-kpi').forEach(c => {
+    const lab = c.querySelector('.lab, .lbl, .label');
+    if(lab && esDinero(lab.textContent)) c.classList.add('oculto-trabajador');
+  });
+  raiz.querySelectorAll('.page-card').forEach(c => {
+    const h2 = c.querySelector('h2');
+    if(h2 && /cobro|facturad/i.test(h2.textContent)) c.classList.add('oculto-trabajador');
+  });
+  document.querySelectorAll('.modal-overlay .field').forEach(f => {
+    const lab = f.querySelector('label');
+    if(lab && /valor|flete/i.test(lab.textContent) && !/precio/i.test(lab.textContent)) f.classList.add('oculto-trabajador');
+  });
+  document.querySelectorAll('.modal-overlay table').forEach(t => {
+    const ths = t.querySelectorAll(':scope > thead > tr:first-child > th');
+    const ocultar = new Set();
+    ths.forEach((th, i) => { if(esDinero(th.textContent)){ ocultar.add(i); th.classList.add('oculto-trabajador'); } });
+    if(ocultar.size) t.querySelectorAll(':scope > tbody > tr').forEach(tr => { if(tr.children.length === ths.length) ocultar.forEach(i => tr.children[i] && tr.children[i].classList.add('oculto-trabajador')); });
+  });
+}
+new MutationObserver(() => {
+  if(!esTrabajador() || ocultarPendiente) return;
+  ocultarPendiente = true;
+  requestAnimationFrame(ocultarValoresTrabajador);
+}).observe(document.body, { childList: true, subtree: true });
+
+async function attemptLogin(){
   if(!firebaseReady){ showToast('Cargando datos, espera un momento…'); return; }
   const u = document.getElementById('loginUsuario').value.trim();
   const p = document.getElementById('loginPassword').value;
-  const auth = currentAuth();
   const errEl = document.getElementById('loginError');
-  if(u === auth.usuario && p === auth.password){
+  const ok = await validarCredenciales(u, p);
+  if(ok){
     errEl.style.display = 'none';
     document.getElementById('loginPassword').value = '';
-    try{ localStorage.setItem(SESSION_KEY, '1'); }catch(e){}
+    usuarioActual = { usuario: ok.usuario, rol: ok.rol };
+    try{ localStorage.setItem(SESSION_KEY, '1'); localStorage.setItem(SESSION_USER_KEY, JSON.stringify({ usuario: ok.usuario, firma: ok.firma })); }catch(e){}
     showApp();
+    aplicarRol();
   }else{
     errEl.style.display = 'block';
   }
@@ -6350,49 +6461,85 @@ document.getElementById('btnLogin').addEventListener('click', attemptLogin);
 document.getElementById('loginUsuario').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
 document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
 
-document.getElementById('btnCerrarSesion').addEventListener('click', ()=>{
-  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+function cerrarSesion(){
+  try{ localStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_USER_KEY); }catch(e){}
+  usuarioActual = null;
+  document.body.classList.remove('rol-trabajador');
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('loginUsuario').value = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').style.display = 'none';
-});
+}
+document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
 
-// Modal para cambiar el usuario y/o la contraseña de acceso (pide la contraseña actual)
+// Usuarios (solo administradores): crear trabajadores o administradores, cambiar contraseñas, desactivar.
 function openChangeAuthModal(){
+  if(esTrabajador()) return;
   const auth = currentAuth();
+  const pintar = () => {
+    const filas = [{ usuario: auth.usuario, rol: 'admin', principal: true }, ...listaUsuarios()];
+    overlay.querySelector('#usrLista').innerHTML = filas.map((x, i) => `<tr>
+      <td><b>${escapeHtml(x.usuario)}</b>${x.principal ? ' <span style="font-size:11px;color:var(--ink-soft);">(principal)</span>' : ''}</td>
+      <td>${x.rol === 'admin' ? 'Administrador' : 'Trabajador'}${x.activo === false ? ' · <span style="color:#B65B2E;">inactivo</span>' : ''}</td>
+      <td style="white-space:nowrap;text-align:right;">
+        <button type="button" class="acc-btn" data-usr-clave="${i}">Cambiar contraseña</button>
+        ${x.principal ? '' : `<button type="button" class="acc-btn acc-danger" data-usr-borrar="${i - 1}">Eliminar</button>`}
+      </td></tr>`).join('');
+  };
   const overlay = openModal(`
-    <h3>Usuario y contraseña de acceso</h3>
-    <div class="hint">Cámbialos aquí y guárdalos en un lugar seguro. La próxima vez que entres a esta app te pedirá los nuevos datos.</div>
-    <div class="field">
-      <label>Contraseña actual</label>
-      <input type="password" id="inpAuthActual" placeholder="Escribe la contraseña actual">
-    </div>
-    <div class="field">
-      <label>Usuario nuevo</label>
-      <input type="text" id="inpAuthUsuario" value="${escapeAttr(auth.usuario)}">
-    </div>
-    <div class="field">
-      <label>Contraseña nueva</label>
-      <input type="password" id="inpAuthPassword" placeholder="Déjalo vacío para no cambiarla">
+    <h3>Usuarios</h3>
+    <div class="hint">Los <b>administradores</b> ven todo. Los <b>trabajadores</b> solo ven Clientes y Pedidos, Despachos, Inventario, Precios de servicio y Producción Diaria; ven precios de productos y servicios, pero no totales, deudas, cobros ni facturación.</div>
+    <div class="table-scroll" style="margin:10px 0;"><table><thead><tr><th>Usuario</th><th>Rol</th><th></th></tr></thead><tbody id="usrLista"></tbody></table></div>
+    <h4 style="margin:14px 0 6px;">Agregar usuario</h4>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div class="field" style="flex:1;min-width:130px;"><label>Usuario</label><input type="text" id="usrNuevo" autocomplete="off" placeholder="Ej. maria"></div>
+      <div class="field" style="flex:1;min-width:130px;"><label>Contraseña</label><input type="password" id="usrClave" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>
+      <div class="field" style="flex:1;min-width:130px;"><label>Rol</label><select id="usrRol"><option value="trabajador">Trabajador</option><option value="admin">Administrador</option></select></div>
     </div>
     <div class="modal-actions">
-      <button class="btn-cancel" id="btnCancel">Cancelar</button>
-      <button class="btn-confirm" id="btnConfirm">Guardar</button>
-    </div>
-  `);
-  overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
-  overlay.querySelector('#btnConfirm').addEventListener('click', async ()=>{
-    const actual = overlay.querySelector('#inpAuthActual').value;
-    if(actual !== auth.password){ showToast('La contraseña actual no es correcta'); return; }
-    const nuevoUsuario = overlay.querySelector('#inpAuthUsuario').value.trim();
-    const nuevaPassword = overlay.querySelector('#inpAuthPassword').value;
-    if(!nuevoUsuario){ showToast('Escribe un usuario'); return; }
-    APPDATA.auth = { usuario: nuevoUsuario, password: nuevaPassword ? nuevaPassword : auth.password };
+      <button class="btn-cancel" id="usrCerrar">Cerrar</button>
+      <button class="btn-confirm" id="usrAgregar">Agregar usuario</button>
+    </div>`);
+  pintar();
+  overlay.querySelector('#usrCerrar').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#usrAgregar').addEventListener('click', async () => {
+    const u = overlay.querySelector('#usrNuevo').value.trim();
+    const p = overlay.querySelector('#usrClave').value;
+    const rol = overlay.querySelector('#usrRol').value;
+    if(!u){ showToast('Escribe el usuario'); return; }
+    if(p.length < 6){ showToast('La contraseña debe tener mínimo 6 caracteres'); return; }
+    if(u === auth.usuario || listaUsuarios().some(x => x.usuario === u)){ showToast('Ese usuario ya existe'); return; }
+    const salt = nuevaSal();
+    APPDATA.usuarios = [...listaUsuarios(), { usuario: u, rol, salt, hash: await hashClave(salt, p), activo: true, creado: new Date().toISOString() }];
     await saveAppData(APPDATA);
-    overlay.remove();
-    showToast('Acceso actualizado');
+    overlay.querySelector('#usrNuevo').value = ''; overlay.querySelector('#usrClave').value = '';
+    pintar();
+    showToast(`Usuario "${u}" creado como ${rol === 'admin' ? 'administrador' : 'trabajador'}`);
+  });
+  overlay.querySelector('#usrLista').addEventListener('click', async (e) => {
+    const bc = e.target.closest('[data-usr-clave]'), bb = e.target.closest('[data-usr-borrar]');
+    if(bc){
+      const i = Number(bc.dataset.usrClave);
+      const nombre = i === 0 ? auth.usuario : listaUsuarios()[i - 1].usuario;
+      const nueva = prompt(`Nueva contraseña para "${nombre}" (mínimo 6 caracteres):`);
+      if(nueva === null) return;
+      if(nueva.length < 6){ showToast('La contraseña debe tener mínimo 6 caracteres'); return; }
+      const salt = nuevaSal(), hash = await hashClave(salt, nueva);
+      if(i === 0){ APPDATA.auth = { usuario: auth.usuario, salt, hash }; }
+      else { const l = listaUsuarios(); l[i - 1] = { ...l[i - 1], salt, hash }; APPDATA.usuarios = l; }
+      await saveAppData(APPDATA);
+      if(usuarioActual && usuarioActual.usuario === nombre){ try{ localStorage.setItem(SESSION_USER_KEY, JSON.stringify({ usuario: nombre, firma: hash })); }catch(err){} }
+      showToast('Contraseña actualizada');
+    }
+    if(bb){
+      const l = listaUsuarios(); const x = l[Number(bb.dataset.usrBorrar)];
+      if(!x || !confirm(`¿Eliminar el usuario "${x.usuario}"? Ya no podrá entrar.`)) return;
+      APPDATA.usuarios = l.filter(z => z !== x);
+      await saveAppData(APPDATA);
+      pintar();
+      showToast('Usuario eliminado');
+    }
   });
 }
 document.getElementById('btnCambiarAcceso').addEventListener('click', openChangeAuthModal);
@@ -9435,7 +9582,11 @@ new MutationObserver(muts => {
   await firebaseReadyPromise;
   let sesionActiva = false;
   try{ sesionActiva = localStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
-  if(sesionActiva) showApp();
+  if(sesionActiva){
+    const s = sesionGuardada();
+    if(s){ usuarioActual = s; showApp(); aplicarRol(); }
+    else { try{ localStorage.removeItem(SESSION_KEY); }catch(e){} } // sesión vieja o inválida: pide entrar otra vez
+  }
 })();
 
 // ---------- Ventas Siigo ----------
