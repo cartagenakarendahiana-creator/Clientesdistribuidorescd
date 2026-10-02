@@ -1,0 +1,43 @@
+# Publica las reglas de seguridad de la base de datos (database.rules.json): solo usuarios con sesión
+# iniciada pueden leer o escribir, y Ventas Siigo solo la ven los administradores.
+#
+# Se ejecuta SOLO a mano (nunca sola): GitHub → pestaña "Actions" → "Publicar reglas de la base de datos"
+# → "Run workflow". Hacerlo después de que todos hayan entrado una vez con la versión nueva de la app.
+# Usa el mismo secreto FIREBASE_SERVICE_ACCOUNT que "Publicar funciones de Siigo".
+name: Publicar reglas de la base de datos
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-reglas
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Preparar credenciales de Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT. Agrégalo en Settings → Secrets and variables → Actions (instrucciones en functions/README.md)."
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+
+      - name: Publicar reglas
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: npx --yes firebase-tools@latest deploy --only database --project pedidos-nuevo --non-interactive
+
+      - name: Borrar credenciales
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"
