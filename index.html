@@ -477,6 +477,12 @@
   .prod-linea .pl-quitar{min-width:44px;font-size:18px;}
   .rep-controles{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:16px;}
   body.rol-trabajador .solo-admin, body.rol-trabajador .oculto-trabajador{display:none !important;}
+  /* Inventario: el trabajador ve los precios de lista pero no los puede cambiar */
+  body.rol-trabajador #viewInventario .inv-precio-input{pointer-events:none;background:transparent;border-color:transparent;color:var(--ink);}
+  body.rol-trabajador #viewInventario .icon-btn, body.rol-trabajador #btnAgregarProductoGlobal{display:none !important;}
+  /* Precio de una línea de pedido cambiado frente al precio de lista */
+  .precio-cambiado{display:inline-block;background:#FFF1D6;color:#8A4B00;border:1px solid #F0B44C;border-radius:6px;padding:1px 6px;font-weight:700;cursor:help;}
+  .precio-cambiado small{display:block;font-weight:500;font-size:10.5px;color:#8A4B00;}
   .rep-tipos .filter-btn.active{background:var(--gold-dark, #7A5B22);border-color:var(--gold-dark, #7A5B22);color:#fff;}
   .rep-tipos,.rep-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
   .rep-nav input[type=date]{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);}
@@ -2849,7 +2855,8 @@ function getOrderLines(distId){
       if(ov.precio !== undefined) precio = ov.precio;
     }
     const prod = products[productoIdx] || p;
-    lines.push({key, productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad, origen:'catalogo', editado: !!ov});
+    lines.push({key, productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad, origen:'catalogo', editado: !!ov,
+      precioLista: ov ? ov.precioLista : null, precioCambiadoPor: ov ? ov.precioCambiadoPor : null, precioCambiadoEl: ov ? ov.precioCambiadoEl : null});
   });
 
   // Cada línea extra lleva un id fijo (uid). Antes la clave de "entregado" era su posición en la lista,
@@ -2866,7 +2873,8 @@ function getOrderLines(distId){
     if(ex.distId === distId){
       const prod = products[ex.productoIdx] || {categoria:'', producto:'(producto eliminado)', medida:'', precio:0};
       const precio = (ex.precio !== undefined && ex.precio !== null) ? ex.precio : (prod.precio || 0);
-      lines.push({key:'extra-'+ex.uid, extraIdx:i, productoIdx: ex.productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad:ex.cantidad, origen:'extra'});
+      lines.push({key:'extra-'+ex.uid, extraIdx:i, productoIdx: ex.productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad:ex.cantidad, origen:'extra',
+        precioLista: ex.precioLista ?? null, precioCambiadoPor: ex.precioCambiadoPor || null, precioCambiadoEl: ex.precioCambiadoEl || null});
     }
   });
   return lines;
@@ -3155,7 +3163,9 @@ function renderMain(){
     rowsHtml += `<tr>
       <td><span class="prod-name">${escapeHtml(l.producto)}</span>${l.editado ? '<span class="edited-tag">✎ editado</span>' : ''}<br>
           <span class="prod-medida">${escapeHtml(l.medida||'')}</span></td>
-      <td class="num">${fmt(l.precio)}</td>
+      <td class="num">${(l.precioCambiadoPor && l.precioLista !== null && l.precioLista !== undefined && Number(l.precio) !== Number(l.precioLista))
+        ? `<span class="precio-cambiado" title="Precio de lista ${escapeAttr(fmt(l.precioLista))} · cambiado por ${escapeAttr(l.precioCambiadoPor)}${l.precioCambiadoEl ? ' el ' + escapeAttr(new Date(l.precioCambiadoEl).toLocaleString('es-CO')) : ''}">✎ ${fmt(l.precio)}<small>lista ${fmt(l.precioLista)} · ${escapeHtml(l.precioCambiadoPor)}</small></span>`
+        : fmt(l.precio)}</td>
       <td class="num">${l.cantidad}</td>
       <td class="num"><input type="number" min="0" class="entregado-input" data-key="${escapeAttr(l.key)}" value="${ent}"><span class="entregado-print">${ent}</span></td>
       <td class="num">${pend}</td>
@@ -4375,7 +4385,9 @@ function renderInventarioView(){
   body.innerHTML = html || `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);">Sin resultados</td></tr>`;
 
   body.querySelectorAll('.inv-precio-input').forEach(inp=>{
+    if(esTrabajador()){ inp.readOnly = true; inp.tabIndex = -1; } // el trabajador no cambia precios de lista
     inp.addEventListener('change', async (e)=>{
+      if(esTrabajador()){ renderInventarioView(); return; }
       const idx = parseInt(e.target.dataset.idx, 10);
       let v = parseFloat(e.target.value);
       if(isNaN(v) || v<0) v = 0;
@@ -5199,6 +5211,17 @@ function wireSearchableSelect(overlay, searchInputEl, selectEl, products, onPick
   });
 }
 
+// Si el precio de una línea de pedido es distinto al de la lista de Inventario, guarda el precio de lista,
+// quién lo cambió y cuándo (para mostrarlo resaltado en el pedido). Si es igual, limpia la marca.
+function marcaCambioPrecio(productoIdx, precio, anterior){
+  const prod = getAllProducts()[productoIdx];
+  const lista = prod ? Number(prod.precio) || 0 : 0;
+  if(!prod || Number(precio) === lista) return { precioLista: null, precioCambiadoPor: null, precioCambiadoEl: null };
+  // Si no cambió el precio que ya tenía la línea, se conserva quién lo cambió originalmente.
+  if(anterior && anterior.precioCambiadoPor && Number(anterior.precio) === Number(precio)) return { precioLista: lista, precioCambiadoPor: anterior.precioCambiadoPor, precioCambiadoEl: anterior.precioCambiadoEl || null };
+  return { precioLista: lista, precioCambiadoPor: (usuarioActual && usuarioActual.usuario) || 'desconocido', precioCambiadoEl: new Date().toISOString() };
+}
+
 // Agrega una línea de producto al pedido de un cliente concreto
 function openAddProductModal(distId){
   const products = getAllProducts();
@@ -5240,7 +5263,7 @@ function openAddProductModal(distId){
     const cantidad = parseFloat(overlay.querySelector('#inpCantidad').value) || 0;
     const precio = parseFloat(precioEl.value) || 0;
     if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); return; }
-    APPDATA.extras.push({uid:newExtraUid(), distId, productoIdx, cantidad, precio});
+    APPDATA.extras.push({uid:newExtraUid(), distId, productoIdx, cantidad, precio, ...marcaCambioPrecio(productoIdx, precio)});
     await saveAppData(APPDATA);
     overlay.remove();
     renderAll();
@@ -5303,11 +5326,11 @@ function openEditLineModal(distId, line){
     if(line.origen==='extra'){
       const i = indiceExtraActual(line);
       if(i < 0){ showToast('Esa línea ya no existe (se borró en otro equipo)'); overlay.remove(); renderAll(); return; }
-      APPDATA.extras[i] = {...APPDATA.extras[i], productoIdx, cantidad, precio};
+      APPDATA.extras[i] = {...APPDATA.extras[i], productoIdx, cantidad, precio, ...marcaCambioPrecio(productoIdx, precio, line)};
     }else{
       if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
       if(!APPDATA.catalogOverrides[distId]) APPDATA.catalogOverrides[distId] = {};
-      APPDATA.catalogOverrides[distId][line.key] = {productoIdx, cantidad, precio};
+      APPDATA.catalogOverrides[distId][line.key] = {productoIdx, cantidad, precio, ...marcaCambioPrecio(productoIdx, precio, line)};
     }
     await saveAppData(APPDATA);
     overlay.remove();
