@@ -2360,6 +2360,9 @@ const CATALOG = {"distribuidores": [{"col": 5, "id": "Imperio", "nombre": "Imper
 // ---------- storage helpers ----------
 const DEFAULT_APPDATA = {
   entregas:{},            // {distId: {lineKey: cantidadEntregada}}
+  entregasLog:{},         // {distId: [{id, fecha, key, producto, medida, precio, delta}]} — cada entrega con su fecha (para facturar en Siigo lo despachado en un día)
+  siigoFacturaConfig:{},  // {documentoId, vendedorId, formaPagoId, impuestoId, ivaPct, preciosIncluyenIva, centroCostoId, enviarDian, enviarCorreo, diasCredito}
+  siigoProductoMap:{},    // {"producto · medida": códigoSiigo} — código de Siigo de cada producto
   extras:[],              // [{distId, productoIdx, cantidad, precio}] — líneas agregadas a un pedido
   nuevosDistribuidores:[],// [{id, nombre, fecha}] — clientes creados desde cero
   customProducts:[],      // [{categoria, producto, medida, precio}] — productos nuevos del catálogo (ej. toallas)
@@ -2892,6 +2895,23 @@ function setEntregado(distId, lineKey, val){
   if(!APPDATA.entregas[distId]) APPDATA.entregas[distId] = {};
   APPDATA.entregas[distId][lineKey] = val;
 }
+// Cambio de "Entregado" hecho por el usuario: además de guardarlo, anota cuánto se entregó HOY de ese
+// producto (lo que luego se puede facturar en Siigo como el despacho del día).
+function registrarEntrega(distId, lineKey, nuevo){
+  const antes = getEntregado(distId, lineKey);
+  setEntregado(distId, lineKey, nuevo);
+  const delta = (Number(nuevo) || 0) - (Number(antes) || 0);
+  if(!delta) return;
+  const l = getOrderLines(distId).find(x => x.key === lineKey) || {};
+  if(!APPDATA.entregasLog) APPDATA.entregasLog = {};
+  if(!Array.isArray(APPDATA.entregasLog[distId])) APPDATA.entregasLog[distId] = [];
+  const hoy = new Date();
+  APPDATA.entregasLog[distId].push({
+    id: 'e' + Date.now() + Math.random().toString(36).slice(2, 7),
+    fecha: hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0'),
+    key: lineKey, producto: l.producto || '', medida: l.medida || '', precio: Number(l.precio) || 0, delta
+  });
+}
 
 function distTotals(distId){
   const lines = getOrderLines(distId);
@@ -3211,6 +3231,7 @@ function renderMain(){
       <div class="acciones-pedido no-print">
         <div class="acciones-grupo">
           <button class="acc-btn acc-primary" id="btnAgregarLinea" title="Agregar un producto a este pedido">+ Agregar producto</button>
+          <button class="acc-btn acc-primary solo-admin" id="btnFacturarSiigo" title="Crear en Siigo la factura de lo despachado en un día a este cliente">🧾 Facturar despacho en Siigo</button>
         </div>
         <div class="acciones-grupo">
           <button class="acc-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir</button>
@@ -3262,7 +3283,7 @@ function renderMain(){
     inp.addEventListener('change', async (e)=>{
       let v = parseFloat(e.target.value);
       if(isNaN(v) || v<0) v = 0;
-      setEntregado(selectedDistId, e.target.dataset.key, v);
+      registrarEntrega(selectedDistId, e.target.dataset.key, v);
       await saveAppData(APPDATA);
       renderMain();
       renderSidebar();
@@ -3352,6 +3373,7 @@ function renderMain(){
   }
 
   document.getElementById('btnImprimirPedido').addEventListener('click', imprimirPedidoActual);
+  document.getElementById('btnFacturarSiigo').addEventListener('click', () => openFacturarSiigoModal(selectedDistId));
 }
 
 // Antes de imprimir: toma lo que haya digitado en "Entregado" (aunque no haya salido de la casilla),
@@ -3361,7 +3383,7 @@ function imprimirPedidoActual(){
   document.querySelectorAll('#mainPanel .entregado-input').forEach(inp=>{
     let v = parseFloat(inp.value);
     if(isNaN(v) || v < 0) v = 0;
-    if(getEntregado(selectedDistId, inp.dataset.key) !== v){ setEntregado(selectedDistId, inp.dataset.key, v); cambio = true; }
+    if(getEntregado(selectedDistId, inp.dataset.key) !== v){ registrarEntrega(selectedDistId, inp.dataset.key, v); cambio = true; }
   });
   if(cambio) saveAppData(APPDATA);
   renderMain();
@@ -9599,6 +9621,194 @@ let siigoChartDias = null;
 let siigoCentros = null;          // catálogo de centros de costo (se carga una vez)
 let siigoVendedores = null;       // catálogo de vendedores (se carga una vez)
 const SIIGO_URL_SINCRONIZAR = 'https://us-central1-' + firebaseConfig.projectId + '.cloudfunctions.net/sincronizarSiigoAhora';
+const SIIGO_URL_OPCIONES_FACTURA = 'https://us-central1-' + firebaseConfig.projectId + '.cloudfunctions.net/siigoOpcionesFactura';
+const SIIGO_URL_FACTURAR = 'https://us-central1-' + firebaseConfig.projectId + '.cloudfunctions.net/facturarDespachoSiigo';
+
+// ---------- Facturar en Siigo lo despachado a un cliente en un día ----------
+function fsHoyIso(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function fsClaveProducto(producto, medida){ return [producto, medida].map(x => String(x || '').trim()).filter(Boolean).join(' · '); }
+// Entregas de ese día sin facturar, sumadas por producto (igual que en el servidor).
+function fsItemsPendientes(distId, fecha, facturadas){
+  const porClave = new Map();
+  ((APPDATA.entregasLog || {})[distId] || []).forEach(e => {
+    if(!e || e.fecha !== fecha || !e.id || facturadas[e.id]) return;
+    const delta = Number(e.delta) || 0;
+    if(!delta) return;
+    const clave = fsClaveProducto(e.producto, e.medida);
+    const it = porClave.get(clave) || { clave, cantidad: 0, precio: Number(e.precio) || 0 };
+    it.cantidad += delta;
+    if(Number(e.precio) > 0) it.precio = Number(e.precio);
+    porClave.set(clave, it);
+  });
+  return [...porClave.values()].filter(i => i.cantidad > 0);
+}
+function fsTotales(items){
+  const c = APPDATA.siigoFacturaConfig || {};
+  const iva = c.impuestoId ? (Number(c.ivaPct) || 0) / 100 : 0;
+  let base = 0, impuesto = 0;
+  items.forEach(i => {
+    const precio = c.preciosIncluyenIva && iva ? i.precio / (1 + iva) : i.precio;
+    const sub = Math.round(i.cantidad * precio * 100) / 100;
+    base += sub; impuesto += iva ? Math.round(sub * iva * 100) / 100 : 0;
+  });
+  return { base, impuesto, total: base + impuesto };
+}
+async function openFacturarSiigoModal(distId){
+  const dist = getAllDistributors().find(d => d.id === distId);
+  if(!dist) return;
+  if(!firebaseReady){ showToast('Sin conexión con la base de datos.'); return; }
+  const db = firebase.database();
+  const enc = encodeFirebaseKey(distId);
+  let estado = {}, catalogo = [];
+  try{
+    const [s1, s2] = await Promise.all([db.ref('siigo/facturacionApp/' + enc).once('value'), db.ref('siigo/catalogos/productos').once('value')]);
+    estado = decodeFirebaseKeys(s1.val() || {});
+    catalogo = Object.values(s2.val() || {}).filter(p => p && p.codigo && p.activo !== false).sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'));
+  }catch(err){ console.error(err); }
+  const facturadas = estado.entradas || {};
+  const mapa = APPDATA.siigoProductoMap || {};
+  const porNombre = new Map(catalogo.map(p => [normalizeText(p.nombre), p.codigo]));
+  const info = getClienteInfo(dist.nombre);
+  const overlay = openModal(`
+    <h3>Facturar despacho en Siigo</h3>
+    <div class="sub" style="margin:-8px 0 12px;color:var(--ink-soft);font-size:13px;">${escapeHtml(dist.nombre)} · se factura lo que se marcó como <b>entregado</b> ese día y todavía no se ha facturado.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="field" style="flex:1;min-width:150px;"><label>Fecha del despacho</label><input type="date" id="fsFecha" value="${fsHoyIso()}"></div>
+      <div class="field" style="flex:1;min-width:150px;"><label>NIT o cédula del cliente</label><input type="text" id="fsNit" value="${escapeAttr(info.nit)}" placeholder="Ej. 900123456-7"></div>
+    </div>
+    <div id="fsCuerpo"></div>
+    <div id="fsConfig" style="font-size:12.5px;color:var(--ink-soft);margin:8px 0;"></div>
+    <div class="field"><label>Clave de facturación</label><input type="password" id="fsClave" autocomplete="off" placeholder="La clave que configuraste para facturar"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="fsCancelar">Cancelar</button>
+      <button class="btn-confirm" id="fsCrear">Crear factura en Siigo</button>
+    </div>`);
+  overlay.querySelector('.modal').classList.add('wide');
+  const pintarConfig = () => {
+    const c = APPDATA.siigoFacturaConfig || {};
+    const ok = c.documentoId && c.vendedorId && c.formaPagoId;
+    overlay.querySelector('#fsConfig').innerHTML = (ok
+      ? `Tipo: <b>${escapeHtml(c.documentoNombre || c.documentoId)}</b> · Vendedor: <b>${escapeHtml(c.vendedorNombre || c.vendedorId)}</b> · Pago: <b>${escapeHtml(c.formaPagoNombre || c.formaPagoId)}</b> · ${c.impuestoId ? 'IVA ' + (Number(c.ivaPct) || 0) + '% ' + (c.preciosIncluyenIva ? '(incluido en los precios)' : '(se suma a los precios)') : 'sin impuesto'} · ${c.enviarDian ? '<b style="color:#B65B2E;">se envía a la DIAN al crearla</b>' : 'no se envía a la DIAN (la envías tú desde Siigo)'}`
+      : '<b style="color:#B65B2E;">Falta configurar la facturación de Siigo.</b>') + ` <button type="button" class="acc-btn" id="fsConfigBtn" style="margin-left:6px;">⚙ Configurar</button>`;
+    overlay.querySelector('#fsConfigBtn').addEventListener('click', () => openConfigFacturaSiigo(() => { pintarConfig(); pintar(); }));
+  };
+  const pintar = () => {
+    const fecha = overlay.querySelector('#fsFecha').value;
+    const items = fsItemsPendientes(distId, fecha, facturadas);
+    const ya = Object.values(estado.facturas || {}).filter(f => f && f.fechaDespacho === fecha);
+    let html = ya.length ? `<div style="margin:0 0 10px;padding:8px 12px;border-radius:8px;background:#EEF5EF;color:#2F5A36;font-size:13px;">Ya facturado de este día: ${ya.map(f => `<b>${escapeHtml(f.numero)}</b> (${fmt(f.total)})`).join(', ')}</div>` : '';
+    if(!items.length){
+      html += `<div style="padding:14px;color:var(--ink-soft);text-align:center;border:1px dashed var(--line);border-radius:10px;">No hay entregas sin facturar para este cliente el ${escapeHtml(fecha)}.<br><small>Se cuentan las cantidades que se marcan en la columna "Entregado" del pedido (desde hoy en adelante).</small></div>`;
+    }else{
+      const opciones = (sel) => '<option value="">— Elige el producto de Siigo —</option>' + catalogo.map(p => `<option value="${escapeAttr(p.codigo)}" ${p.codigo === sel ? 'selected' : ''}>${escapeHtml(p.nombre)} (${escapeHtml(p.codigo)})</option>`).join('');
+      const t = fsTotales(items);
+      html += `<div class="table-scroll"><table>
+        <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio</th><th class="num">Subtotal</th><th>Producto en Siigo</th></tr></thead><tbody>
+        ${items.map(i => { const sel = mapa[i.clave] || porNombre.get(normalizeText(i.clave)) || ''; return `<tr>
+          <td>${escapeHtml(i.clave)}</td><td class="num">${fmtNum(i.cantidad)}</td><td class="num">${fmt(i.precio)}</td><td class="num">${fmt(i.cantidad * i.precio)}</td>
+          <td style="min-width:220px;">${catalogo.length ? `<select class="fs-codigo" data-clave="${escapeAttr(i.clave)}">${opciones(sel)}</select>` : `<input type="text" class="fs-codigo" data-clave="${escapeAttr(i.clave)}" value="${escapeAttr(sel)}" placeholder="Código en Siigo">`}</td></tr>`; }).join('')}
+        </tbody></table></div>
+        <div style="text-align:right;margin-top:8px;font-size:14px;">Base ${fmt(t.base)} · Impuesto ${fmt(t.impuesto)} · <b style="font-size:16px;">Total ${fmt(t.total)}</b></div>`;
+    }
+    overlay.querySelector('#fsCuerpo').innerHTML = html;
+    overlay.querySelector('#fsCrear').disabled = !items.length;
+  };
+  overlay.querySelector('#fsFecha').addEventListener('change', pintar);
+  overlay.querySelector('#fsCancelar').addEventListener('click', () => overlay.remove());
+  pintarConfig();
+  pintar();
+  const enviar = async (forzar) => {
+    const fecha = overlay.querySelector('#fsFecha').value;
+    const nit = overlay.querySelector('#fsNit').value.trim();
+    const clave = overlay.querySelector('#fsClave').value;
+    const c = APPDATA.siigoFacturaConfig || {};
+    if(!(c.documentoId && c.vendedorId && c.formaPagoId)){ showToast('Primero configura la facturación de Siigo (⚙ Configurar).'); return; }
+    if(!nit){ showToast('Escribe el NIT o la cédula del cliente.'); overlay.querySelector('#fsNit').focus(); return; }
+    const codigos = [...overlay.querySelectorAll('.fs-codigo')];
+    if(codigos.some(s => !s.value.trim())){ showToast('Elige el producto de Siigo de cada línea.'); return; }
+    if(!clave){ showToast('Escribe la clave de facturación.'); overlay.querySelector('#fsClave').focus(); return; }
+    // Guarda el código de cada producto y el NIT del cliente para la próxima vez.
+    if(!APPDATA.siigoProductoMap) APPDATA.siigoProductoMap = {};
+    codigos.forEach(s => { APPDATA.siigoProductoMap[s.dataset.clave] = s.value.trim(); });
+    if(nit !== info.nit) setClienteInfo(dist.nombre, { ...info, nit });
+    const t = fsTotales(fsItemsPendientes(distId, fecha, facturadas));
+    if(!forzar && !confirm(`¿Crear en Siigo la factura de ${dist.nombre} por ${fmt(t.total)}?` + (c.enviarDian ? '\n\nATENCIÓN: se enviará a la DIAN al crearla.' : ''))) return;
+    const btn = overlay.querySelector('#fsCrear');
+    btn.disabled = true; btn.textContent = 'Creando factura…';
+    try{
+      await saveAppData(APPDATA);
+      const res = await fetch(SIIGO_URL_FACTURAR, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ distId, fecha, nit, cliente: dist.nombre, clave, forzar: !!forzar }) });
+      const data = await res.json().catch(() => ({}));
+      if(data.ok){
+        overlay.remove();
+        alert(`✅ ${data.mensaje}\nTotal: ${fmt(data.total)}`);
+        return;
+      }
+      if(data.requiereConfirmar){
+        if(confirm((data.mensaje || '') + '\n\n¿Ya revisaste en Siigo y la factura NO se creó? Pulsa Aceptar para intentar de nuevo.')) return enviar(true);
+        return;
+      }
+      alert('No se creó la factura.\n\n' + (data.mensaje || ('Error HTTP ' + res.status)));
+    }catch(err){
+      console.error(err);
+      alert('No se pudo contactar la función de facturación de Siigo. ¿Ya está publicada?\n\n' + err.message);
+    }finally{
+      if(document.body.contains(overlay)){ btn.disabled = false; btn.textContent = 'Crear factura en Siigo'; }
+    }
+  };
+  overlay.querySelector('#fsCrear').addEventListener('click', () => enviar(false));
+}
+// Configuración de la facturación (se trae de Siigo: tipos de factura, vendedores, formas de pago…).
+async function openConfigFacturaSiigo(alGuardar){
+  const overlay = openModal(`<h3>Configurar facturación en Siigo</h3><div id="cfsCuerpo" style="padding:16px 0;color:var(--ink-soft);">Cargando opciones de Siigo…</div>`);
+  let op;
+  try{
+    const res = await fetch(SIIGO_URL_OPCIONES_FACTURA);
+    op = await res.json();
+    if(!op.ok) throw new Error(op.mensaje || ('HTTP ' + res.status));
+  }catch(err){
+    overlay.querySelector('#cfsCuerpo').innerHTML = `<div style="color:#B65B2E;">No se pudieron traer las opciones de Siigo: ${escapeHtml(err.message)}.<br>¿Ya está publicada la función de facturación?</div><div class="modal-actions"><button class="btn-cancel" id="cfsCerrar">Cerrar</button></div>`;
+    overlay.querySelector('#cfsCerrar').addEventListener('click', () => overlay.remove());
+    return;
+  }
+  const c = APPDATA.siigoFacturaConfig || {};
+  const sel = (id, lista, actual, vacio) => `<select id="${id}">${vacio ? `<option value="">${vacio}</option>` : ''}${lista.map(x => `<option value="${escapeAttr(x.id)}" ${String(x.id) === String(actual ?? '') ? 'selected' : ''}>${escapeHtml(x.nombre)}${x.porcentaje ? ' (' + x.porcentaje + '%)' : ''}${x.electronica ? ' · electrónica' : ''}</option>`).join('')}</select>`;
+  const ivaDefecto = c.impuestoId ?? (op.impuestos.find(t => Number(t.porcentaje) === 19) || {}).id;
+  overlay.querySelector('#cfsCuerpo').outerHTML = `
+    <div class="field"><label>Tipo de factura</label>${sel('cfsDoc', op.documentos, c.documentoId, '— Elige —')}</div>
+    <div class="field"><label>Vendedor</label>${sel('cfsVend', op.vendedores, c.vendedorId, '— Elige —')}</div>
+    <div class="field"><label>Forma de pago</label>${sel('cfsPago', op.pagos, c.formaPagoId, '— Elige —')}</div>
+    <div class="field"><label>Días de crédito (vencimiento del pago)</label><input type="number" id="cfsDias" min="0" value="${escapeAttr(c.diasCredito ?? 0)}"></div>
+    <div class="field"><label>Impuesto de los productos</label>${sel('cfsIva', op.impuestos, ivaDefecto, 'Sin impuesto')}</div>
+    <label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:13.5px;"><input type="checkbox" id="cfsIncluye" ${c.preciosIncluyenIva !== false ? 'checked' : ''}> Los precios de la app ya incluyen el IVA</label>
+    <div class="field"><label>Centro de costo (opcional)</label>${sel('cfsCentro', op.centros, c.centroCostoId, 'Ninguno')}</div>
+    <label style="display:flex;gap:8px;align-items:center;margin:0 0 6px;font-size:13.5px;"><input type="checkbox" id="cfsDian" ${c.enviarDian ? 'checked' : ''}> Enviar a la DIAN apenas se cree (si no, la envías tú desde Siigo después de revisarla)</label>
+    <label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:13.5px;"><input type="checkbox" id="cfsCorreo" ${c.enviarCorreo ? 'checked' : ''}> Enviar la factura por correo al cliente</label>
+    <div class="modal-actions"><button class="btn-cancel" id="cfsCancelar">Cancelar</button><button class="btn-confirm" id="cfsGuardar">Guardar</button></div>`;
+  overlay.querySelector('#cfsCancelar').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#cfsGuardar').addEventListener('click', async () => {
+    const v = id => overlay.querySelector(id).value;
+    const nombre = (lista, id) => (lista.find(x => String(x.id) === String(id)) || {}).nombre || '';
+    const imp = op.impuestos.find(t => String(t.id) === v('#cfsIva'));
+    if(!v('#cfsDoc') || !v('#cfsVend') || !v('#cfsPago')){ showToast('Elige tipo de factura, vendedor y forma de pago.'); return; }
+    APPDATA.siigoFacturaConfig = {
+      documentoId: v('#cfsDoc'), documentoNombre: nombre(op.documentos, v('#cfsDoc')),
+      vendedorId: v('#cfsVend'), vendedorNombre: nombre(op.vendedores, v('#cfsVend')),
+      formaPagoId: v('#cfsPago'), formaPagoNombre: nombre(op.pagos, v('#cfsPago')),
+      diasCredito: Math.max(0, Number(v('#cfsDias')) || 0),
+      impuestoId: imp ? imp.id : '', ivaPct: imp ? Number(imp.porcentaje) || 0 : 0,
+      preciosIncluyenIva: overlay.querySelector('#cfsIncluye').checked,
+      centroCostoId: v('#cfsCentro') || '',
+      enviarDian: overlay.querySelector('#cfsDian').checked,
+      enviarCorreo: overlay.querySelector('#cfsCorreo').checked
+    };
+    await saveAppData(APPDATA);
+    overlay.remove();
+    showToast('Configuración de facturación guardada');
+    if(alGuardar) alGuardar();
+  });
+}
 let siigoDatos = null;            // { desde, hasta, dias: { 'AAAA-MM-DD': resumenDelDia } }
 let siigoPeticion = 0;            // descarta respuestas viejas si se cambia el filtro rápido
 const siigoNombresClientes = {};
