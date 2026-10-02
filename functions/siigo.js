@@ -1,5 +1,5 @@
 // Cliente mínimo para la API de Siigo Nube (https://api.siigo.com).
-// Autenticación, listados paginados con reintentos ante límite de peticiones y creación de facturas.
+// Solo lectura: autenticación, listados paginados y reintentos ante límite de peticiones.
 
 const BASE_URL = 'https://api.siigo.com';
 const PAGE_SIZE = 100; // máximo que acepta Siigo por página
@@ -73,35 +73,6 @@ class SiigoClient {
     }
   }
 
-  // Crea un documento (POST). Solo reintenta si Siigo responde 429 (límite de peticiones: la
-  // factura no se creó); ante otros errores NO reintenta, para no crear facturas repetidas.
-  async post(ruta, body) {
-    for (let intento = 0; ; intento++) {
-      const token = await this.autenticar();
-      const res = await this.fetch(`${BASE_URL}/${ruta}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Partner-Id': this.partnerId,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) return res.json();
-      if (res.status === 401 && intento === 0) {
-        this.token = null; // token vencido: Siigo no procesó la petición
-        continue;
-      }
-      if (res.status === 429 && intento < MAX_REINTENTOS) {
-        await esperar(Math.min(60000, 2000 * 2 ** intento));
-        continue;
-      }
-      const err = new Error(`Siigo POST ${ruta} falló (HTTP ${res.status}): ${await res.text()}`);
-      err.status = res.status;
-      throw err;
-    }
-  }
-
   // Recorre todas las páginas de un listado y devuelve los resultados juntos.
   async listarTodo(ruta, params = {}) {
     const todos = [];
@@ -137,22 +108,6 @@ class SiigoClient {
 
   vendedores() {
     return this.listarTodo('v1/users');
-  }
-
-  tiposDeFactura() {
-    return this.get('v1/document-types', { type: 'FV' });
-  }
-
-  formasDePago() {
-    return this.get('v1/payment-types', { document_type: 'FV' });
-  }
-
-  impuestos() {
-    return this.get('v1/taxes');
-  }
-
-  crearFactura(factura) {
-    return this.post('v1/invoices', factura);
   }
 }
 
