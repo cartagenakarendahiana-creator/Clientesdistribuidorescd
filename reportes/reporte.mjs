@@ -69,7 +69,7 @@ function anterior(tipo, r){
 // Con las reglas de seguridad activas la base pide sesión: se entra con un usuario de la app
 // (rol "Solo lectura") puesto en CD_REPORTE_USUARIO y CD_REPORTE_CLAVE. Necesita salida a
 // identitytoolkit.googleapis.com.
-const API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyBj9rIuZdFCff0GoEUweLGEx9MRJ-CX9uc';
+const API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyBj9rIuZdfCFf0GoEUWelGEx9MRJ-CX9uc';
 let tokenSesion = null;
 async function tokenLectura(){
   if(process.env.FIREBASE_DB_AUTH) return process.env.FIREBASE_DB_AUTH;
