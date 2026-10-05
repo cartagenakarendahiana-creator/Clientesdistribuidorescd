@@ -7,7 +7,7 @@
 const admin = require('firebase-admin');
 const { asegurarAccesos, guardarCuenta, claveDe, emailDe } = require('../accesos');
 
-const API_KEY = 'AIzaSyBj9rIuZdFCff0GoEUweLGEx9MRJ-CX9uc';
+const API_KEY = 'AIzaSyBj9rIuZdfCFf0GoEUWelGEx9MRJ-CX9uc';
 const SITIO = 'https://pedidodistribuidores.netlify.app/';
 
 async function main() {
