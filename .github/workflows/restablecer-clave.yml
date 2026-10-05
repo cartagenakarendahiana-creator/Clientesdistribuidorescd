@@ -1,0 +1,49 @@
+# Pone una contraseña nueva a un usuario de la app (por ejemplo, si el administrador no recuerda la suya).
+#
+# 1. GitHub → Settings → Secrets and variables → Actions → secreto CLAVE_RESTABLECER = la contraseña nueva.
+# 2. GitHub → Actions → "Restablecer contraseña de un usuario" → Run workflow → escribe el usuario.
+# 3. Entra a la app con esa contraseña. Después puedes borrar el secreto.
+# La contraseña nunca se imprime; el registro solo dice si la prueba de ingreso funcionó.
+name: Restablecer contraseña de un usuario
+
+on:
+  workflow_dispatch:
+    inputs:
+      usuario:
+        description: 'Usuario de la app (ej. admin)'
+        required: true
+        default: 'admin'
+
+jobs:
+  restablecer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias
+        working-directory: functions
+        run: npm ci
+
+      - name: Preparar credenciales de Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT."; exit 1; fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+
+      - name: Restablecer y probar
+        working-directory: functions
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+          CLAVE_RESTABLECER: ${{ secrets.CLAVE_RESTABLECER }}
+          USUARIO: ${{ inputs.usuario }}
+        run: node scripts/restablecer-clave.js "$USUARIO"
+
+      - name: Borrar credenciales
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"
