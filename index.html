@@ -6437,6 +6437,8 @@ function aplicarRol(){
 
 // Oculta montos importantes para el trabajador: columnas de tablas, tarjetas y campos cuyo título habla
 // de dinero (valor, total, debe, cobro, flete, facturado, saldo, ventas…). Los PRECIOS sí se muestran.
+// Excepción: en Despachos el trabajador ve y llena el valor de la factura y del flete (son obligatorios).
+const montoDeDespacho = (el) => !!(el.querySelector('#despachosBody, #pf_valorFactura, #pf_valorFlete'));
 const RE_DINERO = /(valor|debe|deuda|subtotal|impuesto|cobro|flete|saldo|ventas|utilidad|facturad|^total$|total pendiente|total pedido|total entregado|se debe|total del servicio)/i;
 const RE_PERMITIDO = /(precio|unidad|cantidad|fabricad|registro)/i;
 const esDinero = (t) => { const s = String(t || '').replace(/\s+/g, ' ').trim(); return !!s && RE_DINERO.test(s) && !RE_PERMITIDO.test(s); };
@@ -6447,6 +6449,7 @@ function ocultarValoresTrabajador(){
   const raiz = document.getElementById('appRoot');
   if(!raiz) return;
   raiz.querySelectorAll('table').forEach(t => {
+    if(montoDeDespacho(t)) return;
     const ths = t.querySelectorAll(':scope > thead > tr:first-child > th');
     if(!ths.length) return;
     const ocultar = new Set();
@@ -6467,6 +6470,7 @@ function ocultarValoresTrabajador(){
   });
   document.querySelectorAll('.modal-overlay .field').forEach(f => {
     const lab = f.querySelector('label');
+    if(montoDeDespacho(f)) return;
     if(lab && /valor|flete/i.test(lab.textContent) && !/precio/i.test(lab.textContent)) f.classList.add('oculto-trabajador');
   });
   document.querySelectorAll('.modal-overlay table').forEach(t => {
