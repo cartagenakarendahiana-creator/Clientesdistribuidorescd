@@ -24,7 +24,7 @@ async function main() {
     const lista = Object.values((await db.ref('accesos/usuarios').once('value')).val() || {}).filter(Boolean).map((u) => u.usuario);
     throw new Error(`No existe el usuario "${usuario}". Usuarios guardados: ${lista.join(', ') || '(ninguno)'}`);
   }
-  console.log(`Usuario "${x.usuario}" (${x.rol}). Cuenta de Firebase antes: ${x.uid ? 'sí' : 'no (aún no había entrado)'}.`);
+  console.log(`::notice::Usuario "${x.usuario}" (${x.rol}). Cuenta de Firebase antes: ${x.uid ? 'sí' : 'no (aún no había entrado)'}.`);
   await guardarCuenta({ db, auth, c, x, clave });
   console.log('Contraseña nueva guardada.');
 
@@ -35,11 +35,12 @@ async function main() {
     body: JSON.stringify({ email: emailDe(x.usuario), password: clave, returnSecureToken: true }),
   });
   const j = await r.json().catch(() => ({}));
-  if (r.ok && j.idToken) console.log('Prueba de ingreso: OK. Ya puede entrar con la contraseña nueva.');
+  if (r.ok && j.idToken) console.log(`::notice::Prueba de ingreso OK: "${x.usuario}" ya puede entrar con la contraseña nueva.`);
   else {
     console.log(`::error::Prueba de ingreso FALLÓ: ${(j.error && j.error.message) || 'HTTP ' + r.status}`);
     process.exitCode = 1;
   }
 }
 
-main().catch((err) => { console.error('::error::' + err.message); process.exit(1); });
+// firebase-admin deja la conexión abierta: se cierra el proceso al terminar.
+main().then(() => process.exit(process.exitCode || 0)).catch((err) => { console.error('::error::' + err.message); process.exit(1); });
