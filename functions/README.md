@@ -103,3 +103,21 @@ cd functions && npm test
 - **Facturas anuladas:** se excluyen si Siigo las marca con `annulled: true`. Hay que confirmarlo
   con la primera sincronización real.
 - **Notas crédito / devoluciones:** todavía no se restan.
+
+## Accesos seguros (Firebase Authentication)
+
+Cada usuario de la app es una cuenta de Firebase Authentication (correo interno calculado del nombre de
+usuario; se sigue entrando con usuario y contraseña). Las contraseñas ya no se guardan en la base de datos.
+
+- `migrarAcceso`: la primera vez que cada persona entra después del cambio, revisa su contraseña de antes y le
+  crea la cuenta. Los usuarios pasan al nodo privado `accesos/` y se borran de `casaDoradaDatos`.
+- `gestionarUsuarios`: ventana "Usuarios" (solo administradores): listar, crear, cambiar contraseña, eliminar.
+  Roles: `admin`, `trabajador`, `lector` (solo lectura, para el reporte diario).
+- `database.rules.json`: solo usuarios con sesión leen `casaDoradaDatos` (admin y trabajador pueden guardar);
+  `siigo/` solo lo leen admin y lector. Se publica a mano con el workflow "Publicar reglas de la base de datos".
+
+Pasos, en orden:
+1. Firebase → Authentication → Comenzar → "Correo electrónico/contraseña" → Habilitar.
+2. Unir el cambio a main (publica la app y las funciones).
+3. Entrar una vez con el administrador y crear el usuario de "Solo lectura" para el reporte.
+4. GitHub → Actions → "Publicar reglas de la base de datos" → Run workflow.

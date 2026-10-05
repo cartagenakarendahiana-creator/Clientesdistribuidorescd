@@ -11,6 +11,7 @@ const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { SiigoClient } = require('./siigo');
 const { sincronizar, avanzarHistorico: avanzarHistoricoCon, avanzarNotasCreditoHistorico, hoyColombia, sumarDias } = require('./sync');
+const accesos = require('./accesos');
 
 admin.initializeApp();
 
@@ -69,13 +70,30 @@ exports.sincronizarSiigo = onSchedule(
   }
 );
 
-// Botón "Sincronizar ahora" de la sección Ventas Siigo. No recibe datos: solo dispara la misma
-// sincronización de los últimos días, como máximo una vez por minuto.
+const tokenDe = (req) => String(req.get('Authorization') || '').replace(/^Bearer\s+/i, '') || null;
+function responderError(res, err) {
+  if (err instanceof accesos.ErrorAcceso) {
+    res.status(err.status).json({ ok: false, mensaje: err.message });
+    return;
+  }
+  console.error(err);
+  res.status(500).json({ ok: false, mensaje: 'Error del servidor. Intenta de nuevo.' });
+}
+
+// Botón "Sincronizar ahora" de la sección Ventas Siigo (solo administradores con sesión iniciada).
+// No recibe datos: solo dispara la misma sincronización de los últimos días, como máximo una vez por minuto.
 exports.sincronizarSiigoAhora = onRequest(
   { cors: true, secrets: SECRETOS, timeoutSeconds: 540, maxInstances: 1 },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).json({ ok: false, mensaje: 'Usa POST.' });
+      return;
+    }
+    try {
+      const yo = await accesos.usuarioDelToken({ db: admin.database(), auth: admin.auth(), idToken: tokenDe(req) });
+      if (yo.rol !== 'admin') throw new accesos.ErrorAcceso(403, 'Solo un administrador puede sincronizar.');
+    } catch (err) {
+      responderError(res, err);
       return;
     }
     const estado = (await admin.database().ref('siigo/estado').once('value')).val() || {};
@@ -101,3 +119,32 @@ exports.sincronizarSiigoAhora = onRequest(
     }
   }
 );
+
+// Primer ingreso de cada usuario después de pasar a Firebase Authentication: valida la contraseña de
+// antes y le crea su cuenta. Después de eso la app entra directo con Firebase.
+exports.migrarAcceso = onRequest({ cors: true, maxInstances: 2 }, async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ ok: false, mensaje: 'Usa POST.' });
+    return;
+  }
+  try {
+    const { usuario, clave } = req.body || {};
+    res.json(await accesos.migrarAcceso({ db: admin.database(), auth: admin.auth(), usuario, clave }));
+  } catch (err) {
+    responderError(res, err);
+  }
+});
+
+// Ventana "Usuarios" de la app (solo administradores).
+exports.gestionarUsuarios = onRequest({ cors: true, maxInstances: 2 }, async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ ok: false, mensaje: 'Usa POST.' });
+    return;
+  }
+  try {
+    const { accion, usuario, clave, rol } = req.body || {};
+    res.json(await accesos.gestionarUsuarios({ db: admin.database(), auth: admin.auth(), idToken: tokenDe(req), accion, usuario, clave, rol }));
+  } catch (err) {
+    responderError(res, err);
+  }
+});

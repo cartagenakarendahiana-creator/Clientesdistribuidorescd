@@ -5,7 +5,7 @@
 //   node reportes/reporte.mjs dia 2026-09-30
 //   node reportes/reporte.mjs semana 2026-09-30   (lunes a domingo de esa fecha)
 //   node reportes/reporte.mjs mes 2026-09
-// Si la base de datos pide autenticación, pon el secreto de lectura en FIREBASE_DB_AUTH.
+// Con las reglas de seguridad activas necesita CD_REPORTE_USUARIO y CD_REPORTE_CLAVE (usuario "Solo lectura").
 
 const DB_URL = process.env.FIREBASE_DB_URL || 'https://pedidos-nuevo-default-rtdb.firebaseio.com';
 const TZ = 'America/Bogota';
@@ -66,10 +66,35 @@ function anterior(tipo, r){
   return rango(tipo, iso(f));
 }
 
+// Con las reglas de seguridad activas la base pide sesión: se entra con un usuario de la app
+// (rol "Solo lectura") puesto en CD_REPORTE_USUARIO y CD_REPORTE_CLAVE. Necesita salida a
+// identitytoolkit.googleapis.com.
+const API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyBj9rIuZdFCff0GoEUweLGEx9MRJ-CX9uc';
+let tokenSesion = null;
+async function tokenLectura(){
+  if(process.env.FIREBASE_DB_AUTH) return process.env.FIREBASE_DB_AUTH;
+  const usuario = process.env.CD_REPORTE_USUARIO, clave = process.env.CD_REPORTE_CLAVE;
+  if(!usuario || !clave) return null;
+  if(!tokenSesion){
+    const { createHash } = await import('node:crypto');
+    const email = 'u' + createHash('sha256').update(usuario.trim(), 'utf8').digest('hex').slice(0, 40) + '@usuarios.casadorada.app';
+    tokenSesion = fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: clave, returnSecureToken: true })
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok || !j.idToken) throw new Error(`No se pudo iniciar sesión como "${usuario}": ${(j.error && j.error.message) || 'HTTP ' + r.status}`);
+      return j.idToken;
+    });
+  }
+  return tokenSesion;
+}
+
 async function leer(ruta){
-  const auth = process.env.FIREBASE_DB_AUTH ? `?auth=${encodeURIComponent(process.env.FIREBASE_DB_AUTH)}` : '';
+  const token = await tokenLectura();
+  const auth = token ? `?auth=${encodeURIComponent(token)}` : '';
   const res = await fetch(`${DB_URL}/casaDoradaDatos/${ruta}.json${auth}`);
-  if(res.status === 401 || res.status === 403) throw new Error(`La base de datos no dejó leer "${ruta}" (HTTP ${res.status}): falta el permiso de lectura (FIREBASE_DB_AUTH).`);
+  if(res.status === 401 || res.status === 403) throw new Error(`La base de datos no dejó leer "${ruta}" (HTTP ${res.status}): falta el usuario de lectura (CD_REPORTE_USUARIO y CD_REPORTE_CLAVE).`);
   if(!res.ok) throw new Error(`No se pudo leer "${ruta}" (HTTP ${res.status}).`);
   return res.json();
 }

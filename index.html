@@ -2325,6 +2325,7 @@
 <!-- Firebase (base de datos compartida en tiempo real) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 
 <script>
 // Si la librería de gráficas no cargó, cada recuadro de gráfica lo dice (antes quedaba todo en blanco).
@@ -2381,8 +2382,6 @@ const DEFAULT_APPDATA = {
   vendedoresRegistry:[],     // [nombre, ...] — vendedores creados manualmente (aunque no tengan pedidos aún)
   distribuidoresRegistry:[], // [nombre, ...] — clientes creados manualmente (aunque no tengan pedidos aún)
   distribuidoresEliminados:[], // [distId, ...] — pedidos/clientes borrados (ej. digitados dos veces por error)
-  auth:{usuario:'admin', password:'CasaDorada2026'}, // administrador principal (la contraseña se cifra al entrar: {usuario, salt, hash})
-  usuarios:[],              // [{usuario, rol:'admin'|'trabajador', salt, hash, activo}] — accesos adicionales
   // ---- Gestión de Planta (guardado real en Firebase, igual que Vendedores/Clientes) ----
   plantaOperarios:[],        // [{id, nombre, cedula, cargo, turno, telefono, fechaIngreso, activo}]
   plantaProductos:[],        // [{id, nombre, categoria, unidad, tiempoEstandar, costoMaterial, materiales:[{insumo,cantidad,costoUnitario}], precioVenta, activo}]
@@ -2417,7 +2416,10 @@ const FIREBASE_CONFIGURADO = firebaseConfig.apiKey !== "PON_AQUI_TU_API_KEY";
 let dataRef = null;
 let firebaseReady = false;
 let firebaseReadyResolve;
-const firebaseReadyPromise = new Promise(res => firebaseReadyResolve = res);
+let firebaseReadyPromise = new Promise(res => firebaseReadyResolve = res);
+// Los datos solo se leen con una sesión de Firebase Authentication iniciada (ver "acceso" más abajo).
+let authListo = false;           // ya se sabe si hay sesión guardada en este equipo
+let escuchandoDatos = false;
 
 function initFirebaseSync(){
   if(!FIREBASE_CONFIGURADO){
@@ -2431,17 +2433,23 @@ function initFirebaseSync(){
   try{
     firebase.initializeApp(firebaseConfig);
     dataRef = firebase.database().ref('casaDoradaDatos');
+    firebase.auth().onAuthStateChanged(alCambiarSesion);
   }catch(e){
     console.error('firebase init error', e);
     firebaseReady = true;
     firebaseReadyResolve();
-    return;
+    authListo = true;
   }
+}
+function escucharDatos(){
+  if(escuchandoDatos) return firebaseReadyPromise;
+  escuchandoDatos = true;
   dataRef.on('value', (snap)=>{
     const raw = snap.val();
     recordarEstadoServidor(raw);
     const val = decodeFirebaseKeys(raw);
     APPDATA = val ? {...structuredClone(DEFAULT_APPDATA), ...val} : structuredClone(DEFAULT_APPDATA);
+    CLAVES_PRIVADAS.forEach(k => delete APPDATA[k]);
     if(!firebaseReady){
       firebaseReady = true;
       firebaseReadyResolve();
@@ -2450,9 +2458,19 @@ function initFirebaseSync(){
     }
   }, (err)=>{
     console.error('firebase sync error', err);
-    showToast('Sin conexión con la base de datos');
+    escuchandoDatos = false;
+    showToast(/permission/i.test(String(err && (err.code || err.message))) ? 'Tu usuario no tiene permiso para ver los datos' : 'Sin conexión con la base de datos');
     if(!firebaseReady){ firebaseReady = true; firebaseReadyResolve(); }
   });
+  return firebaseReadyPromise;
+}
+function dejarDeEscucharDatos(){
+  if(dataRef) dataRef.off('value');
+  escuchandoDatos = false;
+  firebaseReady = false;
+  firebaseReadyPromise = new Promise(res => firebaseReadyResolve = res);
+  APPDATA = structuredClone(DEFAULT_APPDATA);
+  recordarEstadoServidor(null);
 }
 // Redibujar toda la app justo entre el "mousedown" y el "click" hacía que el botón pulsado
 // desapareciera (el clic se perdía: había que hacer clic dos veces), y redibujar mientras alguien
@@ -2544,6 +2562,7 @@ function mostrarErrorGuardado(msg){
   el.querySelector('span').textContent = msg;
 }
 let guardadosEnCurso = 0;
+const CLAVES_PRIVADAS = ['auth', 'usuarios'];
 async function saveAppData(data){
   if(!dataRef){
     showToast('Firebase no está configurado todavía');
@@ -2554,6 +2573,7 @@ async function saveAppData(data){
     const enc = sanitizeForFirebase(data);
     const cambios = {};
     new Set([...Object.keys(enc), ...Object.keys(estadoServidorJson)]).forEach(k => {
+      if(CLAVES_PRIVADAS.includes(k)) return; // los usuarios ya no viven aquí (ver functions/accesos.js)
       const v = enc[k] === undefined ? null : enc[k];
       if(JSON.stringify(v) === (estadoServidorJson[k] ?? 'null')) return;
       const srv = estadoServidor[k];
@@ -6327,10 +6347,6 @@ document.getElementById('btnLimpiarFiltros').addEventListener('click', ()=>{
 // ---------- acceso (usuario y contraseña) ----------
 let appRendered = false;
 
-function currentAuth(){
-  return APPDATA.auth || DEFAULT_APPDATA.auth;
-}
-
 // Agrega un botón "🖨 Imprimir" a cualquier encabezado de página (.page-card-header) que todavía
 // no tenga uno propio, para poder imprimir cualquier módulo/tabla de la app (usa las mismas reglas
 // de impresión — @media print — que ya ocultan menús, filtros y botones). Se ejecuta una sola vez
@@ -6355,9 +6371,6 @@ function showApp(){
   if(!appRendered){ syncPlantaProductosFromInventario(); if(firebaseReady && dataRef) asegurarServiciosUltrasonido(); congelarPreciosServicioProduccion(); renderAll(); injectPrintButtons(); appRendered = true; }
 }
 
-const SESSION_KEY = 'casaDoradaSesionActiva';
-const SESSION_USER_KEY = 'casaDoradaSesionUsuario';
-
 // ---------- Usuarios y roles ----------
 // Administrador: ve todo. Trabajador: solo Clientes/Pedidos, Despachos, Inventario, Precios de servicio y
 // Producción Diaria, con precios de productos y de servicios pero SIN totales, deudas, cobros ni facturación.
@@ -6365,46 +6378,53 @@ const VISTAS_TRABAJADOR = ['resumen', 'pedidos', 'distribuidores', 'despachos', 
 let usuarioActual = null; // { usuario, rol }
 const esTrabajador = () => !!usuarioActual && usuarioActual.rol === 'trabajador';
 
-async function hashClave(salt, clave){
-  const datos = new TextEncoder().encode(String(salt) + '|' + String(clave));
-  const buf = await crypto.subtle.digest('SHA-256', datos);
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+// Cada usuario es una cuenta de Firebase Authentication con un correo interno calculado del nombre de usuario
+// (nadie lo escribe): así se sigue entrando con usuario y contraseña. El rol lo pone el servidor
+// (functions/accesos.js) y las reglas de la base de datos lo exigen para leer o guardar.
+const URL_FUNCIONES = 'https://us-central1-' + firebaseConfig.projectId + '.cloudfunctions.net/';
+const NOMBRE_ROL = { admin: 'Administrador', trabajador: 'Trabajador', lector: 'Solo lectura' };
+async function emailDeUsuario(usuario){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(usuario).trim()));
+  return 'u' + [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 40) + '@usuarios.casadorada.app';
 }
-const nuevaSal = () => [...crypto.getRandomValues(new Uint8Array(12))].map(b => b.toString(16).padStart(2, '0')).join('');
-function listaUsuarios(){ return Array.isArray(APPDATA.usuarios) ? APPDATA.usuarios.filter(Boolean) : []; }
-
-// Busca el usuario y valida la contraseña. El administrador principal es APPDATA.auth (el de siempre);
-// si aún tiene la contraseña sin cifrar, se cifra la primera vez que entra.
-async function validarCredenciales(u, p){
-  const auth = currentAuth();
-  if(u === auth.usuario){
-    if(auth.hash){ if(await hashClave(auth.salt, p) === auth.hash) return { usuario: u, rol: 'admin', firma: auth.hash }; }
-    else if(p === auth.password){
-      const salt = nuevaSal(), hash = await hashClave(salt, p);
-      APPDATA.auth = { usuario: u, salt, hash };
-      saveAppData(APPDATA);
-      return { usuario: u, rol: 'admin', firma: hash };
-    }
-    return null;
+async function llamarFuncion(nombre, cuerpo, conSesion){
+  const headers = { 'Content-Type': 'application/json' };
+  if(conSesion) headers.Authorization = 'Bearer ' + await firebase.auth().currentUser.getIdToken();
+  let res;
+  try{ res = await fetch(URL_FUNCIONES + nombre, { method: 'POST', headers, body: JSON.stringify(cuerpo || {}) }); }
+  catch(e){ throw new Error('No se pudo conectar. Revisa el internet e intenta de nuevo.'); }
+  const r = await res.json().catch(() => ({}));
+  if(!res.ok || !r.ok) throw Object.assign(new Error(r.mensaje || 'No se pudo completar (error ' + res.status + ').'), { status: res.status });
+  return r;
+}
+// Se llama sola al abrir la app (sesión guardada en este equipo), al entrar y al cerrar sesión.
+async function alCambiarSesion(user){
+  if(!user){
+    usuarioActual = null;
+    dejarDeEscucharDatos();
+    mostrarLogin();
+    authListo = true;
+    return;
   }
-  const x = listaUsuarios().find(z => z.usuario === u && z.activo !== false);
-  if(x && await hashClave(x.salt, p) === x.hash) return { usuario: x.usuario, rol: x.rol === 'admin' ? 'admin' : 'trabajador', firma: x.hash };
-  return null;
-}
-// Al volver a abrir la app se revisa que la sesión guardada siga siendo válida (y con el rol de hoy).
-function sesionGuardada(){
-  let s = null;
-  try{ s = JSON.parse(localStorage.getItem(SESSION_USER_KEY) || 'null'); }catch(e){}
-  if(!s || !s.usuario) return null;
-  const auth = currentAuth();
-  if(s.usuario === auth.usuario) return (auth.hash ? s.firma === auth.hash : s.firma === 'legacy') ? { usuario: s.usuario, rol: 'admin' } : null;
-  const x = listaUsuarios().find(z => z.usuario === s.usuario && z.activo !== false);
-  return (x && s.firma === x.hash) ? { usuario: x.usuario, rol: x.rol === 'admin' ? 'admin' : 'trabajador' } : null;
+  let claims = {};
+  try{ claims = (await user.getIdTokenResult()).claims || {}; }catch(e){}
+  if(!NOMBRE_ROL[claims.rol]){
+    authListo = true;
+    mostrarErrorLogin('Este usuario no tiene acceso. Pídele a un administrador que lo revise.');
+    firebase.auth().signOut();
+    return;
+  }
+  usuarioActual = { usuario: claims.usuario || user.displayName || '', rol: claims.rol };
+  await escucharDatos();
+  authListo = true;
+  if(!usuarioActual) return; // cerró sesión mientras cargaba
+  showApp();
+  aplicarRol();
 }
 function aplicarRol(){
   document.body.classList.toggle('rol-trabajador', esTrabajador());
   const el = document.getElementById('sesionUsuario');
-  if(el) el.textContent = usuarioActual ? `${usuarioActual.usuario} · ${esTrabajador() ? 'Trabajador' : 'Administrador'}` : '';
+  if(el) el.textContent = usuarioActual ? `${usuarioActual.usuario} · ${NOMBRE_ROL[usuarioActual.rol] || ''}` : '';
   // Menú: el trabajador solo ve sus secciones (y los grupos que quedan vacíos se ocultan).
   document.querySelectorAll('.nav-dropdown-item[data-nav]').forEach(b => b.classList.toggle('oculto-trabajador', !VISTAS_TRABAJADOR.includes(b.dataset.nav)));
   document.querySelectorAll('.nav-dropdown-sub-group, .nav-dropdown').forEach(g => {
@@ -6466,21 +6486,37 @@ new MutationObserver(() => {
   requestAnimationFrame(ocultarValoresTrabajador);
 }).observe(document.body, { childList: true, subtree: true });
 
+function mostrarErrorLogin(msg){
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
 async function attemptLogin(){
-  if(!firebaseReady){ showToast('Cargando datos, espera un momento…'); return; }
+  if(!authListo){ showToast('Cargando, espera un momento…'); return; }
   const u = document.getElementById('loginUsuario').value.trim();
   const p = document.getElementById('loginPassword').value;
-  const errEl = document.getElementById('loginError');
-  const ok = await validarCredenciales(u, p);
-  if(ok){
-    errEl.style.display = 'none';
+  const btn = document.getElementById('btnLogin');
+  document.getElementById('loginError').style.display = 'none';
+  if(!u || !p){ mostrarErrorLogin('Escribe usuario y contraseña.'); return; }
+  btn.disabled = true; btn.textContent = 'Entrando…';
+  try{
+    const email = await emailDeUsuario(u);
+    try{
+      await firebase.auth().signInWithEmailAndPassword(email, p);
+    }catch(e){
+      const code = String(e && e.code || '');
+      if(/operation-not-allowed|configuration-not-found/.test(code)) throw new Error('Falta activar "Correo electrónico/contraseña" en Firebase → Authentication.');
+      if(/too-many-requests/.test(code)) throw new Error('Demasiados intentos seguidos. Espera unos minutos.');
+      if(/network-request-failed/.test(code)) throw new Error('Sin conexión a internet.');
+      // Primera vez que entra después del cambio: el servidor revisa la contraseña de antes y le crea la cuenta.
+      await llamarFuncion('migrarAcceso', { usuario: u, clave: p });
+      await firebase.auth().signInWithEmailAndPassword(email, p);
+    }
     document.getElementById('loginPassword').value = '';
-    usuarioActual = { usuario: ok.usuario, rol: ok.rol };
-    try{ localStorage.setItem(SESSION_KEY, '1'); localStorage.setItem(SESSION_USER_KEY, JSON.stringify({ usuario: ok.usuario, firma: ok.firma })); }catch(e){}
-    showApp();
-    aplicarRol();
-  }else{
-    errEl.style.display = 'block';
+  }catch(e){
+    mostrarErrorLogin(e && e.status === 401 ? 'Usuario o contraseña incorrectos.' : (e && e.message) || 'Usuario o contraseña incorrectos.');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Entrar';
   }
 }
 
@@ -6488,84 +6524,92 @@ document.getElementById('btnLogin').addEventListener('click', attemptLogin);
 document.getElementById('loginUsuario').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
 document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
 
-function cerrarSesion(){
-  try{ localStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_USER_KEY); }catch(e){}
-  usuarioActual = null;
+function mostrarLogin(){
   document.body.classList.remove('rol-trabajador');
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginOverlay').style.display = 'flex';
-  document.getElementById('loginUsuario').value = '';
   document.getElementById('loginPassword').value = '';
+}
+function cerrarSesion(){
+  usuarioActual = null;
+  mostrarLogin();
+  document.getElementById('loginUsuario').value = '';
   document.getElementById('loginError').style.display = 'none';
+  try{ firebase.auth().signOut(); }catch(e){}
 }
 document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
 
-// Usuarios (solo administradores): crear trabajadores o administradores, cambiar contraseñas, desactivar.
+// Usuarios (solo administradores): crear trabajadores o administradores, cambiar contraseñas, eliminar.
+// Todo pasa por el servidor (functions/accesos.js): las contraseñas ya no se guardan en la base de datos.
 function openChangeAuthModal(){
   if(esTrabajador()) return;
-  const auth = currentAuth();
+  let filas = [];
   const pintar = () => {
-    const filas = [{ usuario: auth.usuario, rol: 'admin', principal: true }, ...listaUsuarios()];
-    overlay.querySelector('#usrLista').innerHTML = filas.map((x, i) => `<tr>
-      <td><b>${escapeHtml(x.usuario)}</b>${x.principal ? ' <span style="font-size:11px;color:var(--ink-soft);">(principal)</span>' : ''}</td>
-      <td>${x.rol === 'admin' ? 'Administrador' : 'Trabajador'}${x.activo === false ? ' · <span style="color:#B65B2E;">inactivo</span>' : ''}</td>
+    overlay.querySelector('#usrLista').innerHTML = filas.length ? filas.map((x, i) => `<tr>
+      <td><b>${escapeHtml(x.usuario)}</b>${x.principal ? ' <span style="font-size:11px;color:var(--ink-soft);">(principal)</span>' : ''}${x.pendiente ? '<div style="font-size:11px;color:var(--ink-soft);">aún no ha entrado</div>' : ''}</td>
+      <td>${NOMBRE_ROL[x.rol] || x.rol}</td>
       <td style="white-space:nowrap;text-align:right;">
-        <button type="button" class="acc-btn" data-usr-clave="${i}">Cambiar contraseña</button>
-        ${x.principal ? '' : `<button type="button" class="acc-btn acc-danger" data-usr-borrar="${i - 1}">Eliminar</button>`}
-      </td></tr>`).join('');
+        <button type="button" class="acc-btn" data-usr-clave="${i}" title="Cambiar contraseña">Contraseña</button>
+        ${x.principal ? '' : `<button type="button" class="acc-btn acc-danger" data-usr-borrar="${i}">Eliminar</button>`}
+      </td></tr>`).join('') : '<tr><td colspan="3" style="color:var(--ink-soft);">Cargando…</td></tr>';
+  };
+  const cargar = async () => {
+    try{ filas = (await llamarFuncion('gestionarUsuarios', { accion: 'listar' }, true)).usuarios || []; pintar(); }
+    catch(e){ overlay.querySelector('#usrLista').innerHTML = `<tr><td colspan="3" style="color:#B65B2E;">${escapeHtml(e.message)}</td></tr>`; }
+  };
+  const ocupado = async (btn, fn) => {
+    if(btn) btn.disabled = true;
+    try{ await fn(); }catch(e){ showToast(e.message, 4000); }finally{ if(btn) btn.disabled = false; }
   };
   const overlay = openModal(`
     <h3>Usuarios</h3>
-    <div class="hint">Los <b>administradores</b> ven todo. Los <b>trabajadores</b> solo ven Clientes y Pedidos, Despachos, Inventario, Precios de servicio y Producción Diaria; ven precios de productos y servicios, pero no totales, deudas, cobros ni facturación.</div>
+    <div class="hint">Los <b>administradores</b> ven todo. Los <b>trabajadores</b> solo ven Clientes y Pedidos, Despachos, Inventario, Precios de servicio y Producción Diaria; ven precios de productos y servicios, pero no totales, deudas, cobros ni facturación. <b>Solo lectura</b> ve todo pero no puede cambiar nada (sirve para el reporte diario).</div>
     <div class="table-scroll" style="margin:10px 0;"><table><thead><tr><th>Usuario</th><th>Rol</th><th></th></tr></thead><tbody id="usrLista"></tbody></table></div>
     <h4 style="margin:14px 0 6px;">Agregar usuario</h4>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <div class="field" style="flex:1;min-width:130px;"><label>Usuario</label><input type="text" id="usrNuevo" autocomplete="off" placeholder="Ej. maria"></div>
       <div class="field" style="flex:1;min-width:130px;"><label>Contraseña</label><input type="password" id="usrClave" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>
-      <div class="field" style="flex:1;min-width:130px;"><label>Rol</label><select id="usrRol"><option value="trabajador">Trabajador</option><option value="admin">Administrador</option></select></div>
+      <div class="field" style="flex:1;min-width:130px;"><label>Rol</label><select id="usrRol"><option value="trabajador">Trabajador</option><option value="admin">Administrador</option><option value="lector">Solo lectura</option></select></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="usrCerrar">Cerrar</button>
       <button class="btn-confirm" id="usrAgregar">Agregar usuario</button>
     </div>`);
   pintar();
+  cargar();
   overlay.querySelector('#usrCerrar').addEventListener('click', () => overlay.remove());
-  overlay.querySelector('#usrAgregar').addEventListener('click', async () => {
+  overlay.querySelector('#usrAgregar').addEventListener('click', (e) => ocupado(e.currentTarget, async () => {
     const u = overlay.querySelector('#usrNuevo').value.trim();
     const p = overlay.querySelector('#usrClave').value;
     const rol = overlay.querySelector('#usrRol').value;
     if(!u){ showToast('Escribe el usuario'); return; }
     if(p.length < 6){ showToast('La contraseña debe tener mínimo 6 caracteres'); return; }
-    if(u === auth.usuario || listaUsuarios().some(x => x.usuario === u)){ showToast('Ese usuario ya existe'); return; }
-    const salt = nuevaSal();
-    APPDATA.usuarios = [...listaUsuarios(), { usuario: u, rol, salt, hash: await hashClave(salt, p), activo: true, creado: new Date().toISOString() }];
-    await saveAppData(APPDATA);
+    await llamarFuncion('gestionarUsuarios', { accion: 'crear', usuario: u, clave: p, rol }, true);
     overlay.querySelector('#usrNuevo').value = ''; overlay.querySelector('#usrClave').value = '';
-    pintar();
-    showToast(`Usuario "${u}" creado como ${rol === 'admin' ? 'administrador' : 'trabajador'}`);
-  });
-  overlay.querySelector('#usrLista').addEventListener('click', async (e) => {
+    showToast(`Usuario "${u}" creado como ${(NOMBRE_ROL[rol] || rol).toLowerCase()}`);
+    await cargar();
+  }));
+  overlay.querySelector('#usrLista').addEventListener('click', (e) => {
     const bc = e.target.closest('[data-usr-clave]'), bb = e.target.closest('[data-usr-borrar]');
     if(bc){
-      const i = Number(bc.dataset.usrClave);
-      const nombre = i === 0 ? auth.usuario : listaUsuarios()[i - 1].usuario;
-      const nueva = prompt(`Nueva contraseña para "${nombre}" (mínimo 6 caracteres):`);
+      const x = filas[Number(bc.dataset.usrClave)];
+      const nueva = prompt(`Nueva contraseña para "${x.usuario}" (mínimo 6 caracteres):`);
       if(nueva === null) return;
       if(nueva.length < 6){ showToast('La contraseña debe tener mínimo 6 caracteres'); return; }
-      const salt = nuevaSal(), hash = await hashClave(salt, nueva);
-      if(i === 0){ APPDATA.auth = { usuario: auth.usuario, salt, hash }; }
-      else { const l = listaUsuarios(); l[i - 1] = { ...l[i - 1], salt, hash }; APPDATA.usuarios = l; }
-      await saveAppData(APPDATA);
-      if(usuarioActual && usuarioActual.usuario === nombre){ try{ localStorage.setItem(SESSION_USER_KEY, JSON.stringify({ usuario: nombre, firma: hash })); }catch(err){} }
-      showToast('Contraseña actualizada');
+      ocupado(bc, async () => {
+        await llamarFuncion('gestionarUsuarios', { accion: 'clave', usuario: x.usuario, clave: nueva }, true);
+        showToast('Contraseña actualizada');
+        await cargar();
+      });
     }
     if(bb){
-      const l = listaUsuarios(); const x = l[Number(bb.dataset.usrBorrar)];
+      const x = filas[Number(bb.dataset.usrBorrar)];
       if(!x || !confirm(`¿Eliminar el usuario "${x.usuario}"? Ya no podrá entrar.`)) return;
-      APPDATA.usuarios = l.filter(z => z !== x);
-      await saveAppData(APPDATA);
-      pintar();
-      showToast('Usuario eliminado');
+      ocupado(bb, async () => {
+        await llamarFuncion('gestionarUsuarios', { accion: 'eliminar', usuario: x.usuario }, true);
+        showToast('Usuario eliminado');
+        await cargar();
+      });
     }
   });
 }
@@ -9604,16 +9648,9 @@ new MutationObserver(muts => {
   }));
 }).observe(document.body, { childList: true, subtree: true });
 
-(async function init(){
+(function init(){
   enhanceAllSearchableSelects(document);
-  await firebaseReadyPromise;
-  let sesionActiva = false;
-  try{ sesionActiva = localStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
-  if(sesionActiva){
-    const s = sesionGuardada();
-    if(s){ usuarioActual = s; showApp(); aplicarRol(); }
-    else { try{ localStorage.removeItem(SESSION_KEY); }catch(e){} } // sesión vieja o inválida: pide entrar otra vez
-  }
+  // La sesión guardada en este equipo la retoma Firebase Authentication (alCambiarSesion).
 })();
 
 // ---------- Ventas Siigo ----------
@@ -9931,7 +9968,7 @@ document.getElementById('siigoSincronizarBtn').addEventListener('click', async (
   btn.disabled = true;
   btn.textContent = 'Sincronizando…';
   try{
-    const res = await fetch(SIIGO_URL_SINCRONIZAR, { method: 'POST' });
+    const res = await fetch(SIIGO_URL_SINCRONIZAR, { method: 'POST', headers: { Authorization: 'Bearer ' + await firebase.auth().currentUser.getIdToken() } });
     const data = await res.json().catch(() => ({}));
     showToast(data.mensaje || (res.ok ? 'Sincronizado' : 'No se pudo sincronizar'));
   }catch(err){
