@@ -39,6 +39,24 @@ jobs:
         working-directory: functions
         run: npm test
 
+      - name: Copiar el catálogo de pedidos para la API
+        working-directory: functions
+        run: npm run catalogo
+
+      # La API de pedidos (apiPedidos) solo guarda el SHA-256 de la clave, nunca la clave.
+      # Sin el secreto API_PEDIDOS_CLAVE la API queda apagada (responde 503) y lo demás se publica igual.
+      - name: Clave de la API de pedidos
+        working-directory: functions
+        env:
+          API_PEDIDOS_CLAVE: ${{ secrets.API_PEDIDOS_CLAVE }}
+        run: |
+          if [ -n "$API_PEDIDOS_CLAVE" ]; then
+            printf 'API_PEDIDOS_CLAVE_HASH=%s\n' "$(printf '%s' "$API_PEDIDOS_CLAVE" | sha256sum | cut -d' ' -f1)" > .env
+            echo "API de pedidos: activada."
+          else
+            echo "::warning::Sin el secreto API_PEDIDOS_CLAVE la API de pedidos queda apagada."
+          fi
+
       - name: Preparar credenciales de Firebase
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

@@ -103,3 +103,50 @@ cd functions && npm test
 - **Facturas anuladas:** se excluyen si Siigo las marca con `annulled: true`. Hay que confirmarlo
   con la primera sincronización real.
 - **Notas crédito / devoluciones:** todavía no se restan.
+
+## API de pedidos (para conectar otras apps)
+
+Dirección: `https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos`
+
+Cada llamada lleva el encabezado `Authorization: Bearer <clave>`. La clave se guarda **solo** como secreto de
+GitHub `API_PEDIDOS_CLAVE` (Settings → Secrets and variables → Actions); al publicar se guarda únicamente su
+SHA-256. Sin ese secreto la API responde 503. Para cambiar la clave: cambia el secreto y vuelve a correr
+"Publicar funciones de Siigo". Úsala desde el servidor de la otra app, no desde código que corra en el navegador
+del cliente (ahí cualquiera la vería).
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /productos` | Productos con su `id`, categoría, medida y precio de lista. |
+| `GET /pedidos` | Todos los pedidos. Filtros opcionales: `?estado=pendiente\|entregado\|sin_productos`, `cliente=`, `vendedor=`, `desde=AAAA-MM-DD`, `hasta=AAAA-MM-DD` (fecha del pedido). |
+| `GET /pedidos/{id}` | Un pedido. |
+| `POST /pedidos` | Crea un pedido (como "+ Nuevo pedido" en la app). |
+
+Cada pedido trae: `id, cliente, nit, telefono, ciudad, direccion, fecha, vendedor, fechaDespacho, urgente,
+observaciones[], referenciaExterna, estado, totales{unidades, entregadas, pendientes, valor, valorPendiente},
+lineas[{linea, productoId, categoria, producto, medida, cantidad, precio, subtotal, entregado, pendiente}]`.
+
+Crear un pedido:
+
+```bash
+curl -X POST https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos/pedidos \
+  -H "Authorization: Bearer $CLAVE" -H "Content-Type: application/json" \
+  -d '{
+    "cliente": "Tiendas la Ganga Pamplona",
+    "vendedor": "Julian Aristizabal",
+    "fecha": "2026-10-05",
+    "fechaDespacho": "2026-10-12",
+    "urgente": false,
+    "observaciones": "Entregar en la mañana",
+    "referenciaExterna": "OTRA-APP-1234",
+    "nit": "", "telefono": "", "ciudad": "", "direccion": "",
+    "lineas": [ { "productoId": 65, "cantidad": 3 }, { "productoId": 0, "cantidad": 2, "precio": 25000 } ]
+  }'
+```
+
+- Obligatorios: `cliente` y `lineas` (cada una con `productoId` de `GET /productos` y `cantidad`). Sin `precio`
+  se usa el precio de lista.
+- Si el cliente ya existe (aunque cambien tildes o mayúsculas) se usa ese cliente; si no, se crea.
+- `referenciaExterna` (recomendado): el número del pedido en la otra app. Si se manda dos veces el mismo, no
+  se duplica: responde 200 con el pedido ya creado (201 cuando lo crea).
+- La API no edita ni borra pedidos; eso se sigue haciendo en la app.
+- Errores: `{ "ok": false, "mensaje": "..." }` con 400 (datos), 401 (clave), 404 (no existe) o 503 (API apagada).
