@@ -149,4 +149,4 @@ async function gestionarUsuarios({ db, auth, idToken, accion, usuario, clave, ro
   throw new ErrorAcceso(400, 'Acción no válida.');
 }
 
-module.exports = { emailDe, claveDe, hashLegado, asegurarAccesos, migrarAcceso, gestionarUsuarios, usuarioDelToken, ErrorAcceso, ROLES };
+module.exports = { guardarCuenta, emailDe, claveDe, hashLegado, asegurarAccesos, migrarAcceso, gestionarUsuarios, usuarioDelToken, ErrorAcceso, ROLES };

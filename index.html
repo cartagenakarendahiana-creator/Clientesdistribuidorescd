@@ -6508,9 +6508,13 @@ async function attemptLogin(){
       if(/operation-not-allowed|configuration-not-found/.test(code)) throw new Error('Falta activar "Correo electrónico/contraseña" en Firebase → Authentication.');
       if(/too-many-requests/.test(code)) throw new Error('Demasiados intentos seguidos. Espera unos minutos.');
       if(/network-request-failed/.test(code)) throw new Error('Sin conexión a internet.');
+      // Cualquier otro problema (clave de API restringida, servicio apagado…) se muestra con su código,
+      // para no confundirlo con una contraseña equivocada.
+      if(!/invalid-credential|invalid-login-credentials|user-not-found|wrong-password/.test(code)) throw new Error('Firebase no dejó entrar (' + (code || (e && e.message) || 'error desconocido') + '). Mándale una foto de este mensaje a soporte.');
       // Primera vez que entra después del cambio: el servidor revisa la contraseña de antes y le crea la cuenta.
       await llamarFuncion('migrarAcceso', { usuario: u, clave: p });
-      await firebase.auth().signInWithEmailAndPassword(email, p);
+      try{ await firebase.auth().signInWithEmailAndPassword(email, p); }
+      catch(e2){ throw new Error('La cuenta se creó, pero Firebase no dejó entrar (' + (e2 && (e2.code || e2.message)) + '). Mándale una foto de este mensaje a soporte.'); }
     }
     document.getElementById('loginPassword').value = '';
   }catch(e){
