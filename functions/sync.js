@@ -51,6 +51,25 @@ function nombreCliente(c) {
   return c.name || '';
 }
 
+// Lo que se guarda de cada cliente de Siigo (siigo/catalogos/clientes/{nit}); la app lo usa para
+// registrar los clientes con su NIT, teléfono, dirección y ciudad.
+function datosCliente(c) {
+  const dir = c.address || {};
+  const tel = (c.phones || []).map((t) => [t.indicative && `+${t.indicative}`, t.number, t.extension && `ext ${t.extension}`].filter(Boolean).join(' ')).filter(Boolean);
+  const contacto = (c.contacts || []).find((x) => x && x.email) || {};
+  return {
+    nit: String(c.identification),
+    dv: c.check_digit !== undefined && c.check_digit !== null ? String(c.check_digit) : '',
+    nombre: nombreCliente(c),
+    ciudad: (dir.city && dir.city.city_name) || '',
+    departamento: (dir.city && dir.city.state_name) || '',
+    direccion: dir.address || '',
+    telefono: tel.join(' / '),
+    email: contacto.email || '',
+    activo: c.active !== false,
+  };
+}
+
 function normalizarFactura(f) {
   const items = (f.items || []).map((it) => {
     const cantidad = num(it.quantity);
@@ -229,7 +248,9 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
     // Catálogos: centros de costo y vendedores completos; clientes y productos incrementales.
     const [centros, vendedores] = await Promise.all([client.centrosDeCosto(), client.vendedores()]);
     const clientesDesde = estado.catalogosHasta || undefined;
-    const clientes = await client.clientes(clientesDesde);
+    // Versión 2 del catálogo de clientes guarda también teléfono, dirección y correo: la primera vez se
+    // vuelven a pedir TODOS los clientes para completar los que ya estaban.
+    const clientes = await client.clientes(estado.catalogoClientesVersion === 2 ? clientesDesde : undefined);
     const productos = await client.productos(clientesDesde);
 
     const updates = {};
@@ -244,11 +265,7 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
       nombre: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || '',
       activo: u.active !== false,
     }));
-    for (const [k, c] of Object.entries(indexar(clientes, (c) => c.identification, (c) => ({
-      nit: String(c.identification),
-      nombre: nombreCliente(c),
-      ciudad: (c.address && c.address.city && c.address.city.city_name) || '',
-    })))) updates[`siigo/catalogos/clientes/${k}`] = c;
+    for (const [k, c] of Object.entries(indexar(clientes, (c) => c.identification, datosCliente))) updates[`siigo/catalogos/clientes/${k}`] = c;
     for (const [k, p] of Object.entries(indexar(productos, (p) => p.code, (p) => ({
       codigo: p.code,
       nombre: p.name || '',
@@ -275,6 +292,7 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
       diasActualizados: afectadas.size,
       // Fecha de Colombia (no UTC) y un día de traslape, para no saltarse clientes/productos creados esa noche.
       catalogosHasta: sumarDias(hoyColombia(new Date(inicio)), -1),
+      catalogoClientesVersion: 2,
       ultimoError: null,
     };
     await db.ref().update(updates);

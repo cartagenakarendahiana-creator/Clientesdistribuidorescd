@@ -1467,6 +1467,7 @@
         <div class="registry-add-row no-print">
           <input type="text" id="searchClientesView" placeholder="Buscar por nombre, NIT, ciudad o teléfono...">
           <button class="btn-confirm" id="btnImportarClientesBase" style="flex:0 0 auto;">Importar base (368)</button>
+          <button class="btn-confirm solo-admin" id="btnTraerClientesSiigo" style="flex:0 0 auto;" title="Registra los clientes de Siigo que aún no están (con NIT, teléfono, dirección y ciudad) y completa los datos vacíos de los que ya existen. También se hace solo al entrar un administrador.">⟳ Clientes de Siigo</button>
           <button class="filter-clear-btn" id="btnUnificarDuplicados" style="flex:0 0 auto;">🔀 Unificar duplicados</button>
         </div>
         <div id="dupBanner" class="no-print"></div>
@@ -4104,6 +4105,134 @@ async function importarClientesBase(){
   renderAll();
   showToast(`Listo: ${asociados} clientes existentes asociados, ${nuevos} clientes nuevos importados`);
 }
+// ---------- Clientes de Siigo ----------
+// Registra en Clientes a todos los terceros del catálogo de Siigo (siigo/catalogos/clientes, lo llena la función
+// en la nube) con su NIT, teléfono, dirección y ciudad, sin duplicar. Un tercero de Siigo es un cliente que ya
+// existe en la app si:
+//   1) tiene el mismo NIT (con o sin dígito de verificación), o
+//   2) el cliente de la app no tiene NIT y el nombre es el mismo (clienteKey), o
+//   3) el cliente de la app no tiene NIT y todas las palabras de un nombre están en el otro
+//      ("Yoyo Medellin" ⊂ "Texconfort - Almacén el YOYO Medellín"), con un solo candidato posible.
+// A los que ya existen solo se les completan los datos vacíos (nunca se pisa lo escrito a mano). Si un tercero se
+// parece a VARIOS clientes de la app, no se agrega solo: queda en la lista "por revisar".
+let clientesSiigoRevisados = false;
+let clientesSiigoPorRevisar = [];
+const NITS_GENERICOS = new Set(['222222222222', '2222222222', '222222222', '0']);
+const soloDigitos = s => String(s || '').replace(/\D/g, '');
+const PALABRAS_VACIAS = new Set(['s', 'a', 'sa', 'sas', 'ltda', 'cia', 'y', 'e', 'de', 'del', 'la', 'las', 'el', 'los', 'en', 'and', 'the', 'co', 'col']);
+function palabrasNombre(n){
+  return new Set(String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter(w => w && !PALABRAS_VACIAS.has(w)));
+}
+const contenido = (a, b) => [...a].every(w => b.has(w));
+function infoIgual(a, b){ return a.nit === b.nit && a.telefono === b.telefono && a.direccion === b.direccion && a.ciudad === b.ciudad; }
+
+async function registrarClientesSiigo({ silencioso } = {}){
+  if(!usuarioActual || usuarioActual.rol !== 'admin') return null;
+  const snap = await firebase.database().ref('siigo/catalogos/clientes').once('value');
+  const catalogo = Object.values(snap.val() || {}).filter(c => c && c.nit && String(c.nombre || '').trim())
+    .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
+  if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
+  // Lo que ya existe en la app: por nombre (clienteKey), por NIT (solo dígitos) y los que no tienen NIT.
+  const porClave = new Map();
+  getAllDistribuidorNombres().forEach(n => { const k = clienteKey(n); if(k) porClave.set(k, n); });
+  const porNit = new Map();
+  porClave.forEach(n => { const d = soloDigitos(getClienteInfo(n).nit); if(d) porNit.set(d, n); });
+  const existentes = [...porClave.values()].map(n => ({ n, p: palabrasNombre(n), conNit: !!soloDigitos(getClienteInfo(n).nit) }));
+  const clavesPrevias = new Set(porClave.keys());
+  const asignados = new Set(); // clientes de la app ya emparejados con un tercero en esta corrida
+  let nuevos = 0, completados = 0;
+  const porRevisar = [];
+  const completar = (nombre, datos) => {
+    const cur = getClienteInfo(nombre);
+    const merged = { nit: cur.nit || datos.nit, telefono: cur.telefono || datos.telefono, direccion: cur.direccion || datos.direccion, ciudad: cur.ciudad || datos.ciudad };
+    if(!infoIgual(merged, cur)){ setClienteInfo(nombre, merged); completados++; }
+    asignados.add(nombre);
+  };
+  catalogo.forEach(c => {
+    const nit = soloDigitos(c.nit), dv = soloDigitos(c.dv);
+    if(!nit || NITS_GENERICOS.has(nit) || /consumidor\s*final/i.test(c.nombre)) return;
+    const nitTexto = dv ? `${nit}-${dv}` : nit;
+    const nombreSiigo = String(c.nombre).trim();
+    const datos = { nit: nitTexto, telefono: String(c.telefono || ''), direccion: String(c.direccion || ''), ciudad: String(c.ciudad || '') };
+    // 1) Mismo NIT
+    const porElNit = porNit.get(nit) || (dv && porNit.get(nit + dv));
+    if(porElNit){ completar(porElNit, datos); return; }
+    // 2) Mismo nombre
+    const k = clienteKey(nombreSiigo);
+    const mismoNombre = porClave.get(k);
+    if(mismoNombre && !soloDigitos(getClienteInfo(mismoNombre).nit)){ completar(mismoNombre, datos); porNit.set(nit, mismoNombre); return; }
+    // 3) Nombre igual o parecido a un cliente que YA tenías (no a uno recién traído de Siigo).
+    //    Un solo parecido sin NIT → es ese. Si el parecido tiene otro NIT, o hay varios → por revisar.
+    const ps = palabrasNombre(nombreSiigo);
+    const candidatos = existentes.filter(x => !asignados.has(x.n) && clavesPrevias.has(clienteKey(x.n)) && (
+      clienteKey(x.n) === k || (Math.min(x.p.size, ps.size) >= 2 && (contenido(x.p, ps) || contenido(ps, x.p)))));
+    if(candidatos.length === 1 && !candidatos[0].conNit){ completar(candidatos[0].n, datos); porNit.set(nit, candidatos[0].n); return; }
+    if(candidatos.length){ porRevisar.push({ siigo: nombreSiigo, nit: nitTexto, datos, parecidos: candidatos.map(x => x.n) }); return; }
+    // Nuevo. Si ya hay otro con el mismo nombre pero distinto NIT, se distingue por el NIT.
+    const nombre = mismoNombre ? `${nombreSiigo} (NIT ${nitTexto})` : nombreSiigo;
+    const k2 = clienteKey(nombre);
+    if(porClave.has(k2)) return;
+    APPDATA.distribuidoresRegistry.push(nombre);
+    porClave.set(k2, nombre);
+    porNit.set(nit, nombre);
+    setClienteInfo(nombre, datos);
+    nuevos++;
+  });
+  clientesSiigoPorRevisar = porRevisar;
+  if(nuevos || completados){
+    await saveAppData(APPDATA);
+    renderAll();
+  }
+  if(!silencioso || nuevos || completados){
+    showToast(`Clientes de Siigo: ${nuevos} nuevos, ${completados} completados con NIT/teléfono/dirección` + (porRevisar.length ? `, ${porRevisar.length} por revisar` : '') + (catalogo.length ? '' : ' (aún no hay terceros sincronizados de Siigo)'), 6000);
+  }
+  return { nuevos, completados, porRevisar: porRevisar.length, total: catalogo.length };
+}
+
+// Los terceros que se parecen a varios clientes de la app: se muestran para decidir uno por uno.
+function abrirClientesSiigoPorRevisar(){
+  const lista = clientesSiigoPorRevisar;
+  if(!lista.length){ showToast('No hay terceros de Siigo por revisar'); return; }
+  const overlay = openModal(`
+    <h3>Terceros de Siigo por revisar (${lista.length})</h3>
+    <div class="hint">Se parecen a clientes que ya tienes (mismo nombre o casi), por eso no se agregaron solos para no duplicar. Si es el mismo cliente, elige cuál y se le completan los datos vacíos; si es otro, déjalo como cliente nuevo. Toca Aplicar en cada uno.</div>
+    <div style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;">
+    ${lista.map((x, i) => `<div class="rev-siigo" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;">
+      <div><b>${escapeHtml(x.siigo)}</b> <span style="font-size:11.5px;color:var(--ink-soft);">· NIT ${escapeHtml(x.nit)}${x.datos.ciudad ? ' · ' + escapeHtml(x.datos.ciudad) : ''}</span></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+        <select data-sel="${i}" data-ssel-done="1" style="flex:1;min-width:0;max-width:100%;"><option value="">— Es un cliente nuevo: agregarlo —</option>${x.parecidos.map(n => `<option value="${escapeAttr(n)}">Es el mismo que: ${escapeHtml(n)}</option>`).join('')}</select>
+        <button type="button" class="acc-btn" data-ok="${i}" style="flex:0 0 auto;">Aplicar</button>
+      </div></div>`).join('')}
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" id="btnCerrarRev">Cerrar</button></div>`);
+  overlay.querySelector('#btnCerrarRev').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-ok]'); if(!b) return;
+    const i = Number(b.dataset.ok), x = lista[i];
+    const elegido = overlay.querySelector(`[data-sel="${i}"]`).value;
+    if(elegido){
+      const cur = getClienteInfo(elegido);
+      setClienteInfo(elegido, { nit: cur.nit || x.datos.nit, telefono: cur.telefono || x.datos.telefono, direccion: cur.direccion || x.datos.direccion, ciudad: cur.ciudad || x.datos.ciudad });
+    }else{
+      if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
+      const yaEsta = getAllDistribuidorNombres().some(n => clienteKey(n) === clienteKey(x.siigo));
+      const nombre = yaEsta ? `${x.siigo} (NIT ${x.nit})` : x.siigo;
+      APPDATA.distribuidoresRegistry.push(nombre);
+      setClienteInfo(nombre, x.datos);
+    }
+    await saveAppData(APPDATA);
+    b.closest('.rev-siigo').remove();
+    lista.splice(i, 1, null);
+    clientesSiigoPorRevisar = lista.filter(Boolean);
+    renderAll();
+  });
+}
+document.getElementById('btnTraerClientesSiigo').addEventListener('click', async (e) => {
+  const b = e.currentTarget; b.disabled = true;
+  try{ const r = await registrarClientesSiigo(); if(r && r.porRevisar) abrirClientesSiigoPorRevisar(); }
+  catch(err){ showToast('No se pudieron traer los clientes de Siigo: ' + (err.message || err), 5000); }
+  finally{ b.disabled = false; }
+});
 document.getElementById('btnImportarClientesBase').addEventListener('click', ()=>{
   if(confirm(`Se van a importar hasta ${CLIENTES_BASE.length} clientes del reporte (NIT, teléfono, ciudad y dirección).\n\nLos datos que ya tengas escritos no se sobrescriben. ¿Continuar?`)) importarClientesBase();
 });
@@ -6431,6 +6560,11 @@ async function alCambiarSesion(user){
   if(!usuarioActual) return; // cerró sesión mientras cargaba
   showApp();
   aplicarRol();
+  // Al entrar un administrador se registran solos los clientes nuevos de Siigo (una vez por sesión).
+  if(usuarioActual.rol === 'admin' && !clientesSiigoRevisados){
+    clientesSiigoRevisados = true;
+    setTimeout(() => registrarClientesSiigo({ silencioso: true }).catch(e => console.warn('clientes Siigo', e)), 4000);
+  }
 }
 function aplicarRol(){
   document.body.classList.toggle('rol-trabajador', esTrabajador());
