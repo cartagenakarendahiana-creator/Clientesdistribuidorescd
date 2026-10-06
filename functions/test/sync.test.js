@@ -82,7 +82,12 @@ test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', asyn
     '/auth': { access_token: 'tok', expires_in: 86400 },
     '/v1/cost-centers': [{ id: 12, code: '1', name: 'Corte', active: true }, { id: 13, code: '2', name: 'Confortadora' }],
     '/v1/users': { pagination: { total_results: 1 }, results: [{ id: 7, first_name: 'Ana', last_name: 'Ruiz' }] },
-    '/v1/customers': { pagination: { total_results: 1 }, results: [{ identification: '901759512', name: ['Grupo The Arrow'] }] },
+    '/v1/customers': { pagination: { total_results: 1 }, results: [{
+      identification: '901759512', check_digit: '3', name: ['Grupo The Arrow'], active: true,
+      address: { address: 'Calle 97 # 97-34', city: { city_name: 'Apartadó', state_name: 'Antioquia' } },
+      phones: [{ indicative: '57', number: '3015347888' }, { number: '6044444', extension: '12' }],
+      contacts: [{ first_name: 'Ana', email: '' }, { first_name: 'Luis', email: 'compras@arrow.co' }],
+    }] },
     '/v1/products': { pagination: { total_results: 1 }, results: [{ code: 'A', name: 'Almohada' }] },
     '/v1/invoices': (q) => ({ pagination: { total_results: 101 }, results: q.get('page') === '1' ? pagina1 : pagina2 }),
     '/v1/credit-notes': { results: [], pagination: { total_results: 0 } },
@@ -110,14 +115,19 @@ test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', asyn
   assert.equal(s.resumenDiario['2026-09-02'].cc_13.unidades, 2);
   assert.equal(s.catalogos.centrosCosto.cc_12.nombre, 'Corte');
   assert.equal(s.catalogos.vendedores['7'].nombre, 'Ana Ruiz');
-  assert.equal(s.catalogos.clientes['901759512'].nombre, 'Grupo The Arrow');
+  assert.deepEqual(s.catalogos.clientes['901759512'], {
+    nit: '901759512', dv: '3', nombre: 'Grupo The Arrow', ciudad: 'Apartadó', departamento: 'Antioquia',
+    direccion: 'Calle 97 # 97-34', telefono: '+57 3015347888 / 6044444 ext 12', email: 'compras@arrow.co', activo: true,
+  });
   assert.equal(s.estado.catalogosHasta.length, 10);
   assert.deepEqual(db.datos.casaDoradaDatos, { intacto: true }); // no toca los datos de la app
 
   // Segunda corrida: clientes y productos se piden solo desde la última sincronización.
   await sincronizar({ client, db, desde: '2026-09-02', hasta: '2026-09-02', log: () => {} });
   const cust = fetchImpl.llamadas.filter((l) => l.ruta === '/v1/customers');
+  assert.equal(cust[0].params.updated_start, undefined, 'la primera vez trae todos los clientes');
   assert.equal(cust.at(-1).params.updated_start, s.estado.catalogosHasta);
+  assert.equal(s.estado.catalogoClientesVersion, 2);
 });
 
 test('reintenta ante 429 y renueva el token ante 401', async () => {
