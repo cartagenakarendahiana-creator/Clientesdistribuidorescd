@@ -1311,17 +1311,17 @@
   .sesion-chip small{display:none;}
 }
 
-/* Entrada: solo el logo grande de Casa Dorada y el título, sobre fondo claro */
+/* Entrada: logo grande de Casa Dorada (en dorado) y el título, sobre el fondo azul oscuro */
 @media screen{
-  .login-marca{background:#fff !important;color:#101828 !important;justify-content:center !important;align-items:center;text-align:center;gap:18px;border-right:1px solid #ECE6D8;}
-  .login-marca::after{display:none;}
+  .login-marca{justify-content:center !important;align-items:center;text-align:center;}
   .login-marca .lm-logo-grande{width:min(560px,82%);aspect-ratio:370/96;overflow:hidden;}
-  .login-marca .lm-logo-grande img{display:block;width:177.6%;max-width:none;margin:-17.3% 0 0 -38.9%;mix-blend-mode:multiply;}
-  .login-marca h2{color:#7A5B26 !important;font-size:26px !important;font-weight:600 !important;letter-spacing:.2px;max-width:none !important;margin:22px 0 0 !important;}
+  .login-marca .lm-logo-grande img{display:block;width:177.6%;max-width:none;margin:-17.3% 0 0 -38.9%;opacity:0;transition:opacity .25s;}
+  .login-marca .lm-logo-grande img.listo{opacity:1;}
+  .login-marca h2{font-size:28px !important;font-weight:600 !important;letter-spacing:.2px;max-width:none !important;margin:26px 0 0 !important;color:#fff;}
   @media (max-width: 860px){
-    .login-marca{padding:36px 24px 26px !important;border-right:none;border-bottom:1px solid #ECE6D8;}
+    .login-marca{padding:36px 24px 30px !important;}
     .login-marca .lm-logo-grande{width:min(320px,82%);}
-    .login-marca h2{font-size:18px !important;}
+    .login-marca h2{font-size:18px !important;display:block !important;}
   }
 }
 </style>
@@ -1331,7 +1331,7 @@
 <div class="login-overlay" id="loginOverlay">
   <div class="login-marca">
     <div class="lm-logo-grande"><img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Casa Dorada"></div>
-    <h2>Gestión de pedidos, producción y planta</h2>
+    <h2>Gestión de <span>pedidos, producción</span> y planta</h2>
   </div>
   <div class="login-lado">
   <div class="login-card">
@@ -10229,6 +10229,33 @@ new MutationObserver(muts => {
     else if(node.querySelectorAll) node.querySelectorAll('select').forEach(enhanceSearchableSelect);
   }));
 }).observe(document.body, { childList: true, subtree: true });
+
+// Logo de la pantalla de entrada: la imagen trae fondo blanco; se convierte en dorado sobre transparente
+// para que se vea bien encima del fondo azul oscuro.
+(function logoEntradaDorado(){
+  const img = document.querySelector('.lm-logo-grande img');
+  if(!img) return;
+  const fuente = new Image();
+  fuente.onload = () => {
+    try{
+      const c = document.createElement('canvas');
+      c.width = fuente.naturalWidth; c.height = fuente.naturalHeight;
+      const x = c.getContext('2d');
+      x.drawImage(fuente, 0, 0);
+      const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+      for(let i = 0; i < p.length; i += 4){
+        // El dorado del logo tiene poco azul: entre más se aleja del blanco en azul, más visible.
+        const a = Math.max(0, Math.min(1, (245 - p[i + 2]) / 120));
+        p[i] = 222; p[i + 1] = 188; p[i + 2] = 118; p[i + 3] = Math.round(a * 255);
+      }
+      x.putImageData(d, 0, 0);
+      img.src = c.toDataURL('image/png');
+    }catch(e){ /* si el navegador no deja, queda la imagen original */ }
+    img.classList.add('listo');
+  };
+  fuente.onerror = () => img.classList.add('listo');
+  fuente.src = img.getAttribute('src');
+})();
 
 // ---------- App instalable ----------
 // Registra el service worker (sw.js) y muestra "Instalar app" cuando el navegador lo permite (Chrome/Edge).
