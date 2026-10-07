@@ -1324,6 +1324,13 @@
     .login-marca h2{font-size:18px !important;display:block !important;}
   }
 }
+
+/* Trabajadores: las opciones del menú que no les corresponden siguen ocultas también en el menú lateral */
+body.rol-trabajador .oculto-trabajador,
+body.con-sidebar.rol-trabajador .nav-dropdown-item.oculto-trabajador,
+body.con-sidebar.rol-trabajador .nav-dropdown-sub-toggle.oculto-trabajador,
+body.con-sidebar.rol-trabajador .nav-dropdown.oculto-trabajador,
+body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{display:none !important;}
 </style>
 </head>
 <body>
@@ -1410,6 +1417,7 @@
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
           <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Clientes</button>
           <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario · Precios de venta</button>
+          <button class="nav-dropdown-item" data-nav="productossiigo" type="button">Productos Siigo</button>
           <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button" title="Precios de servicio (sugeridos)">Precios de servicio</button>
         </div>
       </div>
@@ -1687,6 +1695,30 @@
     </div>
   </div>
 
+  <div id="viewProductossiigo" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div>
+            <h2>Productos Siigo <span class="svc-count" id="invSiigoCount" style="font-size:14px;color:var(--ink-soft);font-weight:500;"></span></h2>
+            <div class="sub">Productos de venta de Siigo con su precio en Siigo. Es una lista aparte del Inventario: no cambia tus productos ni tus precios.</div>
+          </div>
+        </div>
+        <div id="invPanelSiigo">
+          <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="invSiigoSearch" placeholder="Buscar por nombre, código o grupo...">
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th class="num">Precio en Siigo</th></tr></thead>
+              <tbody id="invSiigoBody"><tr><td colspan="4" style="color:var(--ink-soft);">Cargando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="viewInventario" class="view-section" style="display:none;">
     <div class="page-section">
       <div class="page-card">
@@ -1700,11 +1732,7 @@
           </div>
         </div>
 
-        <div class="page-tabs no-print solo-admin" role="tablist" id="inventarioTabs" data-tabs-id="inventario">
-          <button type="button" class="page-tab active" data-tab="app">Productos</button>
-          <button type="button" class="page-tab" data-tab="siigo">Productos Siigo <span class="svc-count" id="invSiigoCount"></span></button>
-        </div>
-        <div id="invPanelApp" class="page-tab-panel" data-tab-panel="app">
+        <div id="invPanelApp">
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="inventarioSearch" placeholder="Buscar producto, categoría o medida...">
@@ -1715,19 +1743,6 @@
             <tbody id="inventarioBody"></tbody>
           </table>
         </div>
-        </div>
-        <div id="invPanelSiigo" class="page-tab-panel" data-tab-panel="siigo" hidden>
-          <div class="hint" style="margin-bottom:10px;">Productos de venta de Siigo (los que aparecen en alguna factura), con el precio que tienen en Siigo. Es una lista aparte: no cambia tus productos ni tus precios.</div>
-          <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="invSiigoSearch" placeholder="Buscar por nombre, código o grupo...">
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th class="num">Precio en Siigo</th></tr></thead>
-              <tbody id="invSiigoBody"><tr><td colspan="4" style="color:var(--ink-soft);">Cargando…</td></tr></tbody>
-            </table>
-          </div>
         </div>
       </div>
       <div class="page-card" style="margin-top:16px;">
@@ -3731,7 +3746,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','reportes','despachos','facturas','ventassiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -3764,11 +3779,8 @@ function switchView(viewName){
   if(viewName === 'reportes') renderReportes();
   if(viewName === 'vendedores') renderVendedoresView();
   if(viewName === 'distribuidores') renderDistribuidoresView();
-  if(viewName === 'inventario'){
-    renderInventarioView();
-    if(esTrabajador()){ document.getElementById('invPanelSiigo').hidden = true; document.getElementById('invPanelApp').hidden = false; } // la pestaña Siigo es solo de administradores
-    else if(!document.getElementById('invPanelSiigo').hidden) renderProductosSiigo();
-  }
+  if(viewName === 'inventario') renderInventarioView();
+  if(viewName === 'productossiigo') renderProductosSiigo();
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
@@ -3794,6 +3806,7 @@ const NAV_ICONOS = {
   reportes:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   despachos:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
   ventassiigo:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  productossiigo:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M16 14l2 2 3-4"/>',
   pedidos:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/>',
   vendedores:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
   distribuidores:'<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/>',
@@ -4621,10 +4634,10 @@ function abrirClientesSiigoPorRevisar(){
   });
 }
 
-// ---------- Productos de Siigo (pestaña aparte en Inventario) ----------
+// ---------- Productos de Siigo (sección aparte del menú, solo administradores) ----------
 // Lista de solo lectura con los productos de venta de Siigo: los que aparecen en alguna factura
 // (siigo/catalogos/productosVendidos), con nombre, grupo, unidad y precio de Siigo. Puede repetir
-// productos que también estén en la pestaña "Productos": son listas separadas a propósito.
+// productos del Inventario: son listas separadas a propósito.
 let productosSiigoLista = null;
 async function cargarProductosSiigo(forzar){
   if(productosSiigoLista && !forzar) return productosSiigoLista;
@@ -4652,9 +4665,6 @@ async function renderProductosSiigo(){
   });
   body.innerHTML = html || `<tr><td colspan="4" style="color:var(--ink-soft);">${lista.length ? 'Sin resultados.' : 'Aún no hay productos de Siigo sincronizados (se llenan solos con la próxima sincronización).'}</td></tr>`;
 }
-document.getElementById('inventarioTabs').addEventListener('click', (e) => {
-  const b = e.target.closest('.page-tab'); if(b && b.dataset.tab === 'siigo') renderProductosSiigo();
-});
 document.getElementById('invSiigoSearch').addEventListener('input', () => renderProductosSiigo());
 document.getElementById('btnTraerClientesSiigo').addEventListener('click', async (e) => {
   const b = e.currentTarget; b.disabled = true;
