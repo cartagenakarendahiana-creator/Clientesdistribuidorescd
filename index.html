@@ -1124,6 +1124,94 @@
     .badge{border-radius:999px !important;font-weight:600;}
     .toast{border-radius:12px !important;box-shadow:0 12px 32px rgba(16,24,40,.2) !important;}
   }
+
+/* ================= Menú lateral (pantalla) =================
+   La barra de menús de arriba se convierte en un menú a la izquierda, con cada sección desplegada.
+   En celular/tablet angosta se abre con el botón ☰. La impresión no cambia (el menú no se imprime). */
+.menu-lateral-btn{display:none;}
+.menu-lateral-fondo{display:none;}
+.sidebar-brand{display:none;}
+@media screen{
+  body.con-sidebar .menu-lateral-btn{
+    display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;
+    border:1px solid var(--line);background:var(--white);cursor:pointer;font-size:19px;color:var(--ink);margin-right:6px;flex-shrink:0;
+  }
+  body.con-sidebar #appRoot{padding-left:264px;transition:padding-left .2s;}
+  body.con-sidebar.menu-oculto #appRoot{padding-left:0;}
+  body.con-sidebar .nav-tabs{
+    position:fixed !important;top:0;left:0;bottom:0;width:264px;z-index:70;overflow-y:auto;
+    background:#151A23 !important;border-right:1px solid #232A36;box-shadow:none !important;transition:transform .2s;
+  }
+  body.con-sidebar.menu-oculto .nav-tabs{transform:translateX(-100%);}
+  body.con-sidebar .nav-tabs-inner{display:flex !important;flex-direction:column;flex-wrap:nowrap;gap:4px;max-width:none;margin:0;padding:0 12px 28px;}
+  body.con-sidebar .sidebar-brand{
+    display:flex;align-items:center;gap:10px;padding:18px 8px 16px;margin:0 -12px 8px;padding-left:20px;
+    border-bottom:1px solid #232A36;position:sticky;top:0;background:#151A23;z-index:2;
+  }
+  body.con-sidebar .sidebar-brand img{height:34px;width:34px;object-fit:cover;object-position:22% 50%;border-radius:8px;background:#fff;}
+  body.con-sidebar .sidebar-brand b{display:block;color:#fff;font-size:15px;letter-spacing:.2px;}
+  body.con-sidebar .sidebar-brand small{display:block;color:#8B95A5;font-size:11px;margin-top:1px;}
+  body.con-sidebar .nav-dropdown{width:100%;}
+  body.con-sidebar .nav-dropdown-btn{
+    width:100%;justify-content:space-between;padding:14px 8px 6px !important;border:none !important;
+    font-size:11px !important;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#7E8899 !important;
+  }
+  body.con-sidebar .nav-dropdown-btn:hover{color:#C9D0DA !important;}
+  body.con-sidebar .nav-dropdown-btn .dots{display:none;}
+  body.con-sidebar .nav-dropdown-btn .chev{color:#5F6A7B;transform:none;}
+  body.con-sidebar .nav-dropdown.colapsado .nav-dropdown-btn .chev{transform:rotate(-90deg);}
+  body.con-sidebar .nav-dropdown-menu{
+    position:static !important;display:block !important;min-width:0;margin:0;padding:0 !important;
+    background:transparent !important;border:none !important;box-shadow:none !important;border-radius:0 !important;
+  }
+  body.con-sidebar .nav-dropdown.colapsado .nav-dropdown-menu{display:none !important;}
+  body.con-sidebar .nav-dropdown-item, body.con-sidebar .nav-dropdown-sub-toggle{
+    color:#C7CDD6;font-size:13.5px;padding:9px 12px;border-radius:9px !important;border-left:3px solid transparent;
+  }
+  body.con-sidebar .nav-dropdown-item:hover, body.con-sidebar .nav-dropdown-sub-toggle:hover{background:#1F2631;color:#fff;}
+  body.con-sidebar .nav-dropdown-item.active{background:rgba(201,162,92,.16) !important;color:#E8C981 !important;font-weight:600;border-left-color:#C9A25C;}
+  body.con-sidebar .nav-dropdown-sub-group.has-active .nav-dropdown-sub-toggle{color:#E8C981;}
+  body.con-sidebar .nav-dropdown-sub-toggle .chev{color:#5F6A7B;}
+  body.con-sidebar .nav-dropdown-sub{border-left-color:#2A3240;margin-left:14px;}
+  body.con-sidebar .nav-dropdown-sub .nav-dropdown-item{font-size:13px;padding:7px 10px;}
+  body.con-sidebar .topbar .brand{display:none !important;} /* el logo ya está en el menú */
+  body.con-sidebar .topbar-top{max-width:none;padding-left:18px;padding-right:18px;}
+  body.con-sidebar .menu-lateral-fondo{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:65;}
+  /* Pantallas angostas: el menú se esconde y se abre con ☰ encima del contenido */
+  @media (max-width: 899px){
+    body.con-sidebar #appRoot, body.con-sidebar.menu-oculto #appRoot{padding-left:0;}
+    body.con-sidebar .nav-tabs{transform:translateX(-100%);}
+    body.con-sidebar.menu-abierto .nav-tabs{transform:none;}
+    body.con-sidebar.menu-abierto .menu-lateral-fondo{display:block;}
+    body.con-sidebar .topbar-top{flex-wrap:wrap;gap:8px;padding-left:12px;padding-right:12px;}
+    body.con-sidebar .topbar-session{flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+  }
+}
+@media print{ .menu-lateral-btn, .menu-lateral-fondo{display:none !important;} body.con-sidebar #appRoot{padding-left:0 !important;} }
+
+/* ================= Impresión del pedido: marca de agua y sello ================= */
+.cd-marca-agua, .cd-firmas, .cd-pie-doc{display:none;}
+@media print{
+  @page{ @bottom-right{ content:"Página " counter(page) " de " counter(pages); font-size:8pt; color:#9CA3AF; } }
+  #mainPanel .cd-marca-agua{
+    display:block;position:fixed;inset:0;z-index:50;pointer-events:none; /* encima: las tablas tienen fondo blanco */
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  #mainPanel .cd-marca-agua img{position:absolute;top:50%;left:50%;width:70%;transform:translate(-50%,-50%);opacity:.05;}
+  #mainPanel .cd-sello{
+    position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);
+    font:900 54pt/1 Inter,Arial,sans-serif;letter-spacing:6px;padding:10px 30px;border:6px solid currentColor;border-radius:18px;
+    opacity:.12;white-space:nowrap;
+  }
+  #mainPanel .cd-sello.entregado{color:#1F7A3A;opacity:.16;}
+  #mainPanel .cd-sello.pendiente{color:#9E7B3B;}
+  #mainPanel .cd-estado-doc{display:inline-block;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;}
+  #mainPanel .cd-estado-doc.entregado{background:#E6F4EA !important;color:#1F7A3A;border:1px solid #B7DFC3;}
+  #mainPanel .cd-estado-doc.pendiente{background:#F6EFE1 !important;color:#7C5F2C;border:1px solid #E3D3AC;}
+  #mainPanel .cd-firmas{display:flex;gap:28px;margin-top:34px;break-inside:avoid;}
+  #mainPanel .cd-firmas div{flex:1;border-top:1px solid #9CA3AF;padding-top:6px;font-size:9.5px;color:#6B7280;text-align:center;}
+  #mainPanel .cd-pie-doc{display:flex;justify-content:space-between;margin-top:18px;padding-top:8px;border-top:2px solid #9E7B3B;font-size:8.5px;color:#9CA3AF;}
+}
 </style>
 </head>
 <body>
@@ -1150,6 +1238,7 @@
 <div id="appRoot" style="display:none;">
   <div class="topbar">
     <div class="topbar-top">
+      <button type="button" class="menu-lateral-btn no-print" id="btnMenuLateral" aria-label="Mostrar u ocultar el menú" title="Menú">☰</button>
       <div class="brand" style="display:inline-flex; align-items:center; gap:10px;">
         <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Logo Casa Dorada" style="height:32px; width:auto; object-fit:contain; border-radius:4px; vertical-align:middle;">
         <div>
@@ -1182,8 +1271,10 @@
     </div>
   </div>
 
+  <div class="menu-lateral-fondo" id="menuLateralFondo"></div>
   <nav class="nav-tabs">
     <div class="nav-tabs-inner">
+      <div class="sidebar-brand"><img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt=""><div><b>Casa Dorada</b><small>Pedidos · Producción · Planta</small></div></div>
       <div class="nav-dropdown" id="navDropdownDistribuidores">
         <button class="nav-dropdown-btn" id="navBtnDistribuidores" type="button">
           <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
@@ -3189,7 +3280,10 @@ function renderMain(){
     </tr>`;
   });
 
+  const entregadoCompleto = allLines.length > 0 && totals.totalPendienteVal <= 0 && allLines.every(l => getEntregado(selectedDistId, l.key) >= l.cantidad);
+  const estadoDoc = entregadoCompleto ? 'entregado' : 'pendiente';
   main.innerHTML = `
+    <div class="cd-marca-agua" aria-hidden="true"><img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt=""><div class="cd-sello ${estadoDoc}">${entregadoCompleto ? 'ENTREGADO' : 'PENDIENTE'}</div></div>
     <div class="cd-print-head" data-own="1">
       <div class="cd-ph-top">
         <div class="cd-ph-brand">
@@ -3202,6 +3296,7 @@ function renderMain(){
         <div class="cd-ph-doc">
           <div class="cd-ph-doc-title">Estado de cliente</div>
           <div class="cd-ph-doc-date">Impreso el ${new Date().toLocaleDateString('es-CO')}</div>
+          <div class="cd-estado-doc ${estadoDoc}">${entregadoCompleto ? '✓ Pedido entregado' : 'Pedido con saldo pendiente'}</div>
         </div>
       </div>
       <div class="cd-ph-client">
@@ -3298,6 +3393,8 @@ function renderMain(){
     </div>
     ${!lines.length ? `<div class="no-match">Ningún producto de este pedido coincide con "${escapeHtml(orderSearchTerm)}"</div>` : ''}
     ` : `<p style="color:var(--ink-soft);">Este cliente aún no tiene productos en su pedido. Usa "Agregar producto al pedido".</p>`}
+    <div class="cd-firmas"><div>Entregado por</div><div>Recibido por (nombre y firma)</div><div>Fecha de recibido</div></div>
+    <div class="cd-pie-doc"><span>Casa Dorada · ${escapeHtml(dist.nombre)}</span><span>Documento generado el ${new Date().toLocaleString('es-CO')}</span></div>
   `;
 
   main.querySelectorAll('.entregado-input').forEach(inp=>{
@@ -3507,8 +3604,11 @@ function switchView(viewName){
     dd.classList.toggle('has-active', !!dd.querySelector('.nav-dropdown-item.active'));
   });
   document.querySelectorAll('.nav-dropdown-sub-group').forEach(g=>{
-    g.classList.toggle('has-active', !!g.querySelector('.nav-dropdown-item.active'));
+    const activo = !!g.querySelector('.nav-dropdown-item.active');
+    g.classList.toggle('has-active', activo);
+    if(activo && enMenuLateral()){ g.classList.add('open'); const t = g.querySelector('.nav-dropdown-sub-toggle'); if(t) t.setAttribute('aria-expanded', 'true'); }
   });
+  document.querySelectorAll('.nav-dropdown.has-active').forEach(dd => dd.classList.remove('colapsado'));
   if(viewName === 'pedidos') renderPedidosView();
   if(viewName === 'reportes') renderReportes();
   if(viewName === 'vendedores') renderVendedoresView();
@@ -3527,10 +3627,19 @@ function switchView(viewName){
 }
 
 // ---------- Menús desplegables de navegación (Clientes / Producción) ----------
+const enMenuLateral = () => document.body.classList.contains('con-sidebar');
 function closeAllNavDropdowns(){
+  if(enMenuLateral()){ document.body.classList.remove('menu-abierto'); return; } // en el menú lateral las secciones quedan abiertas
   document.querySelectorAll('.nav-dropdown').forEach(dd => dd.classList.remove('open'));
   document.querySelectorAll('.nav-dropdown-sub-group').forEach(g => { g.classList.remove('open'); const t = g.querySelector('.nav-dropdown-sub-toggle'); if(t) t.setAttribute('aria-expanded', 'false'); });
 }
+// Menú lateral: activo siempre en pantalla. ☰ lo oculta/muestra (computador) o lo abre encima (celular).
+document.body.classList.add('con-sidebar');
+document.getElementById('btnMenuLateral').addEventListener('click', () => {
+  if(window.matchMedia('(max-width: 899px)').matches) document.body.classList.toggle('menu-abierto');
+  else document.body.classList.toggle('menu-oculto');
+});
+document.getElementById('menuLateralFondo').addEventListener('click', () => document.body.classList.remove('menu-abierto'));
 document.querySelectorAll('.nav-dropdown-sub-toggle').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -3544,6 +3653,7 @@ document.querySelectorAll('.nav-dropdown-btn').forEach(btn=>{
   btn.addEventListener('click', (e)=>{
     e.stopPropagation();
     const dd = btn.closest('.nav-dropdown');
+    if(enMenuLateral()){ dd.classList.toggle('colapsado'); return; }
     const willOpen = !dd.classList.contains('open');
     closeAllNavDropdowns();
     if(willOpen) dd.classList.add('open');
@@ -3576,7 +3686,7 @@ document.addEventListener('click', (e)=>{
   switchView(vn);
 });
 document.addEventListener('click', (e)=>{
-  if(!e.target.closest('.nav-dropdown')) closeAllNavDropdowns();
+  if(!e.target.closest('.nav-dropdown, #btnMenuLateral')) closeAllNavDropdowns();
 });
 document.querySelectorAll('.nav-dropdown').forEach(dd=>{
   dd.classList.toggle('has-active', !!dd.querySelector('.nav-dropdown-item.active'));
