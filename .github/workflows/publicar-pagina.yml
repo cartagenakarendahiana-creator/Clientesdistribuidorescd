@@ -1,0 +1,58 @@
+# Publica la página (la app) en Firebase Hosting: https://pedidos-nuevo.web.app
+# Reemplaza a Netlify. Se ejecuta sola cada vez que se une a main un cambio de la página, o a mano
+# desde GitHub → Actions → "Publicar página" → Run workflow.
+# Usa el mismo secreto FIREBASE_SERVICE_ACCOUNT que las funciones.
+name: Publicar página
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'manifest.webmanifest'
+      - 'iconos/**'
+      - 'vendor/**'
+      - '*.jpeg'
+      - 'firebase.json'
+      - '.github/workflows/publicar-pagina.yml'
+
+concurrency:
+  group: publicar-pagina
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # Solo los archivos de la página (nada de functions/, reportes/ ni configuración).
+      - name: Armar la carpeta de la página
+        run: |
+          mkdir -p _sitio
+          cp index.html sw.js manifest.webmanifest *.jpeg _sitio/
+          cp -r iconos vendor _sitio/
+          ls -la _sitio
+
+      - name: Preparar credenciales de Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT."; exit 1; fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+
+      - name: Publicar en Firebase Hosting
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: npx --yes firebase-tools@latest deploy --only hosting --project pedidos-nuevo --non-interactive
+
+      - name: Borrar credenciales
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"
