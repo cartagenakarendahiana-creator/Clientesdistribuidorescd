@@ -7012,6 +7012,7 @@ function ocultarValoresTrabajador(){
     });
   });
   raiz.querySelectorAll('.kpi-card, .prod-stat, .tcard, .pd-card, .rep-kpi').forEach(c => {
+    if(c.closest('#mainPanel .totals-row')) return; // los totales de cada pedido los ven todos los usuarios
     const lab = c.querySelector('.lab, .lbl, .label');
     if(lab && esDinero(lab.textContent)) c.classList.add('oculto-trabajador');
   });
