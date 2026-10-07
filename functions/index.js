@@ -10,7 +10,7 @@ const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { SiigoClient } = require('./siigo');
-const { sincronizar, avanzarHistorico: avanzarHistoricoCon, avanzarNotasCreditoHistorico, hoyColombia, sumarDias } = require('./sync');
+const { sincronizar, avanzarHistorico: avanzarHistoricoCon, avanzarNotasCreditoHistorico, indexarProductosVendidos, hoyColombia, sumarDias } = require('./sync');
 const accesos = require('./accesos');
 
 admin.initializeApp();
@@ -66,6 +66,11 @@ exports.sincronizarSiigo = onSchedule(
       await avanzarNotasCreditoHistorico({ client, db: admin.database(), tiempoMaxMs: 120000 });
     } catch (err) {
       console.error('Siigo notas crédito históricas:', err);
+    }
+    try {
+      await indexarProductosVendidos({ db: admin.database() });
+    } catch (err) {
+      console.error('Siigo productos vendidos:', err);
     }
   }
 );
