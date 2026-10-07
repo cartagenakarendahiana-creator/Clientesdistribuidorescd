@@ -2404,7 +2404,7 @@ const DEFAULT_APPDATA = {
   plantaOrdenes:[],          // [{id, numero, producto, cantidad, fechaInicio, fechaEntrega, prioridad, estado}]
   plantaServiciosMaquila:[], // [{id, etapa, servicio (producto o familia), precio}] — lo que cobra cada etapa por unidad producida; lista APARTE de los precios de venta
   plantaProduccionDiaria:[], // [{id, registroId, fecha, etapa('Corte'|'Taller'|'Ultrasonido'|'Confortadora'), producto, cantidad, observaciones}] — una fila por producto; las filas cargadas juntas comparten registroId
-  despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto(dataURL base64), enviadoWhatsapp(bool), observaciones}] — registro de envíos
+  despachos:[], // [{id, fecha, cliente, ciudad, bultos, cajas, yutes, transportadora, valorFactura, valorFlete, guiaFoto('fb' = la foto está en fotosGuias/{id}; datos viejos: dataURL base64), enviadoWhatsapp(bool), observaciones}] — registro de envíos
   facturas:[], // [{id, numero, distId, cliente, fecha, lineas:[{producto,categoria,medida,cantidad,precioUnitario,subtotal}], subtotalGeneral, impuestoPct, impuestoValor, total, observaciones}] — historial de facturas generadas desde un pedido
   plantaCostosFijos:[],      // [{id, concepto, categoria, valorMensual, periodicidad}]
   plantaGastosAdicionales:[], // [{id, concepto, categoria, fecha, valor, observaciones}]
@@ -4022,7 +4022,11 @@ function renderDistribuidoresView(){
     const i = getClienteInfo(n);
     return normalizeText([n,i.nit,i.telefono,i.ciudad,i.direccion].join(' ')).includes(term);
   });
-  listEl.innerHTML = todos.length ? todos.map(n => {
+  // Con miles de clientes (Siigo) dibujar toda la lista en cada cambio volvía lenta la app: se muestran
+  // los primeros 200 y el buscador encuentra el resto.
+  const MAX_LISTA = 200;
+  const visibles = todos.slice(0, MAX_LISTA);
+  listEl.innerHTML = todos.length ? visibles.map(n => {
     const i = getClienteInfo(n);
     const det = [i.nit&&('NIT '+i.nit), i.ciudad, i.telefono, i.direccion].filter(Boolean).join(' · ');
     return `
@@ -4034,7 +4038,7 @@ function renderDistribuidoresView(){
         <button class="icon-btn no-print solo-admin" data-unir="${escapeAttr(n)}" title="Unir con otro cliente (es el mismo)">🔗</button>
         <button class="icon-btn icon-delete no-print" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
       </span>
-    </div>`;}).join('') : `<div class="registry-empty">${clientesViewTerm ? 'Sin coincidencias.' : 'Aún no has creado clientes.'}</div>`;
+    </div>`;}).join('') + (todos.length > MAX_LISTA ? `<div class="registry-empty">Se muestran ${MAX_LISTA} de ${fmtNum(todos.length)} clientes. Escribe en el buscador para encontrar el resto.</div>` : '') : `<div class="registry-empty">${clientesViewTerm ? 'Sin coincidencias.' : 'Aún no has creado clientes.'}</div>`;
   listEl.querySelectorAll('button[data-n]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry||[]).filter(n=>clienteKey(n)!==clienteKey(btn.dataset.n));
@@ -4208,6 +4212,7 @@ async function importarClientesBase(){
 // A los que ya existen solo se les completan los datos vacíos (nunca se pisa lo escrito a mano). Si un tercero se
 // parece a VARIOS clientes de la app, no se agrega solo: queda en la lista "por revisar".
 let clientesSiigoRevisados = false;
+let fotosGuiasRevisadas = false;
 let clientesSiigoPorRevisar = [];
 const NITS_GENERICOS = new Set(['222222222222', '2222222222', '222222222', '0']);
 const soloDigitos = s => String(s || '').replace(/\D/g, '');
@@ -4841,10 +4846,37 @@ function openImageLightbox(src){
   const overlay = openModal(`<div class="lightbox-modal"><img src="${src}" alt="Foto ampliada"></div>`);
   overlay.classList.add('lightbox-overlay');
 }
-document.addEventListener('click', (e)=>{
+document.addEventListener('click', async (e)=>{
   const img = e.target.closest('[data-guia-view]');
   if(img) openImageLightbox(img.src);
+  const b = e.target.closest('[data-guia-fb]');
+  if(b){
+    b.disabled = true;
+    try{ const src = await leerFotoGuia(b.dataset.guiaFb); if(src) openImageLightbox(src); else showToast('No se encontró la foto'); }
+    catch(err){ showToast('No se pudo cargar la foto'); }
+    finally{ b.disabled = false; }
+  }
 });
+
+// ---------- Fotos de guías de despacho ----------
+// Las fotos pesan mucho (≈180 KB cada una): guardadas dentro de los despachos hacían que la app bajara
+// TODAS las fotos (más de 10 MB) cada vez que alguien entraba. Ahora cada foto va aparte, en
+// fotosGuias/{id del despacho}, y solo se descarga cuando se toca "Ver guía". En el despacho queda guiaFoto:'fb'.
+const refFotoGuia = (id) => firebase.database().ref('fotosGuias/' + encodeFirebaseKey(id));
+async function leerFotoGuia(id){ return (await refFotoGuia(id).once('value')).val(); }
+// Pasa a fotosGuias las fotos que todavía están dentro de los despachos (una vez, al entrar un administrador).
+async function moverFotosGuiasAparte(){
+  const lista = APPDATA.despachos || [];
+  let movidas = 0;
+  for(const d of lista){
+    if(!d || typeof d.guiaFoto !== 'string' || !d.guiaFoto.startsWith('data:')) continue;
+    if(!d.id) d.id = 'p' + Date.now() + Math.random().toString(36).slice(2, 7);
+    await refFotoGuia(d.id).set(d.guiaFoto);
+    d.guiaFoto = 'fb';
+    movidas++;
+  }
+  if(movidas){ await saveAppData(APPDATA); renderAll(); console.info(`Fotos de guías movidas aparte: ${movidas}`); }
+}
 
 
 
@@ -6670,6 +6702,10 @@ async function alCambiarSesion(user){
   showApp();
   aplicarRol();
   // Al entrar un administrador se registran solos los clientes nuevos de Siigo (una vez por sesión).
+  if(usuarioActual.rol === 'admin' && !fotosGuiasRevisadas){
+    fotosGuiasRevisadas = true;
+    setTimeout(() => moverFotosGuiasAparte().catch(e => console.warn('fotos guías', e)), 2500);
+  }
   if(usuarioActual.rol === 'admin' && !clientesSiigoRevisados){
     clientesSiigoRevisados = true;
     setTimeout(() => registrarClientesSiigo({ silencioso: true }).catch(e => console.warn('clientes Siigo', e)), 4000);
@@ -6933,7 +6969,7 @@ const PLANTA_MODULES = {
         const color = pct >= 15 ? '#B65B2E' : (pct >= 8 ? 'var(--gold-dark)' : '#4C7A52');
         return `<span style="font-weight:700;color:${color};">${pct.toFixed(1)}%</span>`;
       }},
-      {key:'guiaFoto', label:'Guía', html:true, format:v=>v ? `<img src="${escapeAttr(v)}" class="guia-thumb" data-guia-view alt="Guía">` : '<span style="color:var(--ink-soft);font-size:12px;">Sin foto</span>'},
+      {key:'guiaFoto', label:'Guía', html:true, format:(v,item)=>v === 'fb' ? `<button type="button" class="acc-btn" data-guia-fb="${escapeAttr(item.id)}" title="Ver la foto de la guía">📷 Ver guía</button>` : v ? `<img src="${escapeAttr(v)}" class="guia-thumb" data-guia-view alt="Guía">` : '<span style="color:var(--ink-soft);font-size:12px;">Sin foto</span>'},
       {key:'enviadoWhatsapp', label:'WhatsApp', html:true, format:v=> v ? `<span class="badge saldado">✓ Enviado</span>` : `<span class="badge debe">Pendiente</span>`},
       {key:'observaciones', label:'Observaciones', html:true, format:v=> v ? `<span class="cell-clamp" title="${escapeAttr(v)}">${escapeHtml(v)}</span>` : '—'}
     ]
@@ -7907,7 +7943,7 @@ function buildPlantaFieldHtml(f, currentValue){
       <input type="file" accept="image/*" capture="environment" id="pf_${f.key}_file" class="img-field-input">
       <input type="hidden" id="pf_${f.key}" value="${escapeAttr(val)}">
       <div class="img-field-preview" id="pf_${f.key}_preview">
-        ${val ? `<img src="${escapeAttr(val)}" alt="Vista previa"><button type="button" class="img-field-remove" data-remove-img="${f.key}">✕ Quitar foto</button>` : `<span class="img-field-empty">Sin foto todavía — toca para tomar o subir una</span>`}
+        ${val === 'fb' ? `<span class="img-field-empty">Cargando foto…</span><button type="button" class="img-field-remove" data-remove-img="${f.key}">✕ Quitar foto</button>` : val ? `<img src="${escapeAttr(val)}" alt="Vista previa"><button type="button" class="img-field-remove" data-remove-img="${f.key}">✕ Quitar foto</button>` : `<span class="img-field-empty">Sin foto todavía — toca para tomar o subir una</span>`}
       </div>
     </div>`;
   }
@@ -7944,11 +7980,18 @@ function resizeImageFile(file, maxDim, quality){
   });
 }
 
-function wirePlantaImageField(overlay, f){
+function wirePlantaImageField(overlay, f, recordId){
   const fileInput = overlay.querySelector(`#pf_${f.key}_file`);
   const hiddenInput = overlay.querySelector(`#pf_${f.key}`);
   const preview = overlay.querySelector(`#pf_${f.key}_preview`);
   if(!fileInput || !hiddenInput || !preview) return;
+  if(hiddenInput.value === 'fb' && recordId){
+    leerFotoGuia(recordId).then(src => {
+      if(hiddenInput.value !== 'fb') return; // ya la cambiaron o la quitaron
+      const span = preview.querySelector('.img-field-empty');
+      if(span) span.outerHTML = src ? `<img src="${escapeAttr(src)}" alt="Vista previa">` : `<span class="img-field-empty">No se encontró la foto</span>`;
+    }).catch(() => { const span = preview.querySelector('.img-field-empty'); if(span) span.textContent = 'No se pudo cargar la foto'; });
+  }
   const wireRemoveBtn = () => {
     const btn = preview.querySelector('[data-remove-img]');
     if(btn) btn.addEventListener('click', ()=>{
@@ -7998,7 +8041,7 @@ function openPlantaModal(moduleKey, idx){
     </div>
   `);
   overlay.querySelector('#btnCancel').addEventListener('click', ()=> overlay.remove());
-  mod.fields.filter(f => f.type === 'image').forEach(f => wirePlantaImageField(overlay, f));
+  mod.fields.filter(f => f.type === 'image').forEach(f => wirePlantaImageField(overlay, f, recordId));
   // Si el módulo tiene "valor factura" y "valor flete" (como Despachos), calcula el % del flete en vivo
   const facturaInput = overlay.querySelector('#pf_valorFactura');
   const fleteInput = overlay.querySelector('#pf_valorFlete');
@@ -8019,6 +8062,9 @@ function openPlantaModal(moduleKey, idx){
     overlay.querySelector('#btnDeleteInModal').addEventListener('click', async ()=>{
       if(!confirm(`¿Eliminar este ${mod.title}?`)) return;
       if(typeof mod.onDelete === 'function') mod.onDelete(record);
+      // La foto se borra solo si ningún otro despacho la usa (hay despachos duplicados con el mismo id).
+      if(mod.fields.some(f => f.type === 'image' && record[f.key] === 'fb') && record.id
+        && getPlantaList(moduleKey).filter(x => x && x.id === record.id).length <= 1) refFotoGuia(record.id).remove().catch(()=>{});
       const freshList = getPlantaList(moduleKey);
       const i = findFreshIndex(freshList);
       if(i > -1) freshList.splice(i, 1);
@@ -8039,6 +8085,18 @@ function openPlantaModal(moduleKey, idx){
         return;
       }
       newRecord[f.key] = v;
+    }
+    // Fotos (guía de despacho): se guardan aparte en fotosGuias/{id}, no dentro del despacho.
+    for(const f of mod.fields.filter(x => x.type === 'image')){
+      const v = newRecord[f.key], antes = editing ? record[f.key] : '';
+      if(!newRecord.id) newRecord.id = 'p' + Date.now() + Math.random().toString(36).slice(2, 7);
+      // Sin internet la foto no se confirma: en ese caso queda dentro del despacho (como antes) y se
+      // pasa aparte la próxima vez que entre un administrador.
+      const conTiempo = (pr) => Promise.race([pr.then(() => true), new Promise(r => setTimeout(() => r(false), 8000))]);
+      try{
+        if(typeof v === 'string' && v.startsWith('data:')){ if(await conTiempo(refFotoGuia(newRecord.id).set(v))) newRecord[f.key] = 'fb'; }
+        else if(!v && antes === 'fb') refFotoGuia(newRecord.id).remove().catch(()=>{});
+      }catch(err){ console.warn('foto guía', err); }
     }
     // Volvemos a tomar la lista en este momento (no la de cuando se abrió el modal): si en el
     // fondo llegó una sincronización mientras la persona llenaba el formulario, esto evita que

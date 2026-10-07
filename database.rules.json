@@ -3,8 +3,12 @@
     "casaDoradaDatos": {
       ".read": "auth != null && root.child('accesos/uids/' + auth.uid + '/rol').exists()",
       ".write": "auth != null && (root.child('accesos/uids/' + auth.uid + '/rol').val() === 'admin' || root.child('accesos/uids/' + auth.uid + '/rol').val() === 'trabajador')",
-      "auth": { ".validate": false },
-      "usuarios": { ".validate": false }
+      "auth": {
+        ".validate": false
+      },
+      "usuarios": {
+        ".validate": false
+      }
     },
     "siigo": {
       ".read": "auth != null && (root.child('accesos/uids/' + auth.uid + '/rol').val() === 'admin' || root.child('accesos/uids/' + auth.uid + '/rol').val() === 'lector')",
@@ -12,8 +16,14 @@
     },
     "accesos": {
       "uids": {
-        "$uid": { ".read": "auth != null && auth.uid === $uid" }
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid"
+        }
       }
+    },
+    "fotosGuias": {
+      ".read": "auth != null && root.child('accesos/uids/' + auth.uid + '/rol').exists()",
+      ".write": "auth != null && (root.child('accesos/uids/' + auth.uid + '/rol').val() === 'admin' || root.child('accesos/uids/' + auth.uid + '/rol').val() === 'trabajador')"
     }
   }
 }
