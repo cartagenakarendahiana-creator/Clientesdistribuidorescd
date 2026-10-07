@@ -1310,19 +1310,28 @@
   body.con-sidebar .topbar-session .filter-btn, body.con-sidebar .global-add-btn{padding:0 10px !important;}
   .sesion-chip small{display:none;}
 }
+
+/* Entrada: solo el logo grande de Casa Dorada y el título, sobre fondo claro */
+@media screen{
+  .login-marca{background:#fff !important;color:#101828 !important;justify-content:center !important;align-items:center;text-align:center;gap:18px;border-right:1px solid #ECE6D8;}
+  .login-marca::after{display:none;}
+  .login-marca .lm-logo-grande{width:min(560px,82%);aspect-ratio:370/96;overflow:hidden;}
+  .login-marca .lm-logo-grande img{display:block;width:177.6%;max-width:none;margin:-17.3% 0 0 -38.9%;mix-blend-mode:multiply;}
+  .login-marca h2{color:#7A5B26 !important;font-size:26px !important;font-weight:600 !important;letter-spacing:.2px;max-width:none !important;margin:22px 0 0 !important;}
+  @media (max-width: 860px){
+    .login-marca{padding:36px 24px 26px !important;border-right:none;border-bottom:1px solid #ECE6D8;}
+    .login-marca .lm-logo-grande{width:min(320px,82%);}
+    .login-marca h2{font-size:18px !important;}
+  }
+}
 </style>
 </head>
 <body>
 
 <div class="login-overlay" id="loginOverlay">
   <div class="login-marca">
-    <div class="lm-logo"><span class="marca-icono"><svg viewBox="0 0 24 24" class="marca-casa" aria-hidden="true"><path d="M3 11.2 12 4l9 7.2V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg></span><b>Casa Dorada</b></div>
-    <div>
-      <h2>Gestión de <span>pedidos, producción</span> y planta</h2>
-      <p>Toda la operación de Casa Dorada en un solo lugar: clientes, despachos, inventario, producción por etapa y ventas de Siigo.</p>
-      <ul><li>Pedidos y entregas al día</li><li>Producción de Corte, Taller, Ultrasonido y Confortadora</li><li>Ventas de Siigo sincronizadas</li></ul>
-    </div>
-    <div class="lm-pie">© Casa Dorada · Acceso solo para personal autorizado</div>
+    <div class="lm-logo-grande"><img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Casa Dorada"></div>
+    <h2>Gestión de pedidos, producción y planta</h2>
   </div>
   <div class="login-lado">
   <div class="login-card">
