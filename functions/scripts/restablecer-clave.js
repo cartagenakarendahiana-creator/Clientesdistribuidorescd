@@ -8,7 +8,7 @@ const admin = require('firebase-admin');
 const { asegurarAccesos, guardarCuenta, claveDe, emailDe } = require('../accesos');
 
 const API_KEY = 'AIzaSyBj9rIuZdfCFf0GoEUWelGEx9MRJ-CX9uc';
-const SITIO = 'https://pedidos-nuevo.web.app/';
+const SITIO = 'https://registros-casa-dorada.web.app/';
 
 async function main() {
   const usuario = String(process.argv[2] || '').trim();

@@ -9,46 +9,60 @@
   "database": {
     "rules": "database.rules.json"
   },
-  "hosting": {
-    "public": "_sitio",
-    "cleanUrls": false,
-    "headers": [
-      {
-        "source": "/",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
-      },
-      {
-        "source": "/index.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
-      },
-      {
-        "source": "/sw.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
-      },
-      {
-        "source": "/manifest.webmanifest",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/manifest+json"
-          }
-        ]
-      }
-    ]
-  }
+  "hosting": [
+    {
+      "site": "registros-casa-dorada",
+      "public": "_sitio",
+      "cleanUrls": false,
+      "headers": [
+        {
+          "source": "/",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/manifest.webmanifest",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/manifest+json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "pedidos-nuevo",
+      "public": "_redireccion",
+      "redirects": [
+        {
+          "source": "**",
+          "destination": "https://registros-casa-dorada.web.app/",
+          "type": 302
+        }
+      ]
+    }
+  ]
 }
