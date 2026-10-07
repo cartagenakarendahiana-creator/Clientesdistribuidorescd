@@ -1696,11 +1696,15 @@
             <div class="sub">Consulta y edita los productos y precios de venta del catálogo (incluye la lista de precios original).</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="filter-btn no-print solo-admin" id="btnTraerProductosSiigo" type="button" title="Agrega al inventario los productos de venta de Siigo que aún no están (sin duplicar). También se hace solo al entrar un administrador.">⟳ Productos de Siigo</button>
             <button class="global-add-btn no-print" id="btnNuevoProductoView">+ Nuevo producto</button>
           </div>
         </div>
 
+        <div class="page-tabs no-print solo-admin" role="tablist" id="inventarioTabs" data-tabs-id="inventario">
+          <button type="button" class="page-tab active" data-tab="app">Productos</button>
+          <button type="button" class="page-tab" data-tab="siigo">Productos Siigo <span class="svc-count" id="invSiigoCount"></span></button>
+        </div>
+        <div id="invPanelApp" class="page-tab-panel" data-tab-panel="app">
         <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="inventarioSearch" placeholder="Buscar producto, categoría o medida...">
@@ -1710,6 +1714,20 @@
             <thead><tr><th>Producto</th><th>Medida</th><th class="num">Precio de venta</th><th></th></tr></thead>
             <tbody id="inventarioBody"></tbody>
           </table>
+        </div>
+        </div>
+        <div id="invPanelSiigo" class="page-tab-panel" data-tab-panel="siigo" hidden>
+          <div class="hint" style="margin-bottom:10px;">Productos de venta de Siigo (los que aparecen en alguna factura), con el precio que tienen en Siigo. Es una lista aparte: no cambia tus productos ni tus precios.</div>
+          <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="invSiigoSearch" placeholder="Buscar por nombre, código o grupo...">
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th class="num">Precio en Siigo</th></tr></thead>
+              <tbody id="invSiigoBody"><tr><td colspan="4" style="color:var(--ink-soft);">Cargando…</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
       <div class="page-card" style="margin-top:16px;">
@@ -3746,7 +3764,11 @@ function switchView(viewName){
   if(viewName === 'reportes') renderReportes();
   if(viewName === 'vendedores') renderVendedoresView();
   if(viewName === 'distribuidores') renderDistribuidoresView();
-  if(viewName === 'inventario') renderInventarioView();
+  if(viewName === 'inventario'){
+    renderInventarioView();
+    if(esTrabajador()){ document.getElementById('invPanelSiigo').hidden = true; document.getElementById('invPanelApp').hidden = false; } // la pestaña Siigo es solo de administradores
+    else if(!document.getElementById('invPanelSiigo').hidden) renderProductosSiigo();
+  }
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
@@ -4599,102 +4621,41 @@ function abrirClientesSiigoPorRevisar(){
   });
 }
 
-// ---------- Productos de Siigo ----------
-// Trae al Inventario los productos de VENTA de Siigo: los que aparecen en alguna factura
-// (siigo/catalogos/productosVendidos) con su nombre, grupo y precio de Siigo. No duplica:
-//   - si ya se vinculó antes (APPDATA.siigoProductos[codigo]) no se vuelve a mirar;
-//   - mismo nombre que un producto de la app (con o sin medida) → se vincula, sin tocar su precio;
-//   - nombre parecido (todas las palabras de uno están en el otro) → queda "por revisar".
-// Los nuevos entran como productos propios (customProducts) con el precio de Siigo y su código.
-let productosSiigoRevisados = false;
-let productosSiigoPorRevisar = [];
-const PALABRAS_VACIAS_PROD = new Set(['de','del','la','el','y','con','en','x','mt','mts','m','cm','gr','grs','gramos','g','und','unid','unidad','und.','ref']);
-function palabrasProducto(t){
-  return new Set(normalizeText(t).split(/[^a-z0-9]+/).filter(w => w && !PALABRAS_VACIAS_PROD.has(w)));
-}
-async function registrarProductosSiigo({ silencioso } = {}){
-  if(!usuarioActual || usuarioActual.rol !== 'admin') return null;
+// ---------- Productos de Siigo (pestaña aparte en Inventario) ----------
+// Lista de solo lectura con los productos de venta de Siigo: los que aparecen en alguna factura
+// (siigo/catalogos/productosVendidos), con nombre, grupo, unidad y precio de Siigo. Puede repetir
+// productos que también estén en la pestaña "Productos": son listas separadas a propósito.
+let productosSiigoLista = null;
+async function cargarProductosSiigo(forzar){
+  if(productosSiigoLista && !forzar) return productosSiigoLista;
   const db = firebase.database();
   const [vendSnap, catSnap] = await Promise.all([db.ref('siigo/catalogos/productosVendidos').once('value'), db.ref('siigo/catalogos/productos').once('value')]);
   const vendidos = vendSnap.val() || {}, catalogo = catSnap.val() || {};
-  if(!APPDATA.siigoProductos) APPDATA.siigoProductos = {};
-  if(!APPDATA.customProducts) APPDATA.customProducts = [];
-  const vinculo = APPDATA.siigoProductos;
-  const productos = getAllProducts();
-  // Nombre completo (producto + medida) y solo el nombre: varios productos pueden compartir el nombre
-  // con distinta medida, por eso cada clave guarda TODOS los que coinciden.
-  const porNombre = new Map();
-  const agregarClave = (k, idx) => { if(!k) return; if(!porNombre.has(k)) porNombre.set(k, []); if(!porNombre.get(k).includes(idx)) porNombre.get(k).push(idx); };
-  productos.forEach((p, idx) => { agregarClave(normalizeText([p.producto, p.medida].filter(Boolean).join(' ')), idx); agregarClave(normalizeText(p.producto), idx); });
-  const conPalabras = productos.map((p, idx) => ({ idx, p: palabrasProducto([p.producto, p.medida].join(' ')) }));
-  const usados = new Set(Object.values(vinculo).filter(v => typeof v === 'number')); // (informativo)
-  let nuevos = 0, vinculados = 0;
-  const porRevisar = [];
-  Object.keys(vendidos).sort().forEach(clave => {
-    const c = catalogo[clave];
-    if(!c || !c.codigo || c.activo === false || !String(c.nombre || '').trim()) return;
-    if(vinculo[c.codigo] !== undefined) return;
-    const nombre = String(c.nombre).trim();
-    const k = normalizeText(nombre);
-    const exactos = porNombre.get(k) || [];
-    if(exactos.length === 1){ vinculo[c.codigo] = exactos[0]; usados.add(exactos[0]); vinculados++; return; }
-    if(exactos.length > 1){ porRevisar.push({ codigo: c.codigo, nombre, grupo: c.grupo || '', precio: Number(c.precio) || 0, parecidos: exactos }); return; }
-    const ps = palabrasProducto(nombre);
-    const cand = conPalabras.filter(x => Math.min(x.p.size, ps.size) >= 3 && (contenido(x.p, ps) || contenido(ps, x.p)));
-    if(cand.length){ porRevisar.push({ codigo: c.codigo, nombre, grupo: c.grupo || '', precio: Number(c.precio) || 0, parecidos: cand.map(x => x.idx) }); return; }
-    APPDATA.customProducts.push({ categoria: String(c.grupo || 'Productos Siigo').toUpperCase(), producto: nombre, medida: '', precio: Number(c.precio) || 0, codigoSiigo: c.codigo });
-    vinculo[c.codigo] = CATALOG.productos.length + APPDATA.customProducts.length - 1;
-    nuevos++;
-  });
-  productosSiigoPorRevisar = porRevisar;
-  if(nuevos || vinculados){ await saveAppData(APPDATA); renderAll(); }
-  if(!silencioso || nuevos){
-    showToast(`Productos de Siigo: ${nuevos} nuevos en Inventario, ${vinculados} ya existían` + (porRevisar.length ? `, ${porRevisar.length} por revisar` : '') + (Object.keys(vendidos).length ? '' : ' (aún no hay productos vendidos sincronizados)'), 6000);
-  }
-  return { nuevos, vinculados, porRevisar: porRevisar.length };
+  productosSiigoLista = Object.keys(vendidos).map(k => catalogo[k]).filter(c => c && c.codigo && c.activo !== false)
+    .map(c => ({ codigo: String(c.codigo), nombre: String(c.nombre || ''), grupo: String(c.grupo || 'Sin grupo'), unidad: String(c.unidad || ''), precio: Number(c.precio) || 0 }))
+    .sort((a, b) => a.grupo.localeCompare(b.grupo) || a.nombre.localeCompare(b.nombre));
+  return productosSiigoLista;
 }
-function abrirProductosSiigoPorRevisar(){
-  const lista = productosSiigoPorRevisar;
-  if(!lista.length){ showToast('No hay productos de Siigo por revisar'); return; }
-  const productos = getAllProducts();
-  const nombreProd = (idx) => { const p = productos[idx] || {}; return [p.producto, p.medida].filter(Boolean).join(' · '); };
-  const overlay = openModal(`
-    <h3>Productos de Siigo por revisar (${lista.length})</h3>
-    <div class="hint">Se parecen a productos que ya tienes. Si es el mismo, elígelo (no se cambia su precio); si es otro, agrégalo como nuevo.</div>
-    <div style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;">
-    ${lista.map((x, i) => `<div class="rev-prod" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;">
-      <div><b>${escapeHtml(x.nombre)}</b> <span style="font-size:11.5px;color:var(--ink-soft);">· Código ${escapeHtml(x.codigo)}${x.precio ? ' · ' + fmt(x.precio) : ''}</span></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
-        <select data-psel="${i}" data-ssel-done="1" style="flex:1;min-width:200px;"><option value="">— Es un producto nuevo: agregarlo —</option>${x.parecidos.map(idx => `<option value="${idx}">Es el mismo que: ${escapeHtml(nombreProd(idx))}</option>`).join('')}</select>
-        <button type="button" class="acc-btn" data-pok="${i}">Aplicar</button>
-      </div></div>`).join('')}
-    </div>
-    <div class="modal-actions"><button class="btn-cancel" id="btnCerrarRevProd">Cerrar</button></div>`);
-  overlay.querySelector('#btnCerrarRevProd').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-pok]'); if(!b) return;
-    const i = Number(b.dataset.pok), x = lista[i]; if(!x) return;
-    const elegido = overlay.querySelector(`[data-psel="${i}"]`).value;
-    if(!APPDATA.siigoProductos) APPDATA.siigoProductos = {};
-    if(elegido !== ''){ APPDATA.siigoProductos[x.codigo] = Number(elegido); }
-    else {
-      if(!APPDATA.customProducts) APPDATA.customProducts = [];
-      APPDATA.customProducts.push({ categoria: String(x.grupo || 'Productos Siigo').toUpperCase(), producto: x.nombre, medida: '', precio: x.precio, codigoSiigo: x.codigo });
-      APPDATA.siigoProductos[x.codigo] = CATALOG.productos.length + APPDATA.customProducts.length - 1;
-    }
-    await saveAppData(APPDATA);
-    b.closest('.rev-prod').remove();
-    lista[i] = null;
-    productosSiigoPorRevisar = lista.filter(Boolean);
-    renderAll();
+async function renderProductosSiigo(){
+  const body = document.getElementById('invSiigoBody');
+  if(!body) return;
+  let lista;
+  try{ lista = await cargarProductosSiigo(); }
+  catch(e){ body.innerHTML = `<tr><td colspan="4" style="color:#B65B2E;">No se pudieron leer los productos de Siigo.</td></tr>`; return; }
+  const cnt = document.getElementById('invSiigoCount'); if(cnt) cnt.textContent = lista.length ? String(lista.length) : '';
+  const palabras = normalizeText(document.getElementById('invSiigoSearch').value || '').split(/\s+/).filter(Boolean);
+  const vis = lista.filter(p => { const t = normalizeText([p.codigo, p.nombre, p.grupo].join(' ')); return palabras.every(w => t.includes(w)); });
+  let html = '', grupo = null;
+  vis.slice(0, 1500).forEach(p => {
+    if(p.grupo !== grupo){ grupo = p.grupo; html += `<tr class="cat-row"><td colspan="4">${escapeHtml(grupo)}</td></tr>`; }
+    html += `<tr><td style="white-space:nowrap;color:var(--ink-soft);">${escapeHtml(p.codigo)}</td><td><b>${escapeHtml(p.nombre)}</b></td><td>${escapeHtml(p.unidad)}</td><td class="num">${p.precio ? fmt(p.precio) : '—'}</td></tr>`;
   });
+  body.innerHTML = html || `<tr><td colspan="4" style="color:var(--ink-soft);">${lista.length ? 'Sin resultados.' : 'Aún no hay productos de Siigo sincronizados (se llenan solos con la próxima sincronización).'}</td></tr>`;
 }
-document.getElementById('btnTraerProductosSiigo').addEventListener('click', async (e) => {
-  const b = e.currentTarget; b.disabled = true;
-  try{ const r = await registrarProductosSiigo(); if(r && r.porRevisar) abrirProductosSiigoPorRevisar(); }
-  catch(err){ showToast('No se pudieron traer los productos de Siigo: ' + (err.message || err), 5000); }
-  finally{ b.disabled = false; }
+document.getElementById('inventarioTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('.page-tab'); if(b && b.dataset.tab === 'siigo') renderProductosSiigo();
 });
+document.getElementById('invSiigoSearch').addEventListener('input', () => renderProductosSiigo());
 document.getElementById('btnTraerClientesSiigo').addEventListener('click', async (e) => {
   const b = e.currentTarget; b.disabled = true;
   try{ const r = await registrarClientesSiigo(); if(r && r.porRevisar) abrirClientesSiigoPorRevisar(); }
@@ -7066,10 +7027,6 @@ async function alCambiarSesion(user){
   if(usuarioActual.rol === 'admin' && !fotosGuiasRevisadas){
     fotosGuiasRevisadas = true;
     setTimeout(() => moverFotosGuiasAparte().catch(e => console.warn('fotos guías', e)), 2500);
-  }
-  if(usuarioActual.rol === 'admin' && !productosSiigoRevisados){
-    productosSiigoRevisados = true;
-    setTimeout(() => registrarProductosSiigo({ silencioso: true }).catch(e => console.warn('productos Siigo', e)), 7000);
   }
   if(usuarioActual.rol === 'admin' && !clientesSiigoRevisados){
     clientesSiigoRevisados = true;
