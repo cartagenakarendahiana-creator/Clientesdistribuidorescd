@@ -1,4 +1,5 @@
-# Publica la página (la app) en Firebase Hosting: https://pedidos-nuevo.web.app
+# Publica la página (la app) en Firebase Hosting: https://registros-casa-dorada.web.app
+# La dirección anterior (https://pedidos-nuevo.web.app) queda redirigiendo a la nueva.
 # Reemplaza a Netlify. Se ejecuta sola cada vez que se une a main un cambio de la página, o a mano
 # desde GitHub → Actions → "Publicar página" → Run workflow.
 # Usa el mismo secreto FIREBASE_SERVICE_ACCOUNT que las funciones.
@@ -40,6 +41,8 @@ jobs:
           cp index.html sw.js manifest.webmanifest *.jpeg _sitio/
           cp -r iconos vendor _sitio/
           ls -la _sitio
+          mkdir -p _redireccion
+          echo '<!doctype html><meta http-equiv="refresh" content="0;url=https://registros-casa-dorada.web.app/">' > _redireccion/index.html
 
       - name: Preparar credenciales de Firebase
         env:
@@ -47,6 +50,14 @@ jobs:
         run: |
           if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT."; exit 1; fi
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+
+      # Crea el sitio "registros-casa-dorada" la primera vez (si ya existe, sigue).
+      - name: Crear el sitio registros-casa-dorada
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: |
+          npx --yes firebase-tools@latest hosting:sites:create registros-casa-dorada --project pedidos-nuevo --non-interactive 2>&1 | tee sitio.log || true
+          if grep -qi "already exists\|ya existe" sitio.log; then echo "El sitio ya existía."; fi
 
       - name: Publicar en Firebase Hosting
         env:
