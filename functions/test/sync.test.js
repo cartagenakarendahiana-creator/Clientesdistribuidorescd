@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { SiigoClient } = require('../siigo');
-const { sincronizar, avanzarHistorico, avanzarNotasCreditoHistorico, normalizarFactura, normalizarNotaCredito, construirDia, hoyColombia } = require('../sync');
+const { indexarProductosVendidos, sincronizar, avanzarHistorico, avanzarNotasCreditoHistorico, normalizarFactura, normalizarNotaCredito, construirDia, hoyColombia } = require('../sync');
 
 // Base de datos falsa con la misma forma que firebase-admin (ref/once/update).
 function dbFalsa() {
@@ -88,7 +88,7 @@ test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', asyn
       phones: [{ indicative: '57', number: '3015347888' }, { number: '6044444', extension: '12' }],
       contacts: [{ first_name: 'Ana', email: '' }, { first_name: 'Luis', email: 'compras@arrow.co' }],
     }] },
-    '/v1/products': { pagination: { total_results: 1 }, results: [{ code: 'A', name: 'Almohada' }] },
+    '/v1/products': { pagination: { total_results: 1 }, results: [{ code: 'A', name: 'Almohada', type: 'Product', account_group: { name: 'Almohadas' }, prices: [{ price_list: [{ value: 12500 }] }] }] },
     '/v1/invoices': (q) => ({ pagination: { total_results: 101 }, results: q.get('page') === '1' ? pagina1 : pagina2 }),
     '/v1/credit-notes': { results: [], pagination: { total_results: 0 } },
   });
@@ -128,6 +128,8 @@ test('sincronizar pagina facturas, envía Partner-Id y guarda bajo siigo/', asyn
   assert.equal(cust[0].params.updated_start, undefined, 'la primera vez trae todos los clientes');
   assert.equal(cust.at(-1).params.updated_start, s.estado.catalogosHasta);
   assert.equal(s.estado.catalogoClientesVersion, 2);
+  assert.deepEqual(s.catalogos.productos.A, { codigo: 'A', nombre: 'Almohada', activo: true, precio: 12500, grupo: 'Almohadas', tipo: 'Product', unidad: '' });
+  assert.ok(Object.keys(s.catalogos.productosVendidos || {}).length > 0, 'índice de productos vendidos');
 });
 
 test('reintenta ante 429 y renueva el token ante 401', async () => {
@@ -286,4 +288,14 @@ test('avanzarNotasCreditoHistorico resta las notas crédito de meses ya cargados
   assert.deepEqual(meses, ['2026-09-01', '2026-08-01', '2026-07-01']);
   assert.equal(h.completo, true);
   assert.equal(db.datos.siigo.resumenDiario['2026-08-05'].global.ventas, 400);
+});
+
+test('catálogo de productos con precio y grupo, e índice de productos vendidos', async () => {
+  const db = dbFalsa();
+  db.datos.siigo = { resumenDiario: { '2026-08-01': { global: { productos: { A: { codigo: 'A', cantidad: 3 }, X: { codigo: 'X', cantidad: 0 } } } } } };
+  const r = await indexarProductosVendidos({ db, log: () => {} });
+  assert.equal(r.productos, 1);
+  assert.deepEqual(Object.keys(db.datos.siigo.catalogos.productosVendidos), ['A']);
+  assert.ok(db.datos.siigo.indices.productosVendidos);
+  assert.equal((await indexarProductosVendidos({ db, log: () => {} })).yaEstaba, true);
 });

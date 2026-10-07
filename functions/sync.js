@@ -70,6 +70,20 @@ function datosCliente(c) {
   };
 }
 
+// Lo que se guarda de cada producto de Siigo (siigo/catalogos/productos/{codigo}).
+function datosProducto(p) {
+  const lista = (p.prices && p.prices[0] && p.prices[0].price_list) || [];
+  return {
+    codigo: p.code,
+    nombre: p.name || '',
+    activo: p.active !== false,
+    precio: lista.length ? num(lista[0].value) : 0,
+    grupo: (p.account_group && p.account_group.name) || '',
+    tipo: p.type || '',
+    unidad: (p.unit && (p.unit.name || p.unit.code)) || p.unit_label || '',
+  };
+}
+
 function normalizarFactura(f) {
   const items = (f.items || []).map((it) => {
     const cantidad = num(it.quantity);
@@ -168,6 +182,10 @@ async function guardarDocumentos({ db, traidas, updates }) {
   for (const f of traidas) {
     const id = claveSegura(f.id);
     afectadas.add(f.fecha);
+    // Productos que se han vendido (los usa la app para traer solo productos de venta al Inventario).
+    if (f.tipo !== 'NC' && !f.anulada) {
+      for (const it of f.items || []) if (it.codigo) updates[`siigo/catalogos/productosVendidos/${claveSegura(it.codigo)}`] = true;
+    }
     if (indice[id] && indice[id] !== f.fecha) afectadas.add(indice[id]);
     updates[`siigo/facturasIndice/${id}`] = f.fecha;
   }
@@ -251,7 +269,8 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
     // Versión 2 del catálogo de clientes guarda también teléfono, dirección y correo: la primera vez se
     // vuelven a pedir TODOS los clientes para completar los que ya estaban.
     const clientes = await client.clientes(estado.catalogoClientesVersion === 2 ? clientesDesde : undefined);
-    const productos = await client.productos(clientesDesde);
+    // Versión 2 del catálogo de productos guarda también precio, grupo y tipo: la primera vez se piden todos.
+    const productos = await client.productos(estado.catalogoProductosVersion === 2 ? clientesDesde : undefined);
 
     const updates = {};
     updates['siigo/catalogos/centrosCosto'] = indexar(centros, (c) => c.id !== undefined && claveCentro(c.id), (c) => ({
@@ -266,11 +285,7 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
       activo: u.active !== false,
     }));
     for (const [k, c] of Object.entries(indexar(clientes, (c) => c.identification, datosCliente))) updates[`siigo/catalogos/clientes/${k}`] = c;
-    for (const [k, p] of Object.entries(indexar(productos, (p) => p.code, (p) => ({
-      codigo: p.code,
-      nombre: p.name || '',
-      activo: p.active !== false,
-    })))) updates[`siigo/catalogos/productos/${k}`] = p;
+    for (const [k, p] of Object.entries(indexar(productos, (p) => p.code, datosProducto))) updates[`siigo/catalogos/productos/${k}`] = p;
 
     const facturasTraidas = (await client.facturas(desde, sumarDias(hasta, MARGEN_DIAS_FIN))).map(normalizarFactura);
     const notasTraidas = (await client.notasCredito(desde, sumarDias(hasta, MARGEN_DIAS_FIN))).map(normalizarNotaCredito);
@@ -293,6 +308,7 @@ async function sincronizar({ client, db, desde, hasta, log = console.log }) {
       // Fecha de Colombia (no UTC) y un día de traslape, para no saltarse clientes/productos creados esa noche.
       catalogosHasta: sumarDias(hoyColombia(new Date(inicio)), -1),
       catalogoClientesVersion: 2,
+      catalogoProductosVersion: 2,
       ultimoError: null,
     };
     await db.ref().update(updates);
@@ -342,7 +358,27 @@ async function avanzarHistorico({ client, db, tiempoMaxMs = 240000, log = consol
 }
 
 
+// Una sola vez: arma siigo/catalogos/productosVendidos con los productos de todas las facturas ya
+// guardadas (los resúmenes diarios traen el código de cada producto vendido).
+async function indexarProductosVendidos({ db, log = console.log }) {
+  const marca = db.ref('siigo/indices/productosVendidos');
+  if ((await marca.once('value')).val()) return { yaEstaba: true };
+  const resumen = (await db.ref('siigo/resumenDiario').once('value')).val() || {};
+  const updates = {};
+  for (const dia of Object.values(resumen)) {
+    const prods = (dia && dia.global && dia.global.productos) || {};
+    for (const p of Object.values(prods)) {
+      if (p && p.codigo && Number(p.cantidad) > 0) updates[`siigo/catalogos/productosVendidos/${claveSegura(p.codigo)}`] = true;
+    }
+  }
+  updates['siigo/indices/productosVendidos'] = new Date().toISOString();
+  await db.ref().update(updates);
+  log(`Siigo: ${Object.keys(updates).length - 1} productos vendidos indexados.`);
+  return { productos: Object.keys(updates).length - 1 };
+}
+
 module.exports = {
+  indexarProductosVendidos,
   sincronizar,
   avanzarHistorico,
   avanzarNotasCreditoHistorico,
