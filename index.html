@@ -1189,7 +1189,7 @@
 }
 @media print{ .menu-lateral-btn, .menu-lateral-fondo{display:none !important;} body.con-sidebar #appRoot{padding-left:0 !important;} }
 
-/* ================= Impresión del pedido: marca de agua y sello ================= */
+/* ================= Impresión del pedido: marca de agua (logo grande de Casa Dorada) ================= */
 .cd-marca-agua, .cd-firmas, .cd-pie-doc{display:none;}
 @media print{
   @page{ @bottom-right{ content:"Página " counter(page) " de " counter(pages); font-size:8pt; color:#9CA3AF; } }
@@ -1197,7 +1197,7 @@
     display:block;position:fixed;inset:0;z-index:50;pointer-events:none; /* encima: las tablas tienen fondo blanco */
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
-  #mainPanel .cd-marca-agua img{position:absolute;top:50%;left:50%;width:70%;transform:translate(-50%,-50%);opacity:.05;}
+  #mainPanel .cd-marca-agua img{position:absolute;top:50%;left:50%;width:115%;max-width:none;transform:translate(-50%,-50%) rotate(-28deg);opacity:.15;mix-blend-mode:multiply;}
   #mainPanel .cd-sello{
     position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);
     font:900 54pt/1 Inter,Arial,sans-serif;letter-spacing:6px;padding:10px 30px;border:6px solid currentColor;border-radius:18px;
@@ -3283,7 +3283,7 @@ function renderMain(){
   const entregadoCompleto = allLines.length > 0 && totals.totalPendienteVal <= 0 && allLines.every(l => getEntregado(selectedDistId, l.key) >= l.cantidad);
   const estadoDoc = entregadoCompleto ? 'entregado' : 'pendiente';
   main.innerHTML = `
-    <div class="cd-marca-agua" aria-hidden="true"><img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt=""><div class="cd-sello ${estadoDoc}">${entregadoCompleto ? 'ENTREGADO' : 'PENDIENTE'}</div></div>
+    <div class="cd-marca-agua" aria-hidden="true"><img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt=""></div>
     <div class="cd-print-head" data-own="1">
       <div class="cd-ph-top">
         <div class="cd-ph-brand">
