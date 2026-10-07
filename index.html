@@ -3318,6 +3318,12 @@ function renderMain(){
         </tbody></table>
       </div>` : ''}
     </div>
+    <!-- Totales arriba de todo el pedido -->
+    <div class="totals-row">
+      <div class="tcard"><div class="label">Total pedido</div><div class="val">${fmt(totals.totalPedido)}</div></div>
+      <div class="tcard ok"><div class="label">Total entregado</div><div class="val">${fmt(totals.totalEntregadoVal)}</div></div>
+      <div class="tcard debe"><div class="label">Total que debe</div><div class="val">${fmt(totals.totalPendienteVal)}</div></div>
+    </div>
     <div class="dist-header">
       <div>
         <div class="dist-header-title">
@@ -3373,11 +3379,6 @@ function renderMain(){
         <input type="text" id="inpNuevaObservacion" placeholder="Ej. Prefiere entrega los viernes, siempre paga en efectivo...">
         <button class="btn-confirm" id="btnAgregarObservacion">+ Agregar</button>
       </div>
-    </div>
-    <div class="totals-row">
-      <div class="tcard"><div class="label">Total pedido</div><div class="val">${fmt(totals.totalPedido)}</div></div>
-      <div class="tcard ok"><div class="label">Total entregado</div><div class="val">${fmt(totals.totalEntregadoVal)}</div></div>
-      <div class="tcard debe"><div class="label">Total que debe</div><div class="val">${fmt(totals.totalPendienteVal)}</div></div>
     </div>
     ${allLines.length ? `
     <div class="order-search-row">
