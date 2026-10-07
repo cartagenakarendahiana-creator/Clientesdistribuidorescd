@@ -4031,6 +4031,7 @@ function renderDistribuidoresView(){
       <span style="display:flex;align-items:center;gap:8px;">
         ${conPedidos.has(clienteKey(n)) ? `<span class="tag">Con pedidos</span>` : `<span class="tag">Sin pedidos aún</span>`}
         <button class="icon-btn icon-edit no-print" data-edit="${escapeAttr(n)}" title="Editar datos del cliente">✎</button>
+        <button class="icon-btn no-print solo-admin" data-unir="${escapeAttr(n)}" title="Unir con otro cliente (es el mismo)">🔗</button>
         <button class="icon-btn icon-delete no-print" data-n="${escapeAttr(n)}" title="Quitar del listado">🗑</button>
       </span>
     </div>`;}).join('') : `<div class="registry-empty">${clientesViewTerm ? 'Sin coincidencias.' : 'Aún no has creado clientes.'}</div>`;
@@ -4044,6 +4045,97 @@ function renderDistribuidoresView(){
   listEl.querySelectorAll('button[data-edit]').forEach(btn=>{
     btn.addEventListener('click', ()=> openEditClienteInfoModal(btn.dataset.edit));
   });
+  listEl.querySelectorAll('button[data-unir]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openUnirClienteModal(btn.dataset.unir));
+  });
+}
+
+// Buscador de clientes: escribes y van saliendo las opciones (sin tildes ni mayúsculas, también por NIT o
+// ciudad). Muestra máximo 50 para que no se trabe con miles de clientes. onElegir(nombre) al tocar uno.
+function buscadorClientesHtml(id, placeholder){
+  return `<div class="cbus" style="position:relative;">
+    <input type="text" id="${id}" class="cbus-input" autocomplete="off" placeholder="${escapeAttr(placeholder || 'Escribe el nombre, NIT o ciudad…')}" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:14px;">
+    <div class="cbus-lista" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:5;max-height:260px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 24px rgba(16,24,40,.15);margin-top:4px;"></div>
+  </div>`;
+}
+function activarBuscadorClientes(root, id, nombres, onElegir, primeros){
+  const input = root.querySelector('#' + id), lista = input.parentNode.querySelector('.cbus-lista');
+  const datos = nombres.map(n => { const i = getClienteInfo(n); return { n, t: normalizeText([n, i.nit, i.ciudad].join(' ')), det: [i.nit && 'NIT ' + i.nit, i.ciudad].filter(Boolean).join(' · ') }; });
+  const pintar = () => {
+    const t = normalizeText(input.value);
+    let res = t ? datos.filter(d => t.split(/\s+/).every(w => d.t.includes(w))) : (primeros || []).map(n => datos.find(d => d.n === n)).filter(Boolean);
+    const total = res.length; res = res.slice(0, 50);
+    lista.innerHTML = res.length
+      ? res.map(d => `<div class="cbus-item" data-n="${escapeAttr(d.n)}" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line);"><b>${escapeHtml(d.n)}</b>${d.det ? `<div style="font-size:11.5px;color:var(--ink-soft);">${escapeHtml(d.det)}</div>` : ''}</div>`).join('')
+        + (total > res.length ? `<div style="padding:8px 12px;font-size:12px;color:var(--ink-soft);">…y ${total - res.length} más. Sigue escribiendo.</div>` : '')
+      : `<div style="padding:9px 12px;color:var(--ink-soft);font-size:13px;">${t ? 'Sin resultados' : 'Escribe para buscar…'}</div>`;
+    lista.style.display = 'block'; lista.classList.add('open');
+  };
+  const cerrar = () => { lista.style.display = 'none'; lista.classList.remove('open'); };
+  input.addEventListener('input', pintar);
+  input.addEventListener('focus', pintar);
+  input.addEventListener('blur', () => setTimeout(cerrar, 180));
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){ e.stopPropagation(); cerrar(); input.blur(); }
+    if(e.key === 'Enter'){ const f = lista.querySelector('.cbus-item'); if(f){ e.preventDefault(); input.value = f.dataset.n; cerrar(); onElegir(f.dataset.n); } }
+  });
+  lista.addEventListener('mousedown', (e) => {
+    const it = e.target.closest('.cbus-item'); if(!it) return;
+    e.preventDefault(); input.value = it.dataset.n; cerrar(); onElegir(it.dataset.n);
+  });
+}
+
+// Une un cliente con otro (son el mismo): los pedidos y despachos del primero pasan a llamarse como el
+// segundo, sus datos (NIT, teléfono…) completan los vacíos del segundo, y el primero sale del listado.
+function unirClienteEn(origen, destino){
+  const ko = clienteKey(origen), kd = clienteKey(destino);
+  if(!ko || !kd || ko === kd) return;
+  getAllDistributors().forEach(d => { if(clienteKey(d.nombre) === ko) cdEnsureMap('distNameOverrides')[d.id] = destino; });
+  (APPDATA.despachos || []).forEach(x => { if(x && clienteKey(x.cliente) === ko) x.cliente = destino; });
+  (APPDATA.facturas || []).forEach(f => { if(f && clienteKey(f.cliente) === ko) f.cliente = destino; });
+  const a = getClienteInfo(origen), b = getClienteInfo(destino);
+  setClienteInfo(destino, { nit: b.nit || a.nit, telefono: b.telefono || a.telefono, direccion: b.direccion || a.direccion, ciudad: b.ciudad || a.ciudad });
+  if(APPDATA.clientesInfo) delete APPDATA.clientesInfo[ko];
+  const reg = (APPDATA.distribuidoresRegistry || []).filter(n => clienteKey(n) !== ko);
+  if(!reg.some(n => clienteKey(n) === kd)) reg.push(destino);
+  APPDATA.distribuidoresRegistry = reg;
+}
+function openUnirClienteModal(origen){
+  if(esTrabajador()) return;
+  const i = getClienteInfo(origen);
+  const otros = getAllDistribuidorNombres().filter(n => clienteKey(n) !== clienteKey(origen));
+  const pOrigen = palabrasNombre(origen);
+  const parecidos = otros.filter(n => { const p = palabrasNombre(n); return [...pOrigen].filter(w => p.has(w)).length >= Math.min(2, pOrigen.size); }).slice(0, 8);
+  let destino = '';
+  const overlay = openModal(`
+    <h3>Unir cliente</h3>
+    <div class="hint"><b>${escapeHtml(origen)}</b>${i.nit ? ' · NIT ' + escapeHtml(i.nit) : ''}<br>Busca el cliente con el que es el mismo. Sus pedidos y despachos pasan a ese nombre, sus datos completan los que falten y este sale del listado.</div>
+    <div class="field"><label>Es el mismo que…</label>${buscadorClientesHtml('unirBuscar')}</div>
+    <div id="unirElegido" class="hint" style="display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancelUnir">Cancelar</button>
+      <button class="btn-confirm" id="btnUnirOk" disabled>Unir</button>
+    </div>`);
+  overlay.querySelector('#btnCancelUnir').addEventListener('click', () => overlay.remove());
+  activarBuscadorClientes(overlay, 'unirBuscar', otros, (n) => {
+    destino = n;
+    const d = getClienteInfo(n);
+    const box = overlay.querySelector('#unirElegido');
+    box.style.display = '';
+    box.innerHTML = `Se va a unir con: <b>${escapeHtml(n)}</b>${d.nit ? ' · NIT ' + escapeHtml(d.nit) : ''}${d.ciudad ? ' · ' + escapeHtml(d.ciudad) : ''}`;
+    overlay.querySelector('#btnUnirOk').disabled = false;
+  }, parecidos);
+  overlay.querySelector('#btnUnirOk').addEventListener('click', async () => {
+    if(!destino) return;
+    const ai = getClienteInfo(origen).nit, bi = getClienteInfo(destino).nit;
+    if(ai && bi && soloDigitos(ai) !== soloDigitos(bi) && !confirm(`Ojo: tienen NIT distinto (${ai} y ${bi}). ¿Seguro que son el mismo cliente?`)) return;
+    unirClienteEn(origen, destino);
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderAll();
+    showToast(`"${origen}" quedó unido con "${destino}"`);
+  });
+  setTimeout(() => overlay.querySelector('#unirBuscar').focus(), 50);
 }
 
 function openEditClienteInfoModal(nombre){
@@ -4195,21 +4287,31 @@ function abrirClientesSiigoPorRevisar(){
   if(!lista.length){ showToast('No hay terceros de Siigo por revisar'); return; }
   const overlay = openModal(`
     <h3>Terceros de Siigo por revisar (${lista.length})</h3>
-    <div class="hint">Se parecen a clientes que ya tienes (mismo nombre o casi), por eso no se agregaron solos para no duplicar. Si es el mismo cliente, elige cuál y se le completan los datos vacíos; si es otro, déjalo como cliente nuevo. Toca Aplicar en cada uno.</div>
+    <div class="hint">Se parecen a clientes que ya tienes (mismo nombre o casi), por eso no se agregaron solos para no duplicar. Si es el mismo cliente, escribe su nombre y elígelo de la lista (se le completan los datos vacíos); si es otro, deja el campo vacío y quedará como cliente nuevo. Toca Aplicar en cada uno.</div>
     <div style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;">
     ${lista.map((x, i) => `<div class="rev-siigo" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;">
       <div><b>${escapeHtml(x.siigo)}</b> <span style="font-size:11.5px;color:var(--ink-soft);">· NIT ${escapeHtml(x.nit)}${x.datos.ciudad ? ' · ' + escapeHtml(x.datos.ciudad) : ''}</span></div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
-        <select data-sel="${i}" data-ssel-done="1" style="flex:1;min-width:0;max-width:100%;"><option value="">— Es un cliente nuevo: agregarlo —</option>${x.parecidos.map(n => `<option value="${escapeAttr(n)}">Es el mismo que: ${escapeHtml(n)}</option>`).join('')}</select>
+        <div style="flex:1;min-width:0;">${buscadorClientesHtml('revBus' + i, 'Si es el mismo, búscalo aquí…')}</div>
         <button type="button" class="acc-btn" data-ok="${i}" style="flex:0 0 auto;">Aplicar</button>
+        <button type="button" class="acc-btn" data-limpiar="${i}" title="Quitar la selección (cliente nuevo)" style="flex:0 0 auto;">✕</button>
       </div></div>`).join('')}
     </div>
     <div class="modal-actions"><button class="btn-cancel" id="btnCerrarRev">Cerrar</button></div>`);
   overlay.querySelector('#btnCerrarRev').addEventListener('click', () => overlay.remove());
+  const todosClientes = getAllDistribuidorNombres();
+  const elegidos = {};
+  lista.forEach((x, i) => { if(x) activarBuscadorClientes(overlay, 'revBus' + i, todosClientes, (n) => { elegidos[i] = n; }, x.parecidos); });
+  overlay.addEventListener('click', (e) => {
+    const l = e.target.closest('[data-limpiar]'); if(!l) return;
+    const i = Number(l.dataset.limpiar); delete elegidos[i]; overlay.querySelector('#revBus' + i).value = '';
+  });
   overlay.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-ok]'); if(!b) return;
     const i = Number(b.dataset.ok), x = lista[i];
-    const elegido = overlay.querySelector(`[data-sel="${i}"]`).value;
+    const escrito = overlay.querySelector('#revBus' + i).value.trim();
+    const elegido = escrito && elegidos[i] === escrito ? elegidos[i] : '';
+    if(escrito && !elegido){ showToast('Elige el cliente de la lista que aparece al escribir, o borra el texto para agregarlo como nuevo', 4500); return; }
     if(elegido){
       const cur = getClienteInfo(elegido);
       setClienteInfo(elegido, { nit: cur.nit || x.datos.nit, telefono: cur.telefono || x.datos.telefono, direccion: cur.direccion || x.datos.direccion, ciudad: cur.ciudad || x.datos.ciudad });
@@ -4694,6 +4796,13 @@ function renderInvProductDebtIdxs(zone, titulo, productoIdxs, esGrupo){
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
 
+// Tecla Esc: cierra la ventana de encima (si no se está escribiendo en un buscador con lista abierta).
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  if(document.querySelector('.ssel-list.open, .cbus-lista.open')) return;
+  const ovs = document.querySelectorAll('.modal-overlay');
+  if(ovs.length) ovs[ovs.length - 1].remove();
+});
 function openModal(innerHtml){
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -9724,11 +9833,16 @@ function enhanceSearchableSelect(selectEl){
   syncInput();
 
   const closeList = () => { list.classList.remove('open'); list.innerHTML = ''; };
+  // Con miles de opciones (ej. todos los clientes de Siigo) solo se dibujan las primeras: dibujarlas todas
+  // en cada tecla dejaba la pantalla trabada en el celular/iPad.
+  const MAX_VISIBLES = 60;
   const openList = (term) => {
-    const t = (term || '').trim().toLowerCase();
-    const opts = [...selectEl.options].filter(o => !t || o.textContent.toLowerCase().includes(t));
+    const palabras = normalizeText(term || '').split(/\s+/).filter(Boolean); // todas las palabras, en cualquier orden
+    const opts = [...selectEl.options].filter(o => { const x = normalizeText(o.textContent); return palabras.every(w => x.includes(w)); });
+    const vis = opts.slice(0, MAX_VISIBLES);
     list.innerHTML = opts.length
-      ? opts.map(o => `<div class="ssel-item${o.selected ? ' sel' : ''}" data-value="${escapeAttr(o.value)}">${escapeHtml(o.textContent || '(vacío)')}</div>`).join('')
+      ? vis.map(o => `<div class="ssel-item${o.selected ? ' sel' : ''}" data-value="${escapeAttr(o.value)}">${escapeHtml(o.textContent || '(vacío)')}</div>`).join('')
+        + (opts.length > vis.length ? `<div class="ssel-empty">…y ${opts.length - vis.length} más. Escribe para buscar.</div>` : '')
       : `<div class="ssel-empty">Sin resultados</div>`;
     list.classList.add('open');
   };
