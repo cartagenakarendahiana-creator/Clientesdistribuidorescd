@@ -2912,22 +2912,44 @@ function setClienteInfo(nombre, info){
 }
 function clienteInfoFieldsHtml(info){
   return `
-    <div class="field"><label>Copiar datos desde el reporte de clientes</label>
-      <input type="text" id="inpDesdeReporte" list="dlClientesBase" placeholder="Escribe para buscar en los ${CLIENTES_BASE.length} clientes del reporte..." autocomplete="off">
-      <datalist id="dlClientesBase">${CLIENTES_BASE.map(c=>`<option value="${escapeAttr(c.n)}">`).join('')}</datalist>
-      <div class="hint" style="margin-top:5px;margin-bottom:0;">Elige uno de la lista y se llenan NIT, teléfono, ciudad y dirección (puedes corregirlos antes de guardar).</div>
+    <div class="field"><label>Copiar datos de un cliente existente</label>
+      ${buscadorClientesHtml('inpDesdeReporte', 'Escribe el nombre, NIT o ciudad (ej. moda)…')}
+      <div class="hint" style="margin-top:5px;margin-bottom:0;">Escribe y elige el cliente: se llenan NIT, teléfono, ciudad y dirección (puedes corregirlos antes de guardar). Busca en todos los clientes de la app, los de Siigo y los del reporte.</div>
     </div>
     <div class="field"><label>NIT / Cédula</label><input type="text" id="inpNit" placeholder="Ej. 901759512" value="${escapeAttr(info.nit||'')}"></div>
     <div class="field"><label>Teléfono</label><input type="tel" id="inpTelefono" placeholder="Ej. 3001234567" value="${escapeAttr(info.telefono||'')}"></div>
     <div class="field"><label>Ciudad</label><input type="text" id="inpCiudad" placeholder="Ej. Montería" value="${escapeAttr(info.ciudad||'')}"></div>
     <div class="field"><label>Dirección</label><input type="text" id="inpDireccion" placeholder="Ej. Calle 18 # 4-49 Barrio Centro" value="${escapeAttr(info.direccion||'')}"></div>`;
 }
-document.addEventListener('change', (e)=>{
-  if(!e.target || e.target.id!=='inpDesdeReporte') return;
-  const c = CLIENTES_BASE.find(x=>x.n===e.target.value);
-  const box = e.target.closest('.modal, .modal-box, form, div[class*="modal"]') || document;
-  if(!c) return;
-  [['#inpNit',c.i],['#inpTelefono',c.t],['#inpCiudad',c.c],['#inpDireccion',c.d]].forEach(([sel,v])=>{ const el = box.querySelector(sel); if(el) el.value = v; });
+// "Copiar datos de un cliente existente": buscador escribiendo sobre TODOS los clientes (los de la app,
+// los del catálogo de Siigo aunque aún no estén registrados, y los del reporte importado).
+let clientesSiigoCatalogoCache = null;
+async function fuentesClientesParaCopiar(){
+  const datos = new Map(); // clave → {n, nit, telefono, ciudad, direccion}
+  const poner = (n, d) => { const k = clienteKey(n); if(!k) return; const prev = datos.get(k); if(!prev || (!prev.nit && d.nit)) datos.set(k, { n, ...d }); };
+  getAllDistribuidorNombres().forEach(n => poner(n, getClienteInfo(n)));
+  if(usuarioActual && usuarioActual.rol !== 'trabajador'){
+    try{
+      if(!clientesSiigoCatalogoCache) clientesSiigoCatalogoCache = (await firebase.database().ref('siigo/catalogos/clientes').once('value')).val() || {};
+      Object.values(clientesSiigoCatalogoCache).forEach(c => { if(c && c.nombre && !/consumidor\s*final/i.test(c.nombre)) poner(String(c.nombre).trim(), { nit: [c.nit, c.dv].filter(Boolean).join('-'), telefono: c.telefono || '', ciudad: c.ciudad || '', direccion: c.direccion || '' }); });
+    }catch(e){ /* sin acceso a Siigo: solo clientes de la app */ }
+  }
+  CLIENTES_BASE.forEach(c => poner(c.n, { nit: c.i || '', telefono: c.t || '', ciudad: c.c || '', direccion: c.d || '' }));
+  return datos;
+}
+document.addEventListener('focusin', async (e)=>{
+  const inp = e.target;
+  if(!inp || inp.id !== 'inpDesdeReporte' || inp.dataset.listo) return;
+  inp.dataset.listo = '1';
+  const box = inp.closest('.modal-overlay') || document;
+  const datos = await fuentesClientesParaCopiar();
+  const porNombre = new Map([...datos.values()].map(d => [d.n, d]));
+  activarBuscadorClientes(box, 'inpDesdeReporte', [...porNombre.keys()].sort((a, b) => a.localeCompare(b)), (n) => {
+    const d = porNombre.get(n) || {};
+    [['#inpNit', d.nit], ['#inpTelefono', d.telefono], ['#inpCiudad', d.ciudad], ['#inpDireccion', d.direccion]].forEach(([sel, v]) => { const el = box.querySelector(sel); if(el && v) el.value = v; });
+    showToast('Datos copiados de ' + n);
+  }, [], (n) => porNombre.get(n));
+  inp.dispatchEvent(new Event('focus'));
 });
 function readClienteInfoFields(ov){
   return {nit:ov.querySelector('#inpNit').value, telefono:ov.querySelector('#inpTelefono').value, ciudad:ov.querySelector('#inpCiudad').value, direccion:ov.querySelector('#inpDireccion').value};
@@ -4361,9 +4383,9 @@ function buscadorClientesHtml(id, placeholder){
     <div class="cbus-lista" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:5;max-height:260px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 24px rgba(16,24,40,.15);margin-top:4px;"></div>
   </div>`;
 }
-function activarBuscadorClientes(root, id, nombres, onElegir, primeros){
+function activarBuscadorClientes(root, id, nombres, onElegir, primeros, infoDe){
   const input = root.querySelector('#' + id), lista = input.parentNode.querySelector('.cbus-lista');
-  const datos = nombres.map(n => { const i = getClienteInfo(n); return { n, t: normalizeText([n, i.nit, i.ciudad].join(' ')), det: [i.nit && 'NIT ' + i.nit, i.ciudad].filter(Boolean).join(' · ') }; });
+  const datos = nombres.map(n => { const i = (infoDe && infoDe(n)) || getClienteInfo(n); return { n, t: normalizeText([n, i.nit, i.ciudad].join(' ')), det: [i.nit && 'NIT ' + i.nit, i.ciudad].filter(Boolean).join(' · ') }; });
   const pintar = () => {
     const t = normalizeText(input.value);
     let res = t ? datos.filter(d => t.split(/\s+/).every(w => d.t.includes(w))) : (primeros || []).map(n => datos.find(d => d.n === n)).filter(Boolean);
