@@ -1412,13 +1412,23 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <button class="nav-dropdown-item active" data-nav="resumen" type="button">Resumen</button>
           <button class="nav-dropdown-item" data-nav="reportes" type="button" title="Reportes por día, semana o mes">Reportes</button>
           <button class="nav-dropdown-item" data-nav="despachos" type="button">Despachos</button>
-          <button class="nav-dropdown-item" data-nav="ventassiigo" type="button">Ventas Siigo</button>
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
           <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Clientes</button>
           <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario · Precios de venta</button>
-          <button class="nav-dropdown-item" data-nav="productossiigo" type="button">Productos Siigo</button>
           <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button" title="Precios de servicio (sugeridos)">Precios de servicio</button>
+        </div>
+      </div>
+      <div class="nav-dropdown" id="navDropdownSiigo">
+        <button class="nav-dropdown-btn" id="navBtnSiigo" type="button">
+          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          Siigo
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="nav-dropdown-item" data-nav="ventassiigo" type="button">Ventas</button>
+          <button class="nav-dropdown-item" data-nav="clientessiigo" type="button">Clientes</button>
+          <button class="nav-dropdown-item" data-nav="productossiigo" type="button">Productos</button>
         </div>
       </div>
       <div class="nav-dropdown" id="navDropdownProduccion">
@@ -1686,11 +1696,33 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
         <div class="registry-add-row no-print">
           <input type="text" id="searchClientesView" placeholder="Buscar por nombre, NIT, ciudad o teléfono...">
           <button class="btn-confirm" id="btnImportarClientesBase" style="flex:0 0 auto;">Importar base (368)</button>
-          <button class="btn-confirm solo-admin" id="btnTraerClientesSiigo" style="flex:0 0 auto;" title="Registra los clientes de Siigo que aún no están (con NIT, teléfono, dirección y ciudad) y completa los datos vacíos de los que ya existen. También se hace solo al entrar un administrador.">⟳ Clientes de Siigo</button>
           <button class="filter-clear-btn" id="btnUnificarDuplicados" style="flex:0 0 auto;">🔀 Unificar duplicados</button>
         </div>
         <div id="dupBanner" class="no-print"></div>
         <div class="registry-list" id="distribuidoresListView"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewClientessiigo" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div>
+            <h2>Clientes Siigo <span class="svc-count" id="cliSiigoCount" style="font-size:14px;color:var(--ink-soft);font-weight:500;"></span></h2>
+            <div class="sub">Terceros de Siigo con su NIT y datos de contacto. Es una lista aparte de tus Clientes: no los agrega ni los cambia.</div>
+          </div>
+        </div>
+        <div class="control-search no-print" style="max-width:420px;margin-bottom:14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="cliSiigoSearch" placeholder="Buscar por nombre, NIT, ciudad o teléfono...">
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>NIT</th><th>Cliente</th><th>Ciudad</th><th>Teléfono</th><th>Dirección</th><th>Correo</th></tr></thead>
+            <tbody id="cliSiigoBody"><tr><td colspan="6" style="color:var(--ink-soft);">Cargando…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -2930,8 +2962,7 @@ async function fuentesClientesParaCopiar(){
   getAllDistribuidorNombres().forEach(n => poner(n, getClienteInfo(n)));
   if(usuarioActual && usuarioActual.rol !== 'trabajador'){
     try{
-      if(!clientesSiigoCatalogoCache) clientesSiigoCatalogoCache = (await firebase.database().ref('siigo/catalogos/clientes').once('value')).val() || {};
-      Object.values(clientesSiigoCatalogoCache).forEach(c => { if(c && c.nombre && !/consumidor\s*final/i.test(c.nombre)) poner(String(c.nombre).trim(), { nit: [c.nit, c.dv].filter(Boolean).join('-'), telefono: c.telefono || '', ciudad: c.ciudad || '', direccion: c.direccion || '' }); });
+      Object.values(await catalogoClientesSiigo()).forEach(c => { if(c && c.nombre && !/consumidor\s*final/i.test(c.nombre)) poner(String(c.nombre).trim(), { nit: [c.nit, c.dv].filter(Boolean).join('-'), telefono: c.telefono || '', ciudad: c.ciudad || '', direccion: c.direccion || '' }); });
     }catch(e){ /* sin acceso a Siigo: solo clientes de la app */ }
   }
   CLIENTES_BASE.forEach(c => poner(c.n, { nit: c.i || '', telefono: c.t || '', ciudad: c.c || '', direccion: c.d || '' }));
@@ -3768,7 +3799,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','clientessiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -3803,6 +3834,7 @@ function switchView(viewName){
   if(viewName === 'distribuidores') renderDistribuidoresView();
   if(viewName === 'inventario') renderInventarioView();
   if(viewName === 'productossiigo') renderProductosSiigo();
+  if(viewName === 'clientessiigo') renderClientesSiigo();
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
@@ -3832,6 +3864,7 @@ const NAV_ICONOS = {
   pedidos:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/>',
   vendedores:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
   distribuidores:'<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/>',
+  clientessiigo:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.5 16.5c.6-1.8 1.9-2.7 3.5-2.7s2.9.9 3.5 2.7M15 10h3M15 13h3"/>',
   inventario:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
   serviciosmaquila:'<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
   produccion:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M8 15l2.5 2.5L16 13"/>',
@@ -4523,138 +4556,78 @@ async function importarClientesBase(){
   showToast(`Listo: ${asociados} clientes existentes asociados, ${nuevos} clientes nuevos importados`);
 }
 // ---------- Clientes de Siigo ----------
-// Registra en Clientes a todos los terceros del catálogo de Siigo (siigo/catalogos/clientes, lo llena la función
-// en la nube) con su NIT, teléfono, dirección y ciudad, sin duplicar. Un tercero de Siigo es un cliente que ya
-// existe en la app si:
-//   1) tiene el mismo NIT (con o sin dígito de verificación), o
-//   2) el cliente de la app no tiene NIT y el nombre es el mismo (clienteKey), o
-//   3) el cliente de la app no tiene NIT y todas las palabras de un nombre están en el otro
-//      ("Yoyo Medellin" ⊂ "Texconfort - Almacén el YOYO Medellín"), con un solo candidato posible.
-// A los que ya existen solo se les completan los datos vacíos (nunca se pisa lo escrito a mano). Si un tercero se
-// parece a VARIOS clientes de la app, no se agrega solo: queda en la lista "por revisar".
+// Los clientes de Siigo viven aparte, en "Clientes Siigo" (solo lectura). Antes se agregaban solos a Clientes;
+// quitarClientesSiigoAgregados() deshace eso una sola vez.
 let clientesSiigoRevisados = false;
 let fotosGuiasRevisadas = false;
-let clientesSiigoPorRevisar = [];
 const NITS_GENERICOS = new Set(['222222222222', '2222222222', '222222222', '0']);
 const soloDigitos = s => String(s || '').replace(/\D/g, '');
 const PALABRAS_VACIAS = new Set(['s', 'a', 'sa', 'sas', 'ltda', 'cia', 'y', 'e', 'de', 'del', 'la', 'las', 'el', 'los', 'en', 'and', 'the', 'co', 'col']);
 function palabrasNombre(n){
-  return new Set(String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter(w => w && !PALABRAS_VACIAS.has(w)));
+  return new Set(String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter(w => w && !PALABRAS_VACIAS.has(w)));
 }
-const contenido = (a, b) => [...a].every(w => b.has(w));
-function infoIgual(a, b){ return a.nit === b.nit && a.telefono === b.telefono && a.direccion === b.direccion && a.ciudad === b.ciudad; }
+async function catalogoClientesSiigo(forzar){
+  if(!clientesSiigoCatalogoCache || forzar) clientesSiigoCatalogoCache = (await firebase.database().ref('siigo/catalogos/clientes').once('value')).val() || {};
+  return clientesSiigoCatalogoCache;
+}
 
-async function registrarClientesSiigo({ silencioso } = {}){
-  if(!usuarioActual || usuarioActual.rol !== 'admin') return null;
-  const snap = await firebase.database().ref('siigo/catalogos/clientes').once('value');
-  const catalogo = Object.values(snap.val() || {}).filter(c => c && c.nit && String(c.nombre || '').trim())
-    .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
-  if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
-  // Lo que ya existe en la app: por nombre (clienteKey), por NIT (solo dígitos) y los que no tienen NIT.
-  const porClave = new Map();
-  getAllDistribuidorNombres().forEach(n => { const k = clienteKey(n); if(k) porClave.set(k, n); });
-  const porNit = new Map();
-  porClave.forEach(n => { const d = soloDigitos(getClienteInfo(n).nit); if(d) porNit.set(d, n); });
-  const existentes = [...porClave.values()].map(n => ({ n, p: palabrasNombre(n), conNit: !!soloDigitos(getClienteInfo(n).nit) }));
-  const clavesPrevias = new Set(porClave.keys());
-  const asignados = new Set(); // clientes de la app ya emparejados con un tercero en esta corrida
-  let nuevos = 0, completados = 0;
-  const porRevisar = [];
-  const completar = (nombre, datos) => {
-    const cur = getClienteInfo(nombre);
-    const merged = { nit: cur.nit || datos.nit, telefono: cur.telefono || datos.telefono, direccion: cur.direccion || datos.direccion, ciudad: cur.ciudad || datos.ciudad };
-    if(!infoIgual(merged, cur)){ setClienteInfo(nombre, merged); completados++; }
-    asignados.add(nombre);
+// Quita de Clientes los que se agregaron solos desde Siigo: mismo nombre que el tercero (o "nombre (NIT …)") y
+// exactamente los datos de Siigo. Nunca quita uno que aparezca en pedidos, despachos, facturas u otra parte de la
+// app, ni uno al que le cambiaste los datos. Se hace una sola vez (queda la marca limpiezaClientesSiigo).
+async function quitarClientesSiigoAgregados(){
+  if(!usuarioActual || usuarioActual.rol !== 'admin' || APPDATA.limpiezaClientesSiigo) return null;
+  const catalogo = Object.values(await catalogoClientesSiigo()).filter(c => c && c.nit && String(c.nombre || '').trim());
+  // Todo lo que la app usa fuera de la lista de clientes y sus datos (nombres en pedidos, despachos, etc.).
+  const usados = new Set();
+  const recorrer = (v) => {
+    if(typeof v === 'string'){ if(v.length <= 300) usados.add(clienteKey(v)); return; }
+    if(!v || typeof v !== 'object') return;
+    for(const [k, x] of Object.entries(v)){ usados.add(clienteKey(k)); usados.add(clienteKey(decodeFirebaseKey(k))); recorrer(x); }
   };
+  Object.entries(APPDATA).forEach(([k, v]) => { if(!['distribuidoresRegistry', 'clientesInfo', 'limpiezaClientesSiigo'].includes(k)) recorrer(v); });
+  const quitar = new Set();
   catalogo.forEach(c => {
     const nit = soloDigitos(c.nit), dv = soloDigitos(c.dv);
-    if(!nit || NITS_GENERICOS.has(nit) || /consumidor\s*final/i.test(c.nombre)) return;
+    if(!nit || NITS_GENERICOS.has(nit)) return;
     const nitTexto = dv ? `${nit}-${dv}` : nit;
     const nombreSiigo = String(c.nombre).trim();
-    const datos = { nit: nitTexto, telefono: String(c.telefono || ''), direccion: String(c.direccion || ''), ciudad: String(c.ciudad || '') };
-    // 1) Mismo NIT
-    const porElNit = porNit.get(nit) || (dv && porNit.get(nit + dv));
-    if(porElNit){ completar(porElNit, datos); return; }
-    // 2) Mismo nombre
-    const k = clienteKey(nombreSiigo);
-    const mismoNombre = porClave.get(k);
-    if(mismoNombre && !soloDigitos(getClienteInfo(mismoNombre).nit)){ completar(mismoNombre, datos); porNit.set(nit, mismoNombre); return; }
-    // 3) Nombre igual o parecido a un cliente que YA tenías (no a uno recién traído de Siigo).
-    //    Un solo parecido sin NIT → es ese. Si el parecido tiene otro NIT, o hay varios → por revisar.
-    const ps = palabrasNombre(nombreSiigo);
-    const candidatos = existentes.filter(x => !asignados.has(x.n) && clavesPrevias.has(clienteKey(x.n)) && (
-      clienteKey(x.n) === k || (Math.min(x.p.size, ps.size) >= 2 && (contenido(x.p, ps) || contenido(ps, x.p)))));
-    if(candidatos.length === 1 && !candidatos[0].conNit){ completar(candidatos[0].n, datos); porNit.set(nit, candidatos[0].n); return; }
-    if(candidatos.length){ porRevisar.push({ siigo: nombreSiigo, nit: nitTexto, datos, parecidos: candidatos.map(x => x.n) }); return; }
-    // Nuevo. Si ya hay otro con el mismo nombre pero distinto NIT, se distingue por el NIT.
-    const nombre = mismoNombre ? `${nombreSiigo} (NIT ${nitTexto})` : nombreSiigo;
-    const k2 = clienteKey(nombre);
-    if(porClave.has(k2)) return;
-    APPDATA.distribuidoresRegistry.push(nombre);
-    porClave.set(k2, nombre);
-    porNit.set(nit, nombre);
-    setClienteInfo(nombre, datos);
-    nuevos++;
+    const datos = { nit: nitTexto, telefono: String(c.telefono || '').trim(), direccion: String(c.direccion || '').trim(), ciudad: String(c.ciudad || '').trim() };
+    [nombreSiigo, `${nombreSiigo} (NIT ${nitTexto})`].forEach(n => {
+      const k = clienteKey(n);
+      if(!k || usados.has(k)) return;
+      const info = APPDATA.clientesInfo && APPDATA.clientesInfo[k];
+      if(info && info.nit === datos.nit && (info.telefono || '') === datos.telefono && (info.direccion || '') === datos.direccion && (info.ciudad || '') === datos.ciudad) quitar.add(k);
+    });
   });
-  clientesSiigoPorRevisar = porRevisar;
-  if(nuevos || completados){
-    await saveAppData(APPDATA);
-    renderAll();
-  }
-  if(!silencioso || nuevos || completados){
-    showToast(`Clientes de Siigo: ${nuevos} nuevos, ${completados} completados con NIT/teléfono/dirección` + (porRevisar.length ? `, ${porRevisar.length} por revisar` : '') + (catalogo.length ? '' : ' (aún no hay terceros sincronizados de Siigo)'), 6000);
-  }
-  return { nuevos, completados, porRevisar: porRevisar.length, total: catalogo.length };
+  const antes = (APPDATA.distribuidoresRegistry || []).length;
+  APPDATA.distribuidoresRegistry = (APPDATA.distribuidoresRegistry || []).filter(n => !quitar.has(clienteKey(n)));
+  const quitados = antes - APPDATA.distribuidoresRegistry.length;
+  quitar.forEach(k => { if(APPDATA.clientesInfo) delete APPDATA.clientesInfo[k]; });
+  APPDATA.limpiezaClientesSiigo = new Date().toISOString();
+  await saveAppData(APPDATA);
+  if(quitados){ renderAll(); showToast(`Se quitaron de Clientes ${quitados} clientes que se habían agregado solos desde Siigo. Ahora están en "Clientes Siigo".`, 7000); }
+  return { quitados };
 }
 
-// Los terceros que se parecen a varios clientes de la app: se muestran para decidir uno por uno.
-function abrirClientesSiigoPorRevisar(){
-  const lista = clientesSiigoPorRevisar;
-  if(!lista.length){ showToast('No hay terceros de Siigo por revisar'); return; }
-  const overlay = openModal(`
-    <h3>Terceros de Siigo por revisar (${lista.length})</h3>
-    <div class="hint">Se parecen a clientes que ya tienes (mismo nombre o casi), por eso no se agregaron solos para no duplicar. Si es el mismo cliente, escribe su nombre y elígelo de la lista (se le completan los datos vacíos); si es otro, deja el campo vacío y quedará como cliente nuevo. Toca Aplicar en cada uno.</div>
-    <div style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;">
-    ${lista.map((x, i) => `<div class="rev-siigo" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;">
-      <div><b>${escapeHtml(x.siigo)}</b> <span style="font-size:11.5px;color:var(--ink-soft);">· NIT ${escapeHtml(x.nit)}${x.datos.ciudad ? ' · ' + escapeHtml(x.datos.ciudad) : ''}</span></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
-        <div style="flex:1;min-width:0;">${buscadorClientesHtml('revBus' + i, 'Si es el mismo, búscalo aquí…')}</div>
-        <button type="button" class="acc-btn" data-ok="${i}" style="flex:0 0 auto;">Aplicar</button>
-        <button type="button" class="acc-btn" data-limpiar="${i}" title="Quitar la selección (cliente nuevo)" style="flex:0 0 auto;">✕</button>
-      </div></div>`).join('')}
-    </div>
-    <div class="modal-actions"><button class="btn-cancel" id="btnCerrarRev">Cerrar</button></div>`);
-  overlay.querySelector('#btnCerrarRev').addEventListener('click', () => overlay.remove());
-  const todosClientes = getAllDistribuidorNombres();
-  const elegidos = {};
-  lista.forEach((x, i) => { if(x) activarBuscadorClientes(overlay, 'revBus' + i, todosClientes, (n) => { elegidos[i] = n; }, x.parecidos); });
-  overlay.addEventListener('click', (e) => {
-    const l = e.target.closest('[data-limpiar]'); if(!l) return;
-    const i = Number(l.dataset.limpiar); delete elegidos[i]; overlay.querySelector('#revBus' + i).value = '';
-  });
-  overlay.addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-ok]'); if(!b) return;
-    const i = Number(b.dataset.ok), x = lista[i];
-    const escrito = overlay.querySelector('#revBus' + i).value.trim();
-    const elegido = escrito && elegidos[i] === escrito ? elegidos[i] : '';
-    if(escrito && !elegido){ showToast('Elige el cliente de la lista que aparece al escribir, o borra el texto para agregarlo como nuevo', 4500); return; }
-    if(elegido){
-      const cur = getClienteInfo(elegido);
-      setClienteInfo(elegido, { nit: cur.nit || x.datos.nit, telefono: cur.telefono || x.datos.telefono, direccion: cur.direccion || x.datos.direccion, ciudad: cur.ciudad || x.datos.ciudad });
-    }else{
-      if(!APPDATA.distribuidoresRegistry) APPDATA.distribuidoresRegistry = [];
-      const yaEsta = getAllDistribuidorNombres().some(n => clienteKey(n) === clienteKey(x.siigo));
-      const nombre = yaEsta ? `${x.siigo} (NIT ${x.nit})` : x.siigo;
-      APPDATA.distribuidoresRegistry.push(nombre);
-      setClienteInfo(nombre, x.datos);
-    }
-    await saveAppData(APPDATA);
-    b.closest('.rev-siigo').remove();
-    lista.splice(i, 1, null);
-    clientesSiigoPorRevisar = lista.filter(Boolean);
-    renderAll();
-  });
+// ---------- Clientes de Siigo (sección aparte del menú, solo administradores) ----------
+async function renderClientesSiigo(){
+  const body = document.getElementById('cliSiigoBody');
+  if(!body) return;
+  let lista;
+  try{
+    lista = Object.values(await catalogoClientesSiigo()).filter(c => c && String(c.nombre || '').trim() && c.activo !== false)
+      .map(c => ({ nombre: String(c.nombre).trim(), nit: [c.nit, c.dv].filter(Boolean).join('-'), ciudad: [c.ciudad, c.departamento].filter(Boolean).join(', '),
+        telefono: String(c.telefono || ''), direccion: String(c.direccion || ''), email: String(c.email || '') }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }catch(e){ body.innerHTML = `<tr><td colspan="6" style="color:#B65B2E;">No se pudieron leer los clientes de Siigo.</td></tr>`; return; }
+  const cnt = document.getElementById('cliSiigoCount'); if(cnt) cnt.textContent = lista.length ? String(lista.length) : '';
+  const palabras = normalizeText(document.getElementById('cliSiigoSearch').value || '').split(/\s+/).filter(Boolean);
+  const vis = lista.filter(c => { const t = normalizeText([c.nombre, c.nit, c.ciudad, c.telefono, c.direccion, c.email].join(' ')); return palabras.every(w => t.includes(w)); });
+  body.innerHTML = vis.slice(0, 1500).map(c => `<tr><td style="white-space:nowrap;color:var(--ink-soft);">${escapeHtml(c.nit)}</td><td><b>${escapeHtml(c.nombre)}</b></td><td>${escapeHtml(c.ciudad)}</td><td style="white-space:nowrap;">${escapeHtml(c.telefono)}</td><td>${escapeHtml(c.direccion)}</td><td>${escapeHtml(c.email)}</td></tr>`).join('')
+    || `<tr><td colspan="6" style="color:var(--ink-soft);">${lista.length ? 'Sin resultados.' : 'Aún no hay clientes de Siigo sincronizados (se llenan solos con la próxima sincronización).'}</td></tr>`;
+  if(vis.length > 1500) body.insertAdjacentHTML('beforeend', `<tr><td colspan="6" style="color:var(--ink-soft);">Mostrando 1500 de ${vis.length}. Escribe en el buscador para ver los demás.</td></tr>`);
 }
+document.getElementById('cliSiigoSearch').addEventListener('input', () => renderClientesSiigo());
 
 // ---------- Productos de Siigo (sección aparte del menú, solo administradores) ----------
 // Lista de solo lectura con los productos de venta de Siigo: los que aparecen en alguna factura
@@ -4688,12 +4661,6 @@ async function renderProductosSiigo(){
   body.innerHTML = html || `<tr><td colspan="4" style="color:var(--ink-soft);">${lista.length ? 'Sin resultados.' : 'Aún no hay productos de Siigo sincronizados (se llenan solos con la próxima sincronización).'}</td></tr>`;
 }
 document.getElementById('invSiigoSearch').addEventListener('input', () => renderProductosSiigo());
-document.getElementById('btnTraerClientesSiigo').addEventListener('click', async (e) => {
-  const b = e.currentTarget; b.disabled = true;
-  try{ const r = await registrarClientesSiigo(); if(r && r.porRevisar) abrirClientesSiigoPorRevisar(); }
-  catch(err){ showToast('No se pudieron traer los clientes de Siigo: ' + (err.message || err), 5000); }
-  finally{ b.disabled = false; }
-});
 document.getElementById('btnImportarClientesBase').addEventListener('click', ()=>{
   if(confirm(`Se van a importar hasta ${CLIENTES_BASE.length} clientes del reporte (NIT, teléfono, ciudad y dirección).\n\nLos datos que ya tengas escritos no se sobrescriben. ¿Continuar?`)) importarClientesBase();
 });
@@ -7055,14 +7022,13 @@ async function alCambiarSesion(user){
   if(!usuarioActual) return; // cerró sesión mientras cargaba
   showApp();
   aplicarRol();
-  // Al entrar un administrador se registran solos los clientes nuevos de Siigo (una vez por sesión).
   if(usuarioActual.rol === 'admin' && !fotosGuiasRevisadas){
     fotosGuiasRevisadas = true;
     setTimeout(() => moverFotosGuiasAparte().catch(e => console.warn('fotos guías', e)), 2500);
   }
   if(usuarioActual.rol === 'admin' && !clientesSiigoRevisados){
     clientesSiigoRevisados = true;
-    setTimeout(() => registrarClientesSiigo({ silencioso: true }).catch(e => console.warn('clientes Siigo', e)), 4000);
+    setTimeout(() => quitarClientesSiigoAgregados().catch(e => console.warn('clientes Siigo', e)), 4000);
   }
 }
 function aplicarRol(){
