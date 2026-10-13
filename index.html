@@ -1380,7 +1380,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
   <div class="topbar">
     <div class="topbar-top">
       <button type="button" class="menu-lateral-btn no-print" id="btnMenuLateral" aria-label="Mostrar u ocultar el menú" title="Menú">☰</button>
-      <div class="topbar-titulo"><small id="tbGrupo">Clientes</small><b id="tbTitulo">Resumen</b></div>
+      <div class="topbar-titulo"><small id="tbGrupo">Clientes</small><b id="tbTitulo">Pedidos distribuidores</b></div>
       <div class="brand" style="display:inline-flex; align-items:center; gap:10px;">
         <img src="f16eedaf-9536-4042-8efc-29e8c7a79821.jpeg" alt="Logo Casa Dorada" style="height:32px; width:auto; object-fit:contain; border-radius:4px; vertical-align:middle;">
         <div>
@@ -1424,7 +1424,8 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
         </button>
         <div class="nav-dropdown-menu">
-          <button class="nav-dropdown-item active" data-nav="resumen" type="button">Resumen</button>
+          <button class="nav-dropdown-item active" data-nav="resumen" type="button">Pedidos distribuidores</button>
+          <button class="nav-dropdown-item" data-nav="hoteles" type="button">Pedidos hoteles</button>
           <button class="nav-dropdown-item" data-nav="reportes" type="button" title="Reportes por día, semana o mes">Reportes</button>
           <button class="nav-dropdown-item" data-nav="despachos" type="button">Despachos</button>
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
@@ -1524,7 +1525,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
 
   <div id="viewResumen" class="view-section">
   <div class="kpi-strip">
-    <div class="kpi-card"><div class="lab">Clientes</div><b class="v" id="kpiDistribuidores">0</b></div>
+    <div class="kpi-card"><div class="lab" id="kpiDistribuidoresLbl">Distribuidores</div><b class="v" id="kpiDistribuidores">0</b></div>
     <div class="kpi-card"><div class="lab" id="kpiFacturadoLbl">Total Facturado del mes</div><b class="v" id="kpiFacturado">$0</b></div>
     <div class="kpi-card debt"><div class="lab">Total Pendiente</div><b class="v" id="kpiPendiente">$0</b></div>
     <div class="kpi-card"><div class="lab" id="kpiPedidosLbl">Pedidos del mes</div><b class="v" id="kpiPedidos">0</b></div>
@@ -1594,7 +1595,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
   </div>
 
   <div class="main-card">
-    <div class="main-card-header"><h3>Estado de Cliente</h3></div>
+    <div class="main-card-header"><h3 id="mainCardTitulo">Estado de Cliente</h3></div>
     <div class="main" id="mainPanel">
       <div class="empty-state">
         <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="14" x2="14" y2="14"/><line x1="8" y1="17" x2="11" y2="17"/></svg>
@@ -1668,6 +1669,11 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
         </div>
         <div class="debt-report-toolbar no-print">
           <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría o medida...">
+          <select id="pedidosViewTipo" title="Qué pedidos incluir" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);">
+            <option value="">Todos los pedidos</option>
+            <option value="distribuidores">Solo distribuidores</option>
+            <option value="hoteles">Solo hoteles</option>
+          </select>
         </div>
         <div class="debt-report-totals">
           <div class="pd-card"><div class="lab">Productos con deuda</div><div class="v" id="pvCountLines">0</div></div>
@@ -3075,6 +3081,28 @@ function readClienteInfoFields(ov){
   return {nit:ov.querySelector('#inpNit').value, telefono:ov.querySelector('#inpTelefono').value, ciudad:ov.querySelector('#inpCiudad').value, direccion:ov.querySelector('#inpDireccion').value};
 }
 // Build full distributor list (catalog + custom-added), applying name overrides
+// ---------- Pedidos distribuidores / Pedidos hoteles ----------
+// Los pedidos de hoteles son pedidos normales (mismos productos, entregas y totales) marcados en
+// APPDATA.distHotel[distId] = true. "Pedidos distribuidores" muestra los demás.
+let segmentoPedidos = 'distribuidores';
+function esPedidoHotel(distId){ return !!(APPDATA.distHotel && APPDATA.distHotel[distId]); }
+function marcarPedidoHotel(distId, hotel){
+  if(!APPDATA.distHotel) APPDATA.distHotel = {};
+  if(hotel) APPDATA.distHotel[distId] = true; else delete APPDATA.distHotel[distId];
+}
+const enSegmento = d => d.hotel === (segmentoPedidos === 'hoteles');
+function distribuidoresDelSegmento(){ return getAllDistributors().filter(enSegmento); }
+function cambiarSegmentoPedidos(seg){
+  if(segmentoPedidos === seg) return;
+  segmentoPedidos = seg;
+  const hotel = seg === 'hoteles';
+  const sel = selectedDistId && getAllDistributors().find(d => d.id === selectedDistId);
+  if(sel && !enSegmento(sel)) selectedDistId = null;
+  const ph = document.getElementById('searchDist'); if(ph) ph.placeholder = hotel ? 'Buscar hotel...' : 'Buscar cliente...';
+  const lab = document.getElementById('kpiDistribuidoresLbl'); if(lab) lab.textContent = hotel ? 'Hoteles' : 'Distribuidores';
+  const tit = document.getElementById('mainCardTitulo'); if(tit) tit.textContent = hotel ? 'Estado del hotel' : 'Estado de Cliente';
+  renderSidebar(); renderMain(); renderSummaryStrip();
+}
 function getAllDistributors(){
   const base = CATALOG.distribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha}));
   const custom = APPDATA.nuevosDistribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha, vendedor: d.vendedor, fechaDespacho: d.fechaDespacho}));
@@ -3088,6 +3116,7 @@ function getAllDistributors(){
     fechaDespacho: (APPDATA.distDespachoOverrides && APPDATA.distDespachoOverrides[d.id]) || d.fechaDespacho || null,
     observaciones: getObservaciones(d.id),
     urgente: !!(APPDATA.distUrgenteOverrides && APPDATA.distUrgenteOverrides[d.id]),
+    hotel: esPedidoHotel(d.id),
     ...getClienteInfo((APPDATA.distNameOverrides && APPDATA.distNameOverrides[d.id]) || d.nombre)
   }));
 }
@@ -3335,8 +3364,8 @@ function distTotals(distId){
 }
 
 // Totales globales de UNIDADES (piezas) en todos los clientes
-function computeGlobalUnitTotals(){
-  const dists = getAllDistributors();
+function computeGlobalUnitTotals(lista){
+  const dists = lista || getAllDistributors();
   let totalUnidadesPedidas = 0;
   let totalUnidadesPendientes = 0;
   dists.forEach(d=>{
@@ -3421,7 +3450,7 @@ function refreshVendedorOptions(dists){
 }
 
 function renderSidebar(){
-  const dists = getAllDistributors();
+  const dists = distribuidoresDelSegmento();
   refreshVendedorOptions(dists);
 
   const withT = dists.map(d => ({...d, t: distTotals(d.id)}));
@@ -3508,7 +3537,7 @@ function esDelMesActual(fecha){
   return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth();
 }
 function renderSummaryStrip(){
-  const dists = getAllDistributors();
+  const dists = distribuidoresDelSegmento();
   let totalFactMes=0, totalDeuda=0, pedidosMes=0;
   dists.forEach(d=>{
     const t = distTotals(d.id);
@@ -3518,7 +3547,7 @@ function renderSummaryStrip(){
       getOrderLines(d.id).forEach(l => { pedidosMes += Number(l.cantidad) || 0; });
     }
   });
-  const unidades = computeGlobalUnitTotals();
+  const unidades = computeGlobalUnitTotals(dists);
   const setKpi = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
   const mes = new Date().toLocaleDateString('es-CO', { month: 'long' });
   setKpi('kpiDistribuidores', fmtNum(new Set(dists.map(d => clienteKey(d.nombre)).filter(Boolean)).size));
@@ -3657,6 +3686,7 @@ function renderMain(){
           <button class="acc-btn" id="btnImprimirPedido" title="Imprimir este pedido">🖨 Imprimir</button>
           <button class="acc-btn" id="btnNuevoPedidoCliente" title="Crear otro pedido para este mismo cliente">+ Nuevo pedido</button>
           <button class="acc-btn" id="btnDuplicarPedido" title="Copiar todas las líneas de este pedido a un cliente NUEVO y distinto">⧉ Duplicar</button>
+          <button class="acc-btn solo-admin" id="btnMoverSegmento" title="${dist.hotel ? 'Pasar este pedido a Pedidos distribuidores' : 'Pasar este pedido a Pedidos hoteles'}">${dist.hotel ? '↔ Pasar a distribuidores' : '↔ Pasar a hoteles'}</button>
           <button class="acc-btn acc-danger" id="btnEliminarPedido" title="Eliminar este pedido por completo">🗑 Eliminar</button>
         </div>
       </div>
@@ -3775,6 +3805,15 @@ function renderMain(){
     if(e.key === 'Enter'){ e.preventDefault(); submitNuevaObservacion(); }
   });
   document.getElementById('btnNuevoPedidoCliente').addEventListener('click', ()=> openNewOrderForClientModal(dist));
+  document.getElementById('btnMoverSegmento').addEventListener('click', async ()=>{
+    const destino = dist.hotel ? 'Pedidos distribuidores' : 'Pedidos hoteles';
+    if(!confirm(`¿Pasar el pedido de ${dist.nombre} a ${destino}?`)) return;
+    marcarPedidoHotel(dist.id, !dist.hotel);
+    selectedDistId = null;
+    await saveAppData(APPDATA);
+    renderAll();
+    showToast(`Pedido pasado a ${destino}`);
+  });
   document.getElementById('btnDuplicarPedido').addEventListener('click', ()=> openDuplicatePedidoModal(dist));
   document.getElementById('btnGenerarFactura')?.addEventListener('click', ()=> abrirGenerarFacturaModal(dist));
 
@@ -3885,6 +3924,8 @@ let currentView = 'resumen';
 function switchView(viewName){
   if(typeof esTrabajador === 'function' && esTrabajador() && !VISTAS_TRABAJADOR.includes(viewName)) viewName = 'resumen';
   currentView = viewName;
+  // "Pedidos distribuidores" (resumen) y "Pedidos hoteles" usan la misma pantalla con otra lista.
+  if(viewName === 'resumen' || viewName === 'hoteles') cambiarSegmentoPedidos(viewName === 'hoteles' ? 'hoteles' : 'distribuidores');
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
@@ -3892,7 +3933,7 @@ function switchView(viewName){
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
-    if(el) el.style.display = (name === viewName) ? '' : 'none';
+    if(el) el.style.display = (name === viewName || (name === 'resumen' && viewName === 'hoteles')) ? '' : 'none';
   });
   document.querySelectorAll('.nav-dropdown-item').forEach(item=>{
     const itemEtapa = item.dataset.etapaFiltro || null;
@@ -3952,6 +3993,7 @@ const NAV_ICONOS = {
   despachos:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
   ventassiigo:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   productossiigo:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M16 14l2 2 3-4"/>',
+  hoteles:'<path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-4h4v4"/>',
   pedidosespeciales:'<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/>',
   costoinsumos:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01M9.5 15.5l5-5"/>',
   pedidos:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/>',
@@ -4342,8 +4384,8 @@ function renderProduccionView(){
 // ---- Pedidos: deuda total por producto (agrupada), vista completa ----
 let pedidosViewSearchTerm = '';
 let produccionEtapaFiltro = 'todos';
-function computeDebtGroups(){
-  const dists = getAllDistributors();
+function computeDebtGroups(tipo){
+  const dists = getAllDistributors().filter(d => !tipo || d.hotel === (tipo === 'hoteles'));
   const grupos = {};
   dists.forEach(d=>{
     getOrderLines(d.id).forEach(l=>{
@@ -4371,7 +4413,8 @@ function computeDebtGroups(){
 function renderPedidosView(){
   const tbody = document.getElementById('pvBody');
   if(!tbody) return;
-  const rows = computeDebtGroups();
+  const tipoEl = document.getElementById('pedidosViewTipo');
+  const rows = computeDebtGroups(tipoEl ? tipoEl.value : '');
   const t = pedidosViewSearchTerm.trim();
   const filtered = !t ? rows : rows.filter(r => matchesProductSearch(r, t));
   let fVal=0, fUnid=0, lastCat=null, bodyHtml='';
@@ -5032,6 +5075,7 @@ document.getElementById('invSiigoSearch').addEventListener('input', () => render
 document.getElementById('btnImportarClientesBase').addEventListener('click', ()=>{
   if(confirm(`Se van a importar hasta ${CLIENTES_BASE.length} clientes del reporte (NIT, teléfono, ciudad y dirección).\n\nLos datos que ya tengas escritos no se sobrescriben. ¿Continuar?`)) importarClientesBase();
 });
+document.getElementById('pedidosViewTipo').addEventListener('change', () => renderPedidosView());
 document.getElementById('searchClientesView').addEventListener('input', (e)=>{ clientesViewTerm = e.target.value; renderDistribuidoresView(); });
 
 // ---------- Unificar clientes duplicados ----------
@@ -6799,6 +6843,7 @@ function openNewDistModal(){
     if(!nombre){ showToast('Escribe un nombre'); return; }
     const id = 'nuevo-' + Date.now();
     APPDATA.nuevosDistribuidores.push({id, nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    marcarPedidoHotel(id, segmentoPedidos === 'hoteles');
     registerVendedor(vendedor);
     { const inf = readClienteInfoFields(overlay); if(inf.nit.trim()||inf.telefono.trim()||inf.direccion.trim()||inf.ciudad.trim()) setClienteInfo(nombre, inf); }
     if(urgente){
@@ -6857,6 +6902,7 @@ function openNewOrderForClientModal(dist){
     const observaciones = overlay.querySelector('#txtObservacionesNP').value;
     const id = dist.nombre + ' — ' + Date.now();
     APPDATA.nuevosDistribuidores.push({id, nombre: dist.nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    marcarPedidoHotel(id, dist.hotel);
     registerVendedor(vendedor);
     if(urgente){
       if(!APPDATA.distUrgenteOverrides) APPDATA.distUrgenteOverrides = {};
@@ -6917,6 +6963,7 @@ function openDuplicatePedidoModal(dist){
     const fechaDespacho = overlay.querySelector('#inpFechaDespachoDup').value;
     const id = 'dup-' + Date.now();
     APPDATA.nuevosDistribuidores.push({id, nombre, fecha: fecha || null, vendedor: vendedor || '', fechaDespacho: fechaDespacho || null});
+    marcarPedidoHotel(id, dist.hotel);
     registerVendedor(vendedor);
     sourceLines.forEach(l=>{
       APPDATA.extras.push({uid:newExtraUid(), distId:id, productoIdx: l.productoIdx, cantidad: l.cantidad, precio: l.precio});
@@ -7344,7 +7391,7 @@ function showApp(){
 // ---------- Usuarios y roles ----------
 // Administrador: ve todo. Trabajador: solo Clientes/Pedidos, Despachos, Inventario, Precios de servicio y
 // Producción Diaria, con precios de productos y de servicios pero SIN totales, deudas, cobros ni facturación.
-const VISTAS_TRABAJADOR = ['resumen', 'pedidos', 'distribuidores', 'despachos', 'inventario', 'serviciosmaquila', 'produccion'];
+const VISTAS_TRABAJADOR = ['resumen', 'hoteles', 'pedidos', 'distribuidores', 'despachos', 'inventario', 'serviciosmaquila', 'produccion'];
 let usuarioActual = null; // { usuario, rol }
 const esTrabajador = () => !!usuarioActual && usuarioActual.rol === 'trabajador';
 
