@@ -275,6 +275,21 @@
   }
   .badge.debe{background:var(--gold);color:var(--white);}
   .badge.saldado{background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);}
+  .mini-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+  .mini-kpis > div{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--white);}
+  .mini-kpis small{display:block;font-size:12px;color:var(--ink-soft);}
+  .mini-kpis b{display:block;font-size:20px;margin-top:4px;color:var(--ink);}
+  .filtros-fila{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;}
+  .filtros-fila label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-soft);}
+  .filtros-fila select, .filtros-fila input[type=date]{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);color:var(--ink);}
+  .pe-estado{padding:5px 8px;border-radius:999px;border:1px solid var(--line);font-family:var(--font);font-size:12.5px;font-weight:600;background:var(--white);}
+  .pe-estado[data-e=pendiente]{background:#FFF6E0;border-color:#E8C981;color:#8A6417;}
+  .pe-estado[data-e=produccion]{background:#E8F0FB;border-color:#A9C1E6;color:#28508C;}
+  .pe-estado[data-e=entregado]{background:#E6F4EA;border-color:#9FD0AE;color:#21663A;}
+  .pe-estado[data-e=cancelado]{background:#F3F3F3;border-color:#D5D5D5;color:#777;}
+  .pe-vencido{color:#B3261E;font-weight:600;}
+  .ci-barato{display:inline-block;white-space:nowrap;margin-left:6px;padding:1px 7px;border-radius:999px;background:#E6F4EA;color:#21663A;font-size:11px;font-weight:600;}
+  .ci-sube{color:#B3261E;font-weight:600;} .ci-baja{color:#21663A;font-weight:600;}
   .filtro-etapa-chip{display:inline-flex;align-items:center;gap:4px;background:var(--gold-pale);border:1px solid var(--line-gold);color:var(--gold-dark);border-radius:20px;padding:3px 6px 3px 12px;font-size:12px;font-weight:600;margin-left:10px;vertical-align:middle;}
   .filtro-etapa-chip button{background:none;border:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:2px 5px;}
   .filtro-etapa-chip button:hover{opacity:.7;}
@@ -1431,6 +1446,17 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <button class="nav-dropdown-item" data-nav="productossiigo" type="button">Productos</button>
         </div>
       </div>
+      <div class="nav-dropdown" id="navDropdownEspeciales">
+        <button class="nav-dropdown-btn" id="navBtnEspeciales" type="button">
+          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          Especiales e Insumos
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="nav-dropdown-item" data-nav="pedidosespeciales" type="button">Pedidos especiales</button>
+          <button class="nav-dropdown-item" data-nav="costoinsumos" type="button">Costo insumos</button>
+        </div>
+      </div>
       <div class="nav-dropdown" id="navDropdownProduccion">
         <button class="nav-dropdown-btn" id="navBtnProduccion" type="button">
           <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
@@ -1721,6 +1747,67 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <table>
             <thead><tr><th>NIT</th><th>Cliente</th><th>Ciudad</th><th>Teléfono</th><th>Dirección</th><th>Correo</th></tr></thead>
             <tbody id="cliSiigoBody"><tr><td colspan="6" style="color:var(--ink-soft);">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewPedidosespeciales" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Pedidos especiales</h2><div class="sub">Pedidos a la medida que no están en la lista de productos (medidas, tela, color…). Van aparte: no suman en los pedidos normales.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoPedidoEspecial">+ Nuevo pedido especial</button>
+        </div>
+        <div class="mini-kpis" id="peKpis"></div>
+        <div class="filtros-fila no-print">
+          <div class="control-search" style="flex:1;min-width:220px;max-width:420px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="peSearch" placeholder="Buscar cliente, descripción, número...">
+          </div>
+          <label>Estado<select id="peEstadoFiltro">
+            <option value="activos">Pendientes y en producción</option>
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="produccion">En producción</option>
+            <option value="entregado">Entregado</option>
+            <option value="cancelado">Cancelado</option>
+          </select></label>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>N.º</th><th>Fecha</th><th>Cliente</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Valor unit.</th><th class="num">Total</th><th class="num">Abono</th><th class="num">Saldo</th><th>Entrega</th><th>Estado</th><th class="no-print"></th></tr></thead>
+            <tbody id="peBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewCostoinsumos" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>Costo de insumos</h2><div class="sub">Precio de cada insumo con cada proveedor. Cada actualización queda guardada con su fecha, así ves cómo ha cambiado y qué proveedor está más barato.</div></div>
+          <button class="global-add-btn no-print" id="btnNuevoCostoInsumo">+ Registrar costo</button>
+        </div>
+        <div class="mini-kpis" id="ciKpis"></div>
+        <div class="filtros-fila no-print">
+          <div class="control-search" style="flex:1;min-width:200px;max-width:340px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="ciSearch" placeholder="Buscar insumo o proveedor...">
+          </div>
+          <label>Proveedor<select id="ciProveedor"><option value="">Todos</option></select></label>
+          <label>Actualizado desde<input type="date" id="ciDesde"></label>
+          <label>Hasta<input type="date" id="ciHasta"></label>
+          <label>Ver<select id="ciModo"><option value="actual">Precios actuales</option><option value="historial">Historial de actualizaciones</option></select></label>
+          <label>Agrupar<select id="ciAgrupar"><option value="proveedor">Por proveedor</option><option value="insumo">Por insumo</option></select></label>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead id="ciHead"></thead>
+            <tbody id="ciBody"></tbody>
           </table>
         </div>
       </div>
@@ -2689,6 +2776,8 @@ const DEFAULT_APPDATA = {
   plantaGastosAdicionales:[], // [{id, concepto, categoria, fecha, valor, observaciones}]
   plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
   plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
+  pedidosEspeciales:[],      // [{id, numero, fecha, cliente, descripcion, cantidad, valorUnitario, abono, fechaEntrega, estado('pendiente'|'produccion'|'entregado'|'cancelado'), observaciones}] — pedidos a la medida, aparte de los normales
+  insumosCostos:[],          // [{id, insumo, unidad, proveedor, costo, fecha('YYYY-MM-DD'), nota}] — una fila por actualización de precio (historial)
   plantaProductividad:[]     // [{id, operario, operacion, producto, turno, fecha, asignaciones, productividad, estado}] — filas editables del dashboard de Productividad
 };
 // ---------- Firebase: base de datos compartida ----------
@@ -3799,7 +3888,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','clientessiigo','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','clientessiigo','pedidosespeciales','costoinsumos','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -3835,6 +3924,8 @@ function switchView(viewName){
   if(viewName === 'inventario') renderInventarioView();
   if(viewName === 'productossiigo') renderProductosSiigo();
   if(viewName === 'clientessiigo') renderClientesSiigo();
+  if(viewName === 'pedidosespeciales') renderPedidosEspeciales();
+  if(viewName === 'costoinsumos') renderCostoInsumos();
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
@@ -3861,6 +3952,8 @@ const NAV_ICONOS = {
   despachos:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
   ventassiigo:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   productossiigo:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M16 14l2 2 3-4"/>',
+  pedidosespeciales:'<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/>',
+  costoinsumos:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01M9.5 15.5l5-5"/>',
   pedidos:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/>',
   vendedores:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
   distribuidores:'<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/>',
@@ -4628,6 +4721,281 @@ async function renderClientesSiigo(){
   if(vis.length > 1500) body.insertAdjacentHTML('beforeend', `<tr><td colspan="6" style="color:var(--ink-soft);">Mostrando 1500 de ${vis.length}. Escribe en el buscador para ver los demás.</td></tr>`);
 }
 document.getElementById('cliSiigoSearch').addEventListener('input', () => renderClientesSiigo());
+
+// ---------- Pedidos especiales (a la medida; sección aparte, solo administradores) ----------
+const PE_ESTADOS = [['pendiente', 'Pendiente'], ['produccion', 'En producción'], ['entregado', 'Entregado'], ['cancelado', 'Cancelado']];
+const hoyISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fechaCorta = f => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(f || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : (f || '—'); };
+function listaPedidosEspeciales(){
+  if(!Array.isArray(APPDATA.pedidosEspeciales)) APPDATA.pedidosEspeciales = Object.values(APPDATA.pedidosEspeciales || {});
+  return APPDATA.pedidosEspeciales;
+}
+const peTotal = p => (Number(p.cantidad) || 0) * (Number(p.valorUnitario) || 0);
+const peSaldo = p => Math.max(0, peTotal(p) - (Number(p.abono) || 0));
+const peNumero = p => 'PE-' + String(p.numero || 0).padStart(3, '0');
+function renderPedidosEspeciales(){
+  const body = document.getElementById('peBody');
+  if(!body) return;
+  const lista = listaPedidosEspeciales().filter(Boolean);
+  const hoy = hoyISO();
+  const cuenta = e => lista.filter(p => p.estado === e).length;
+  const activos = lista.filter(p => p.estado === 'pendiente' || p.estado === 'produccion');
+  document.getElementById('peKpis').innerHTML = `
+    <div><small>Pendientes</small><b>${cuenta('pendiente')}</b></div>
+    <div><small>En producción</small><b>${cuenta('produccion')}</b></div>
+    <div><small>Entregados</small><b>${cuenta('entregado')}</b></div>
+    <div><small>Valor por entregar</small><b>${fmt(activos.reduce((s, p) => s + peTotal(p), 0))}</b></div>
+    <div><small>Saldo por cobrar</small><b>${fmt(lista.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + peSaldo(p), 0))}</b></div>`;
+  const filtro = document.getElementById('peEstadoFiltro').value;
+  const palabras = normalizeText(document.getElementById('peSearch').value || '').split(/\s+/).filter(Boolean);
+  const vis = lista.filter(p => (filtro === 'activos' ? (p.estado === 'pendiente' || p.estado === 'produccion') : (!filtro || p.estado === filtro))
+    && palabras.every(w => normalizeText([peNumero(p), p.cliente, p.descripcion, p.observaciones].join(' ')).includes(w)))
+    .sort((a, b) => String(a.fechaEntrega || '9999').localeCompare(String(b.fechaEntrega || '9999')) || (b.numero || 0) - (a.numero || 0));
+  body.innerHTML = vis.map(p => {
+    const vencido = p.fechaEntrega && p.fechaEntrega < hoy && (p.estado === 'pendiente' || p.estado === 'produccion');
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--ink-soft);">${peNumero(p)}</td>
+      <td style="white-space:nowrap;">${fechaCorta(p.fecha)}</td>
+      <td><b>${escapeHtml(p.cliente || '')}</b></td>
+      <td style="min-width:200px;">${escapeHtml(p.descripcion || '')}${p.observaciones ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:3px;">${escapeHtml(p.observaciones)}</div>` : ''}</td>
+      <td class="num">${fmtNum(Number(p.cantidad) || 0)}</td>
+      <td class="num">${p.valorUnitario ? fmt(p.valorUnitario) : '—'}</td>
+      <td class="num"><b>${peTotal(p) ? fmt(peTotal(p)) : '—'}</b></td>
+      <td class="num">${p.abono ? fmt(p.abono) : '—'}</td>
+      <td class="num">${peTotal(p) ? fmt(peSaldo(p)) : '—'}</td>
+      <td style="white-space:nowrap;" class="${vencido ? 'pe-vencido' : ''}">${p.fechaEntrega ? fechaCorta(p.fechaEntrega) + (vencido ? ' · vencido' : '') : '—'}</td>
+      <td><select class="pe-estado" data-pe-estado="${escapeAttr(p.id)}" data-e="${escapeAttr(p.estado)}">${PE_ESTADOS.map(([v, l]) => `<option value="${v}" ${v === p.estado ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+      <td class="no-print" style="white-space:nowrap;"><button type="button" class="acc-btn" data-pe-edit="${escapeAttr(p.id)}">Editar</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="12" style="color:var(--ink-soft);">${lista.length ? 'No hay pedidos especiales con este filtro.' : 'Aún no hay pedidos especiales. Toca “+ Nuevo pedido especial”.'}</td></tr>`;
+}
+function openPedidoEspecialModal(id){
+  const actual = id ? listaPedidosEspeciales().find(p => p && p.id === id) : null;
+  const p = actual || { fecha: hoyISO(), estado: 'pendiente', cantidad: 1 };
+  const overlay = openModal(`
+    <h3>${actual ? 'Editar pedido especial ' + peNumero(actual) : 'Nuevo pedido especial'}</h3>
+    <div class="field"><label>Cliente *</label><input type="text" id="peCliente" list="peClientesLista" value="${escapeAttr(p.cliente || '')}" placeholder="Escribe o elige un cliente">
+      <datalist id="peClientesLista">${getAllDistribuidorNombres().map(n => `<option value="${escapeAttr(n)}">`).join('')}</datalist></div>
+    <div class="field"><label>Descripción del pedido *</label><textarea id="peDescripcion" rows="3" placeholder="Ej. Cubrelecho 2,40 × 2,60 en tela Silver gris, con 4 fundas" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;resize:vertical;">${escapeHtml(p.descripcion || '')}</textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+      <div class="field"><label>Cantidad</label><input type="number" id="peCantidad" min="0" value="${escapeAttr(p.cantidad ?? '')}"></div>
+      <div class="field"><label>Valor unitario</label><input type="number" id="peValor" min="0" value="${escapeAttr(p.valorUnitario ?? '')}" placeholder="Ej. 85000"></div>
+      <div class="field"><label>Abono recibido</label><input type="number" id="peAbono" min="0" value="${escapeAttr(p.abono ?? '')}" placeholder="0"></div>
+      <div class="field"><label>Estado</label><select id="peEstado">${PE_ESTADOS.map(([v, l]) => `<option value="${v}" ${v === p.estado ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha del pedido</label><input type="date" id="peFecha" value="${escapeAttr(p.fecha || '')}"></div>
+      <div class="field"><label>Fecha de entrega</label><input type="date" id="peEntrega" value="${escapeAttr(p.fechaEntrega || '')}"></div>
+    </div>
+    <div id="peTotalVivo" style="margin:-4px 0 10px;font-size:13px;color:var(--ink-soft);"></div>
+    <div class="field"><label>Observaciones</label><input type="text" id="peObs" value="${escapeAttr(p.observaciones || '')}" placeholder="Notas internas"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="peCancelar">Cancelar</button>
+      ${actual ? '<button class="btn-danger" id="peEliminar">Eliminar</button>' : ''}
+      <button class="btn-confirm" id="peGuardar">Guardar</button>
+    </div>`);
+  const $ = sel => overlay.querySelector(sel);
+  const total = () => {
+    const t = (Number($('#peCantidad').value) || 0) * (Number($('#peValor').value) || 0);
+    $('#peTotalVivo').innerHTML = t ? `Total: <b>${fmt(t)}</b> · Saldo: <b>${fmt(Math.max(0, t - (Number($('#peAbono').value) || 0)))}</b>` : '';
+  };
+  ['#peCantidad', '#peValor', '#peAbono'].forEach(s => $(s).addEventListener('input', total)); total();
+  $('#peCancelar').addEventListener('click', () => overlay.remove());
+  if(actual) $('#peEliminar').addEventListener('click', async () => {
+    if(!confirm(`¿Eliminar el pedido especial ${peNumero(actual)}?`)) return;
+    const lista = listaPedidosEspeciales(), i = lista.findIndex(x => x && x.id === id);
+    if(i > -1) lista.splice(i, 1);
+    await saveAppData(APPDATA); overlay.remove(); renderPedidosEspeciales();
+  });
+  $('#peGuardar').addEventListener('click', async () => {
+    const cliente = $('#peCliente').value.trim(), descripcion = $('#peDescripcion').value.trim();
+    if(!cliente){ showToast('Escribe el cliente'); $('#peCliente').focus(); return; }
+    if(!descripcion){ showToast('Describe el pedido'); $('#peDescripcion').focus(); return; }
+    const num = v => v === '' ? '' : Number(v);
+    const datos = { cliente: nombreClienteCanonico(cliente), descripcion, cantidad: num($('#peCantidad').value), valorUnitario: num($('#peValor').value), abono: num($('#peAbono').value),
+      estado: $('#peEstado').value, fecha: $('#peFecha').value, fechaEntrega: $('#peEntrega').value, observaciones: $('#peObs').value.trim() };
+    const lista = listaPedidosEspeciales(); // se vuelve a tomar: pudo llegar una sincronización con el modal abierto
+    if(actual){
+      const i = lista.findIndex(x => x && x.id === id);
+      if(i < 0){ showToast('Este pedido fue eliminado en otro equipo; no se guardó.', 5000); overlay.remove(); renderPedidosEspeciales(); return; }
+      lista[i] = { ...lista[i], ...datos };
+    }else{
+      const numero = lista.reduce((m, x) => Math.max(m, Number(x && x.numero) || 0), 0) + 1;
+      lista.push({ id: 'pe' + Date.now() + Math.random().toString(36).slice(2, 7), numero, ...datos });
+    }
+    await saveAppData(APPDATA); overlay.remove(); renderPedidosEspeciales();
+  });
+}
+document.getElementById('btnNuevoPedidoEspecial').addEventListener('click', () => openPedidoEspecialModal());
+document.getElementById('peSearch').addEventListener('input', () => renderPedidosEspeciales());
+document.getElementById('peEstadoFiltro').addEventListener('change', () => renderPedidosEspeciales());
+document.getElementById('peBody').addEventListener('click', e => { const b = e.target.closest('[data-pe-edit]'); if(b) openPedidoEspecialModal(b.dataset.peEdit); });
+document.getElementById('peBody').addEventListener('change', async e => {
+  const sel = e.target.closest('[data-pe-estado]'); if(!sel) return;
+  const p = listaPedidosEspeciales().find(x => x && x.id === sel.dataset.peEstado); if(!p) return;
+  p.estado = sel.value; sel.dataset.e = sel.value;
+  await saveAppData(APPDATA); renderPedidosEspeciales();
+});
+
+// ---------- Costo de insumos por proveedor (historial de precios; solo administradores) ----------
+// Cada registro es una actualización de precio: {insumo, proveedor, costo, fecha}. El precio actual de un insumo
+// con un proveedor es el de la fecha más reciente; los anteriores quedan como historial.
+function listaInsumosCostos(){
+  if(!Array.isArray(APPDATA.insumosCostos)) APPDATA.insumosCostos = Object.values(APPDATA.insumosCostos || {});
+  return APPDATA.insumosCostos;
+}
+const ciPar = r => normalizeText(r.insumo) + '|' + normalizeText(r.proveedor);
+const ciOrden = (a, b) => String(a.fecha || '').localeCompare(String(b.fecha || '')) || String(a.id).localeCompare(String(b.id));
+// Historial por insumo+proveedor, del más viejo al más nuevo.
+function ciHistoriales(){
+  const m = new Map();
+  listaInsumosCostos().filter(r => r && r.insumo).forEach(r => { const k = ciPar(r); if(!m.has(k)) m.set(k, []); m.get(k).push(r); });
+  m.forEach(l => l.sort(ciOrden));
+  return m;
+}
+const ciVariacion = (nuevo, anterior) => {
+  if(!anterior || !Number(anterior.costo)) return '';
+  const pct = (Number(nuevo.costo) - Number(anterior.costo)) / Number(anterior.costo) * 100;
+  if(Math.abs(pct) < 0.05) return '<span style="color:var(--ink-soft);">igual</span>';
+  return `<span class="${pct > 0 ? 'ci-sube' : 'ci-baja'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</span>`;
+};
+function renderCostoInsumos(){
+  const body = document.getElementById('ciBody');
+  if(!body) return;
+  const hist = ciHistoriales();
+  const todos = [...hist.values()].flat();
+  // Filtro de proveedores (conserva la elección)
+  const selProv = document.getElementById('ciProveedor');
+  const provElegido = selProv.value;
+  const proveedores = [...new Map(todos.map(r => [normalizeText(r.proveedor), String(r.proveedor || '').trim()])).values()].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  selProv.innerHTML = '<option value="">Todos</option>' + proveedores.map(p => `<option value="${escapeAttr(p)}" ${p === provElegido ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
+  const desde = document.getElementById('ciDesde').value, hasta = document.getElementById('ciHasta').value;
+  const modo = document.getElementById('ciModo').value, agrupar = document.getElementById('ciAgrupar').value;
+  const palabras = normalizeText(document.getElementById('ciSearch').value || '').split(/\s+/).filter(Boolean);
+  const pasa = r => (!provElegido || normalizeText(r.proveedor) === normalizeText(provElegido))
+    && (!desde || (r.fecha || '') >= desde) && (!hasta || (r.fecha || '') <= hasta)
+    && palabras.every(w => normalizeText([r.insumo, r.proveedor, r.nota].join(' ')).includes(w));
+  // Filas: en "actual" una por insumo+proveedor (su última actualización); en "historial" todas.
+  let filas = [];
+  hist.forEach(l => {
+    if(modo === 'actual'){ const r = l[l.length - 1]; filas.push({ r, ant: l[l.length - 2], n: l.length }); }
+    else l.forEach((r, i) => filas.push({ r, ant: l[i - 1], n: l.length }));
+  });
+  filas = filas.filter(f => pasa(f.r));
+  // Proveedor más barato de cada insumo (con su precio actual)
+  const masBarato = new Map();
+  hist.forEach(l => { const r = l[l.length - 1], k = normalizeText(r.insumo), c = Number(r.costo) || 0; if(c && (!masBarato.has(k) || c < masBarato.get(k).c)) masBarato.set(k, { c, par: ciPar(r) }); });
+  const nIns = new Set(todos.map(r => normalizeText(r.insumo))).size;
+  const enRango = todos.filter(r => (!desde || (r.fecha || '') >= desde) && (!hasta || (r.fecha || '') <= hasta)).length;
+  document.getElementById('ciKpis').innerHTML = `
+    <div><small>Insumos</small><b>${nIns}</b></div>
+    <div><small>Proveedores</small><b>${proveedores.length}</b></div>
+    <div><small>Actualizaciones${desde || hasta ? ' en las fechas' : ''}</small><b>${enRango}</b></div>
+    <div><small>Última actualización</small><b style="font-size:16px;">${todos.length ? fechaCorta(todos.map(r => r.fecha || '').sort().pop()) : '—'}</b></div>`;
+  const grupoDe = r => agrupar === 'insumo' ? String(r.insumo).trim() : (String(r.proveedor || '').trim() || 'Sin proveedor');
+  filas.sort((a, b) => grupoDe(a.r).localeCompare(grupoDe(b.r))
+    || (modo === 'historial' ? ciOrden(b.r, a.r) : 0)
+    || (agrupar === 'insumo' ? String(a.r.proveedor || '').localeCompare(String(b.r.proveedor || '')) : String(a.r.insumo).localeCompare(String(b.r.insumo))));
+  const colOtro = agrupar === 'insumo' ? 'Proveedor' : 'Insumo';
+  document.getElementById('ciHead').innerHTML = modo === 'actual'
+    ? `<tr><th>${colOtro}</th><th>Unidad</th><th class="num">Costo actual</th><th class="num">Costo anterior</th><th>Variación</th><th>Actualizado</th><th class="no-print"></th></tr>`
+    : `<tr><th>Fecha</th><th>${colOtro}</th><th>Unidad</th><th class="num">Costo</th><th>Variación</th><th>Nota</th><th class="no-print"></th></tr>`;
+  let html = '', grupo = null;
+  filas.forEach(({ r, ant, n }) => {
+    const g = grupoDe(r);
+    if(g !== grupo){ grupo = g; html += `<tr class="cat-row"><td colspan="7">${escapeHtml(g)}</td></tr>`; }
+    const otro = escapeHtml(agrupar === 'insumo' ? (r.proveedor || 'Sin proveedor') : r.insumo);
+    const mb = masBarato.get(normalizeText(r.insumo));
+    const barato = modo === 'actual' && mb && mb.par === ciPar(r) && [...hist.keys()].filter(k => k.startsWith(normalizeText(r.insumo) + '|')).length > 1 ? '<span class="ci-barato">Más barato</span>' : '';
+    if(modo === 'actual'){
+      html += `<tr><td style="min-width:150px;"><b>${otro}</b>${barato}</td><td>${escapeHtml(r.unidad || '')}</td><td class="num"><b>${fmt(Number(r.costo) || 0)}</b></td>
+        <td class="num">${ant ? fmt(Number(ant.costo) || 0) : '—'}</td><td>${ciVariacion(r, ant) || '—'}</td><td style="white-space:nowrap;">${fechaCorta(r.fecha)}${n > 1 ? ` <span style="font-size:11.5px;color:var(--ink-soft);">(${n} precios)</span>` : ''}</td>
+        <td class="no-print" style="white-space:nowrap;"><button type="button" class="acc-btn" data-ci-nuevo="${escapeAttr(r.id)}">Actualizar precio</button> <button type="button" class="acc-btn" data-ci-ver="${escapeAttr(r.id)}" title="Ver el historial de este insumo con este proveedor">Historial</button></td></tr>`;
+    }else{
+      html += `<tr><td style="white-space:nowrap;">${fechaCorta(r.fecha)}</td><td><b>${otro}</b></td><td>${escapeHtml(r.unidad || '')}</td><td class="num"><b>${fmt(Number(r.costo) || 0)}</b></td>
+        <td>${ciVariacion(r, ant) || '—'}</td><td style="font-size:12.5px;color:var(--ink-soft);">${escapeHtml(r.nota || '')}</td>
+        <td class="no-print"><button type="button" class="acc-btn" data-ci-edit="${escapeAttr(r.id)}">Editar</button></td></tr>`;
+    }
+  });
+  body.innerHTML = html || `<tr><td colspan="7" style="color:var(--ink-soft);">${todos.length ? 'No hay costos con estos filtros.' : 'Aún no hay costos de insumos. Toca “+ Registrar costo”.'}</td></tr>`;
+}
+// Modal: registrar un costo nuevo (base = otro registro para precargar insumo/proveedor) o editar uno.
+function openCostoInsumoModal({ editarId, baseId } = {}){
+  const lista = listaInsumosCostos();
+  const actual = editarId ? lista.find(r => r && r.id === editarId) : null;
+  const base = baseId ? lista.find(r => r && r.id === baseId) : null;
+  const r = actual || { insumo: base?.insumo || '', unidad: base?.unidad || '', proveedor: base?.proveedor || '', fecha: hoyISO() };
+  const unicos = (arr) => [...new Map(arr.filter(Boolean).map(x => [normalizeText(x), String(x).trim()])).values()].sort((a, b) => a.localeCompare(b));
+  const insumos = unicos([...lista.map(x => x && x.insumo), ...(APPDATA.plantaInsumos || []).map(x => x && x.nombre)]);
+  const proveedores = unicos([...lista.map(x => x && x.proveedor), ...(APPDATA.plantaInsumos || []).map(x => x && x.proveedor)]);
+  const overlay = openModal(`
+    <h3>${actual ? 'Editar costo' : 'Registrar costo de insumo'}</h3>
+    <div class="field"><label>Insumo *</label><input type="text" id="ciInsumo" list="ciInsumosLista" value="${escapeAttr(r.insumo)}" placeholder="Ej. Tela Silver blanca">
+      <datalist id="ciInsumosLista">${insumos.map(n => `<option value="${escapeAttr(n)}">`).join('')}</datalist></div>
+    <div class="field"><label>Proveedor *</label><input type="text" id="ciProv" list="ciProvLista" value="${escapeAttr(r.proveedor)}" placeholder="Ej. Textiles del Valle">
+      <datalist id="ciProvLista">${proveedores.map(n => `<option value="${escapeAttr(n)}">`).join('')}</datalist></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+      <div class="field"><label>Costo unitario *</label><input type="number" id="ciCosto" min="0" value="${escapeAttr(r.costo ?? '')}" placeholder="Ej. 8000"></div>
+      <div class="field"><label>Unidad</label><input type="text" id="ciUnidad" value="${escapeAttr(r.unidad || '')}" placeholder="Ej. Metro, Rollo, Kg"></div>
+      <div class="field"><label>Fecha de actualización *</label><input type="date" id="ciFecha" value="${escapeAttr(r.fecha || '')}"></div>
+      <div class="field"><label>Nota</label><input type="text" id="ciNota" value="${escapeAttr(r.nota || '')}" placeholder="Ej. Cotización, factura #123"></div>
+    </div>
+    <div id="ciAnterior" style="font-size:13px;color:var(--ink-soft);margin:-4px 0 10px;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="ciCancelar">Cancelar</button>
+      ${actual ? '<button class="btn-danger" id="ciEliminar">Eliminar</button>' : ''}
+      <button class="btn-confirm" id="ciGuardar">Guardar</button>
+    </div>`);
+  const $ = sel => overlay.querySelector(sel);
+  const mostrarAnterior = () => {
+    const par = ciPar({ insumo: $('#ciInsumo').value, proveedor: $('#ciProv').value });
+    const prev = lista.filter(x => x && x !== actual && ciPar(x) === par).sort(ciOrden).pop();
+    if(prev && !$('#ciUnidad').value) $('#ciUnidad').value = prev.unidad || '';
+    $('#ciAnterior').innerHTML = prev ? `Precio anterior con este proveedor: <b>${fmt(Number(prev.costo) || 0)}</b> (${fechaCorta(prev.fecha)})` : '';
+  };
+  ['#ciInsumo', '#ciProv'].forEach(s => $(s).addEventListener('change', mostrarAnterior)); mostrarAnterior();
+  $('#ciCancelar').addEventListener('click', () => overlay.remove());
+  if(actual) $('#ciEliminar').addEventListener('click', async () => {
+    if(!confirm('¿Eliminar este registro de costo?')) return;
+    const l = listaInsumosCostos(), i = l.findIndex(x => x && x.id === editarId);
+    if(i > -1) l.splice(i, 1);
+    await saveAppData(APPDATA); overlay.remove(); renderCostoInsumos();
+  });
+  $('#ciGuardar').addEventListener('click', async () => {
+    const datos = { insumo: $('#ciInsumo').value.trim(), proveedor: $('#ciProv').value.trim(), costo: $('#ciCosto').value === '' ? '' : Number($('#ciCosto').value),
+      unidad: $('#ciUnidad').value.trim(), fecha: $('#ciFecha').value, nota: $('#ciNota').value.trim() };
+    // Mismo insumo/proveedor escrito con otras mayúsculas o tildes: se usa el nombre que ya existe.
+    datos.insumo = insumos.find(n => normalizeText(n) === normalizeText(datos.insumo)) || datos.insumo;
+    datos.proveedor = proveedores.find(n => normalizeText(n) === normalizeText(datos.proveedor)) || datos.proveedor;
+    if(!datos.insumo){ showToast('Escribe el insumo'); $('#ciInsumo').focus(); return; }
+    if(!datos.proveedor){ showToast('Escribe el proveedor'); $('#ciProv').focus(); return; }
+    if(datos.costo === '' || !(datos.costo >= 0)){ showToast('Escribe el costo'); $('#ciCosto').focus(); return; }
+    if(!datos.fecha){ showToast('Elige la fecha de actualización'); $('#ciFecha').focus(); return; }
+    const l = listaInsumosCostos();
+    if(actual){
+      const i = l.findIndex(x => x && x.id === editarId);
+      if(i < 0){ showToast('Este registro fue eliminado en otro equipo; no se guardó.', 5000); overlay.remove(); renderCostoInsumos(); return; }
+      l[i] = { ...l[i], ...datos };
+    }else l.push({ id: 'ci' + Date.now() + Math.random().toString(36).slice(2, 7), ...datos });
+    await saveAppData(APPDATA); overlay.remove(); renderCostoInsumos();
+  });
+}
+document.getElementById('btnNuevoCostoInsumo').addEventListener('click', () => openCostoInsumoModal());
+['ciSearch', 'ciDesde', 'ciHasta'].forEach(id => document.getElementById(id).addEventListener('input', () => renderCostoInsumos()));
+['ciProveedor', 'ciModo', 'ciAgrupar', 'ciDesde', 'ciHasta'].forEach(id => document.getElementById(id).addEventListener('change', () => renderCostoInsumos()));
+document.getElementById('ciBody').addEventListener('click', e => {
+  const nuevo = e.target.closest('[data-ci-nuevo]'); if(nuevo){ openCostoInsumoModal({ baseId: nuevo.dataset.ciNuevo }); return; }
+  const ed = e.target.closest('[data-ci-edit]'); if(ed){ openCostoInsumoModal({ editarId: ed.dataset.ciEdit }); return; }
+  const ver = e.target.closest('[data-ci-ver]');
+  if(ver){
+    const r = listaInsumosCostos().find(x => x && x.id === ver.dataset.ciVer); if(!r) return;
+    document.getElementById('ciModo').value = 'historial';
+    document.getElementById('ciAgrupar').value = 'insumo';
+    document.getElementById('ciProveedor').value = r.proveedor || '';
+    document.getElementById('ciSearch').value = r.insumo;
+    document.getElementById('ciDesde').value = ''; document.getElementById('ciHasta').value = '';
+    renderCostoInsumos();
+  }
+});
+
 
 // ---------- Productos de Siigo (sección aparte del menú, solo administradores) ----------
 // Lista de solo lectura con los productos de venta de Siigo: los que aparecen en alguna factura
