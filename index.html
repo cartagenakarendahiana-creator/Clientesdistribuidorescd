@@ -1796,19 +1796,23 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
       <div class="page-card">
         <div class="page-card-header">
           <div><h2>Costo de insumos</h2><div class="sub">Precio de cada insumo con cada proveedor. Cada actualización queda guardada con su fecha, así ves cómo ha cambiado y qué proveedor está más barato.</div></div>
-          <button class="global-add-btn no-print" id="btnNuevoCostoInsumo">+ Registrar costo</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" class="no-print">
+            <button class="filter-clear-btn" id="btnImportarEffi" title="Cargar el Excel de materias primas exportado de Effi">⇪ Importar Excel de Effi</button>
+            <input type="file" id="inpImportarEffi" accept=".xlsx" style="display:none;">
+            <button class="global-add-btn" id="btnNuevoCostoInsumo">+ Registrar costo</button>
+          </div>
         </div>
         <div class="mini-kpis" id="ciKpis"></div>
         <div class="filtros-fila no-print">
           <div class="control-search" style="flex:1;min-width:200px;max-width:340px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="ciSearch" placeholder="Buscar insumo o proveedor...">
+            <input type="text" id="ciSearch" placeholder="Buscar insumo, referencia o proveedor...">
           </div>
           <label>Proveedor<select id="ciProveedor"><option value="">Todos</option></select></label>
           <label>Actualizado desde<input type="date" id="ciDesde"></label>
           <label>Hasta<input type="date" id="ciHasta"></label>
           <label>Ver<select id="ciModo"><option value="actual">Precios actuales</option><option value="historial">Historial de actualizaciones</option></select></label>
-          <label>Agrupar<select id="ciAgrupar"><option value="proveedor">Por proveedor</option><option value="insumo">Por insumo</option></select></label>
+          <label>Agrupar<select id="ciAgrupar"><option value="categoria">Por categoría</option><option value="proveedor">Por proveedor</option><option value="insumo">Por insumo</option></select></label>
         </div>
         <div class="table-scroll">
           <table>
@@ -2783,7 +2787,7 @@ const DEFAULT_APPDATA = {
   plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
   plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
   pedidosEspeciales:[],      // [{id, numero, fecha, cliente, descripcion, cantidad, valorUnitario, abono, fechaEntrega, estado('pendiente'|'produccion'|'entregado'|'cancelado'), observaciones}] — pedidos a la medida, aparte de los normales
-  insumosCostos:[],          // [{id, insumo, unidad, proveedor, costo, fecha('YYYY-MM-DD'), nota}] — una fila por actualización de precio (historial)
+  insumosCostos:[],          // [{id, insumo, ref?, categoria?, unidad, proveedor, costo, costoPromedio?, fecha('YYYY-MM-DD'), nota}] — una fila por actualización de precio (historial)
   plantaProductividad:[]     // [{id, operario, operacion, producto, turno, fecha, asignaciones, productividad, estado}] — filas editables del dashboard de Productividad
 };
 // ---------- Firebase: base de datos compartida ----------
@@ -4909,13 +4913,15 @@ function renderCostoInsumos(){
   const selProv = document.getElementById('ciProveedor');
   const provElegido = selProv.value;
   const proveedores = [...new Map(todos.map(r => [normalizeText(r.proveedor), String(r.proveedor || '').trim()])).values()].filter(Boolean).sort((a, b) => a.localeCompare(b));
-  selProv.innerHTML = '<option value="">Todos</option>' + proveedores.map(p => `<option value="${escapeAttr(p)}" ${p === provElegido ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
+  const haySinProv = todos.some(r => !String(r.proveedor || '').trim());
+  selProv.innerHTML = '<option value="">Todos</option>' + proveedores.map(p => `<option value="${escapeAttr(p)}" ${p === provElegido ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')
+    + (haySinProv ? `<option value="__sin" ${provElegido === '__sin' ? 'selected' : ''}>Sin proveedor</option>` : '');
   const desde = document.getElementById('ciDesde').value, hasta = document.getElementById('ciHasta').value;
   const modo = document.getElementById('ciModo').value, agrupar = document.getElementById('ciAgrupar').value;
   const palabras = normalizeText(document.getElementById('ciSearch').value || '').split(/\s+/).filter(Boolean);
-  const pasa = r => (!provElegido || normalizeText(r.proveedor) === normalizeText(provElegido))
+  const pasa = r => (!provElegido || (provElegido === '__sin' ? !String(r.proveedor || '').trim() : normalizeText(r.proveedor) === normalizeText(provElegido)))
     && (!desde || (r.fecha || '') >= desde) && (!hasta || (r.fecha || '') <= hasta)
-    && palabras.every(w => normalizeText([r.insumo, r.proveedor, r.nota].join(' ')).includes(w));
+    && palabras.every(w => normalizeText([r.insumo, r.ref, r.categoria, r.proveedor, r.nota].join(' ')).includes(w));
   // Filas: en "actual" una por insumo+proveedor (su última actualización); en "historial" todas.
   let filas = [];
   hist.forEach(l => {
@@ -4933,53 +4939,60 @@ function renderCostoInsumos(){
     <div><small>Proveedores</small><b>${proveedores.length}</b></div>
     <div><small>Actualizaciones${desde || hasta ? ' en las fechas' : ''}</small><b>${enRango}</b></div>
     <div><small>Última actualización</small><b style="font-size:16px;">${todos.length ? fechaCorta(todos.map(r => r.fecha || '').sort().pop()) : '—'}</b></div>`;
-  const grupoDe = r => agrupar === 'insumo' ? String(r.insumo).trim() : (String(r.proveedor || '').trim() || 'Sin proveedor');
+  const grupoDe = r => agrupar === 'insumo' ? String(r.insumo).trim() : agrupar === 'categoria' ? (String(r.categoria || '').trim() || 'Sin categoría') : (String(r.proveedor || '').trim() || 'Sin proveedor');
   filas.sort((a, b) => grupoDe(a.r).localeCompare(grupoDe(b.r))
     || (modo === 'historial' ? ciOrden(b.r, a.r) : 0)
     || (agrupar === 'insumo' ? String(a.r.proveedor || '').localeCompare(String(b.r.proveedor || '')) : String(a.r.insumo).localeCompare(String(b.r.insumo))));
   const colOtro = agrupar === 'insumo' ? 'Proveedor' : 'Insumo';
+  const conProv = agrupar === 'categoria'; // agrupado por categoría se muestra también el proveedor
   document.getElementById('ciHead').innerHTML = modo === 'actual'
-    ? `<tr><th>${colOtro}</th><th>Unidad</th><th class="num">Costo actual</th><th class="num">Costo anterior</th><th>Variación</th><th>Actualizado</th><th class="no-print"></th></tr>`
-    : `<tr><th>Fecha</th><th>${colOtro}</th><th>Unidad</th><th class="num">Costo</th><th>Variación</th><th>Nota</th><th class="no-print"></th></tr>`;
+    ? `<tr><th>${colOtro}</th>${conProv ? '<th>Proveedor</th>' : ''}<th>Unidad</th><th class="num">Costo actual</th><th class="num">Costo anterior</th><th>Variación</th><th>Actualizado</th><th class="no-print"></th></tr>`
+    : `<tr><th>Fecha</th><th>${colOtro}</th>${conProv ? '<th>Proveedor</th>' : ''}<th>Unidad</th><th class="num">Costo</th><th>Variación</th><th>Nota</th><th class="no-print"></th></tr>`;
   let html = '', grupo = null;
   filas.forEach(({ r, ant, n }) => {
     const g = grupoDe(r);
-    if(g !== grupo){ grupo = g; html += `<tr class="cat-row"><td colspan="7">${escapeHtml(g)}</td></tr>`; }
-    const otro = escapeHtml(agrupar === 'insumo' ? (r.proveedor || 'Sin proveedor') : r.insumo);
+    if(g !== grupo){ grupo = g; html += `<tr class="cat-row"><td colspan="8">${escapeHtml(g)}</td></tr>`; }
+    const otro = agrupar === 'insumo' ? escapeHtml(r.proveedor || 'Sin proveedor')
+      : escapeHtml(r.insumo) + (r.ref ? `<div style="font-size:11.5px;color:var(--ink-soft);font-weight:400;">${escapeHtml(r.ref)}</div>` : '');
+    const tdProv = conProv ? `<td>${escapeHtml(r.proveedor || '—')}</td>` : '';
     const mb = masBarato.get(normalizeText(r.insumo));
     const barato = modo === 'actual' && mb && mb.par === ciPar(r) && [...hist.keys()].filter(k => k.startsWith(normalizeText(r.insumo) + '|')).length > 1 ? '<span class="ci-barato">Más barato</span>' : '';
     if(modo === 'actual'){
-      html += `<tr><td style="min-width:150px;"><b>${otro}</b>${barato}</td><td>${escapeHtml(r.unidad || '')}</td><td class="num"><b>${fmt(Number(r.costo) || 0)}</b></td>
+      html += `<tr><td style="min-width:150px;"><b>${otro}</b>${barato}</td>${tdProv}<td>${escapeHtml(r.unidad || '')}</td><td class="num"><b>${fmt(Number(r.costo) || 0)}</b></td>
         <td class="num">${ant ? fmt(Number(ant.costo) || 0) : '—'}</td><td>${ciVariacion(r, ant) || '—'}</td><td style="white-space:nowrap;">${fechaCorta(r.fecha)}${n > 1 ? ` <span style="font-size:11.5px;color:var(--ink-soft);">(${n} precios)</span>` : ''}</td>
-        <td class="no-print" style="white-space:nowrap;"><button type="button" class="acc-btn" data-ci-nuevo="${escapeAttr(r.id)}">Actualizar precio</button> <button type="button" class="acc-btn" data-ci-ver="${escapeAttr(r.id)}" title="Ver el historial de este insumo con este proveedor">Historial</button></td></tr>`;
+        <td class="no-print" style="white-space:nowrap;"><button type="button" class="acc-btn" data-ci-nuevo="${escapeAttr(r.id)}" title="Registrar el precio nuevo (el anterior queda en el historial)">✎ Cambiar precio</button> <button type="button" class="acc-btn" data-ci-ver="${escapeAttr(r.id)}" title="Ver el historial de este insumo con este proveedor">Historial</button></td></tr>`;
     }else{
-      html += `<tr><td style="white-space:nowrap;">${fechaCorta(r.fecha)}</td><td><b>${otro}</b></td><td>${escapeHtml(r.unidad || '')}</td><td class="num"><b>${fmt(Number(r.costo) || 0)}</b></td>
+      html += `<tr><td style="white-space:nowrap;">${fechaCorta(r.fecha)}</td><td><b>${otro}</b></td>${tdProv}<td>${escapeHtml(r.unidad || '')}</td><td class="num"><b>${fmt(Number(r.costo) || 0)}</b></td>
         <td>${ciVariacion(r, ant) || '—'}</td><td style="font-size:12.5px;color:var(--ink-soft);">${escapeHtml(r.nota || '')}</td>
         <td class="no-print"><button type="button" class="acc-btn" data-ci-edit="${escapeAttr(r.id)}">Editar</button></td></tr>`;
     }
   });
-  body.innerHTML = html || `<tr><td colspan="7" style="color:var(--ink-soft);">${todos.length ? 'No hay costos con estos filtros.' : 'Aún no hay costos de insumos. Toca “+ Registrar costo”.'}</td></tr>`;
+  body.innerHTML = html || `<tr><td colspan="8" style="color:var(--ink-soft);">${todos.length ? 'No hay costos con estos filtros.' : 'Aún no hay costos de insumos. Toca “+ Registrar costo” o “Importar Excel de Effi”.'}</td></tr>`;
 }
 // Modal: registrar un costo nuevo (base = otro registro para precargar insumo/proveedor) o editar uno.
 function openCostoInsumoModal({ editarId, baseId } = {}){
   const lista = listaInsumosCostos();
   const actual = editarId ? lista.find(r => r && r.id === editarId) : null;
   const base = baseId ? lista.find(r => r && r.id === baseId) : null;
-  const r = actual || { insumo: base?.insumo || '', unidad: base?.unidad || '', proveedor: base?.proveedor || '', fecha: hoyISO() };
+  const r = actual || { insumo: base?.insumo || '', ref: base?.ref || '', categoria: base?.categoria || '', unidad: base?.unidad || '', proveedor: base?.proveedor || '', fecha: hoyISO() };
   const unicos = (arr) => [...new Map(arr.filter(Boolean).map(x => [normalizeText(x), String(x).trim()])).values()].sort((a, b) => a.localeCompare(b));
   const insumos = unicos([...lista.map(x => x && x.insumo), ...(APPDATA.plantaInsumos || []).map(x => x && x.nombre)]);
   const proveedores = unicos([...lista.map(x => x && x.proveedor), ...(APPDATA.plantaInsumos || []).map(x => x && x.proveedor)]);
+  const categorias = unicos(lista.map(x => x && x.categoria));
   const overlay = openModal(`
     <h3>${actual ? 'Editar costo' : 'Registrar costo de insumo'}</h3>
     <div class="field"><label>Insumo *</label><input type="text" id="ciInsumo" list="ciInsumosLista" value="${escapeAttr(r.insumo)}" placeholder="Ej. Tela Silver blanca">
       <datalist id="ciInsumosLista">${insumos.map(n => `<option value="${escapeAttr(n)}">`).join('')}</datalist></div>
-    <div class="field"><label>Proveedor *</label><input type="text" id="ciProv" list="ciProvLista" value="${escapeAttr(r.proveedor)}" placeholder="Ej. Textiles del Valle">
+    <div class="field"><label>Proveedor</label><input type="text" id="ciProv" list="ciProvLista" value="${escapeAttr(r.proveedor)}" placeholder="Ej. Textiles del Valle">
       <datalist id="ciProvLista">${proveedores.map(n => `<option value="${escapeAttr(n)}">`).join('')}</datalist></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
       <div class="field"><label>Costo unitario *</label><input type="number" id="ciCosto" min="0" value="${escapeAttr(r.costo ?? '')}" placeholder="Ej. 8000"></div>
       <div class="field"><label>Unidad</label><input type="text" id="ciUnidad" value="${escapeAttr(r.unidad || '')}" placeholder="Ej. Metro, Rollo, Kg"></div>
       <div class="field"><label>Fecha de actualización *</label><input type="date" id="ciFecha" value="${escapeAttr(r.fecha || '')}"></div>
       <div class="field"><label>Nota</label><input type="text" id="ciNota" value="${escapeAttr(r.nota || '')}" placeholder="Ej. Cotización, factura #123"></div>
+      <div class="field"><label>Categoría</label><input type="text" id="ciCategoria" list="ciCatLista" value="${escapeAttr(r.categoria || '')}" placeholder="Ej. Telas, Insumos">
+        <datalist id="ciCatLista">${categorias.map(n => `<option value="${escapeAttr(n)}">`).join('')}</datalist></div>
+      <div class="field"><label>Referencia</label><input type="text" id="ciRef" value="${escapeAttr(r.ref || '')}" placeholder="Ej. TEL-27001"></div>
     </div>
     <div id="ciAnterior" style="font-size:13px;color:var(--ink-soft);margin:-4px 0 10px;"></div>
     <div class="modal-actions">
@@ -4992,6 +5005,8 @@ function openCostoInsumoModal({ editarId, baseId } = {}){
     const par = ciPar({ insumo: $('#ciInsumo').value, proveedor: $('#ciProv').value });
     const prev = lista.filter(x => x && x !== actual && ciPar(x) === par).sort(ciOrden).pop();
     if(prev && !$('#ciUnidad').value) $('#ciUnidad').value = prev.unidad || '';
+    if(prev && !$('#ciCategoria').value) $('#ciCategoria').value = prev.categoria || '';
+    if(prev && !$('#ciRef').value) $('#ciRef').value = prev.ref || '';
     $('#ciAnterior').innerHTML = prev ? `Precio anterior con este proveedor: <b>${fmt(Number(prev.costo) || 0)}</b> (${fechaCorta(prev.fecha)})` : '';
   };
   ['#ciInsumo', '#ciProv'].forEach(s => $(s).addEventListener('change', mostrarAnterior)); mostrarAnterior();
@@ -5004,12 +5019,12 @@ function openCostoInsumoModal({ editarId, baseId } = {}){
   });
   $('#ciGuardar').addEventListener('click', async () => {
     const datos = { insumo: $('#ciInsumo').value.trim(), proveedor: $('#ciProv').value.trim(), costo: $('#ciCosto').value === '' ? '' : Number($('#ciCosto').value),
-      unidad: $('#ciUnidad').value.trim(), fecha: $('#ciFecha').value, nota: $('#ciNota').value.trim() };
+      unidad: $('#ciUnidad').value.trim(), fecha: $('#ciFecha').value, nota: $('#ciNota').value.trim(),
+      categoria: $('#ciCategoria').value.trim(), ref: $('#ciRef').value.trim() };
     // Mismo insumo/proveedor escrito con otras mayúsculas o tildes: se usa el nombre que ya existe.
     datos.insumo = insumos.find(n => normalizeText(n) === normalizeText(datos.insumo)) || datos.insumo;
     datos.proveedor = proveedores.find(n => normalizeText(n) === normalizeText(datos.proveedor)) || datos.proveedor;
     if(!datos.insumo){ showToast('Escribe el insumo'); $('#ciInsumo').focus(); return; }
-    if(!datos.proveedor){ showToast('Escribe el proveedor'); $('#ciProv').focus(); return; }
     if(datos.costo === '' || !(datos.costo >= 0)){ showToast('Escribe el costo'); $('#ciCosto').focus(); return; }
     if(!datos.fecha){ showToast('Elige la fecha de actualización'); $('#ciFecha').focus(); return; }
     const l = listaInsumosCostos();
@@ -5032,12 +5047,116 @@ document.getElementById('ciBody').addEventListener('click', e => {
     const r = listaInsumosCostos().find(x => x && x.id === ver.dataset.ciVer); if(!r) return;
     document.getElementById('ciModo').value = 'historial';
     document.getElementById('ciAgrupar').value = 'insumo';
-    document.getElementById('ciProveedor').value = r.proveedor || '';
+    document.getElementById('ciProveedor').value = r.proveedor || (r.ref ? '' : '__sin');
     document.getElementById('ciSearch').value = r.insumo;
     document.getElementById('ciDesde').value = ''; document.getElementById('ciHasta').value = '';
     renderCostoInsumos();
   }
 });
+
+// ---------- Importar el Excel de materias primas de Effi (solo para Costo insumos) ----------
+// Lee el .xlsx en el navegador (un .xlsx es un zip con XML adentro). Por cada materia prima agrega un
+// registro de costo con la fecha de la importación SOLO si es nueva o si su costo cambió: así cada
+// importación va armando el historial. No toca Insumos ni los costos de los productos.
+async function leerFilasXlsx(file){
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const dec = new TextDecoder();
+  let e = buf.length - 22;
+  while(e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if(e < 0) throw new Error('El archivo no es un Excel (.xlsx) válido');
+  const archivos = {};
+  let p = dv.getUint32(e + 16, true);
+  for(let i = 0, n = dv.getUint16(e + 10, true); i < n; i++){
+    const largoNombre = dv.getUint16(p + 28, true), largoExtra = dv.getUint16(p + 30, true), largoComent = dv.getUint16(p + 32, true);
+    archivos[dec.decode(buf.subarray(p + 46, p + 46 + largoNombre))] = { metodo: dv.getUint16(p + 10, true), tam: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+    p += 46 + largoNombre + largoExtra + largoComent;
+  }
+  const leer = async (nombre) => {
+    const f = archivos[nombre]; if(!f) return null;
+    const ini = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true);
+    const datos = buf.subarray(ini, ini + f.tam);
+    if(f.metodo === 0) return dec.decode(datos);
+    return await new Response(new Blob([datos]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+  const xml = (t) => new DOMParser().parseFromString(t, 'application/xml');
+  const compartidos = [];
+  const ss = await leer('xl/sharedStrings.xml');
+  if(ss) xml(ss).querySelectorAll('si').forEach(si => compartidos.push(si.textContent));
+  const hoja = Object.keys(archivos).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort()[0];
+  if(!hoja) throw new Error('El Excel no tiene hojas');
+  const filas = [];
+  xml(await leer(hoja)).querySelectorAll('sheetData > row').forEach(row => {
+    const fila = {};
+    row.querySelectorAll('c').forEach(c => {
+      const col = (c.getAttribute('r') || '').replace(/\d+/g, ''), t = c.getAttribute('t');
+      const v = c.querySelector('v');
+      fila[col] = t === 's' ? (compartidos[Number(v && v.textContent)] || '') : t === 'inlineStr' ? (c.querySelector('is') || c).textContent : (v ? v.textContent : '');
+    });
+    filas.push(fila);
+  });
+  // Primera fila = encabezados → objetos {Encabezado: valor}
+  const enc = filas.shift() || {};
+  return filas.map(f => Object.fromEntries(Object.entries(enc).map(([col, nombre]) => [String(nombre).trim(), String(f[col] ?? '').trim()])));
+}
+function filasEffiACostos(filas){
+  const col = (f, ...nombres) => { for(const n of nombres){ const k = Object.keys(f).find(x => normalizeText(x) === normalizeText(n)); if(k && f[k] !== '') return f[k]; } return ''; };
+  const num = (v) => { const n = Number(String(v).replace(/[^\d.,-]/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+  return filas.map(f => {
+    const insumo = col(f, 'Descripción', 'Descripcion', 'Insumo', 'Nombre');
+    if(!insumo) return null;
+    const ultimo = num(col(f, 'Último costo', 'Ultimo costo')), manual = num(col(f, 'Costo manual')), promedio = num(col(f, 'Costo promedio'));
+    const costo = Math.round((ultimo || manual || promedio || num(col(f, 'Costo'))) * 100) / 100;
+    return { insumo, ref: col(f, 'Referencia', 'Código', 'Codigo'), categoria: col(f, 'Categoría', 'Categoria'), proveedor: col(f, 'Proveedor'), unidad: col(f, 'Unidad'),
+      costo, costoPromedio: promedio ? Math.round(promedio * 100) / 100 : '' };
+  }).filter(Boolean);
+}
+async function importarExcelEffi(file){
+  let nuevos;
+  try{ nuevos = filasEffiACostos(await leerFilasXlsx(file)); }
+  catch(err){ showToast('No se pudo leer el Excel: ' + (err.message || err), 6000); return; }
+  if(!nuevos.length){ showToast('El Excel no tiene materias primas (falta la columna Descripción)', 6000); return; }
+  const fechaArchivo = (/(\d{4}-\d{2}-\d{2})/.exec(file.name) || [])[1] || hoyISO();
+  // Último registro de cada materia prima: por referencia, o por nombre si no tiene.
+  // Effi a veces repite una referencia en productos distintos: la clave es referencia + nombre.
+  const claveDe = r => normalizeText(r.ref) + '|' + normalizeText(r.insumo);
+  const vistos = new Map();
+  nuevos.forEach(n => { const k = claveDe(n), y = vistos.get(k); if(!y || (!y.costo && n.costo)) vistos.set(k, n); });
+  nuevos = [...vistos.values()];
+  const ultimos = new Map();
+  listaInsumosCostos().filter(Boolean).slice().sort(ciOrden).forEach(r => ultimos.set(claveDe(r), r));
+  const plan = nuevos.map(n => { const prev = ultimos.get(claveDe(n)); return { n, prev, tipo: !prev ? 'nuevo' : (Number(prev.costo) !== Number(n.costo) ? 'cambio' : 'igual') }; });
+  const cuenta = t => plan.filter(x => x.tipo === t).length;
+  const overlay = openModal(`
+    <h3>Importar materias primas de Effi</h3>
+    <div class="hint">Se leyeron <b>${nuevos.length}</b> materias primas de <b>${escapeHtml(file.name)}</b>. Se toma el <b>Último costo</b> de Effi (si está en 0, el costo manual).</div>
+    <div class="mini-kpis" style="margin-top:10px;">
+      <div><small>Nuevas</small><b>${cuenta('nuevo')}</b></div>
+      <div><small>Con precio distinto</small><b>${cuenta('cambio')}</b></div>
+      <div><small>Sin cambio (no se agregan)</small><b>${cuenta('igual')}</b></div>
+    </div>
+    <div class="field"><label>Fecha de actualización de estos precios</label><input type="date" id="effiFecha" value="${escapeAttr(fechaArchivo)}"></div>
+    <div class="hint">Las que cambiaron quedan con el precio nuevo y el anterior pasa al historial. Esto es solo para Costo insumos.</div>
+    <div class="modal-actions"><button class="btn-cancel" id="effiCancelar">Cancelar</button><button class="btn-confirm" id="effiOk" ${cuenta('nuevo') + cuenta('cambio') ? '' : 'disabled'}>Importar</button></div>`);
+  overlay.querySelector('#effiCancelar').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#effiOk').addEventListener('click', async () => {
+    const fecha = overlay.querySelector('#effiFecha').value || fechaArchivo;
+    const lista = listaInsumosCostos();
+    let i = 0;
+    plan.filter(x => x.tipo !== 'igual').forEach(({ n, prev }) => {
+      lista.push({ id: 'ci' + Date.now() + (i++) + Math.random().toString(36).slice(2, 6), ...n,
+        // Lo que se escribió a mano en la app (proveedor, unidad) se conserva si Effi no lo trae.
+        proveedor: n.proveedor || (prev && prev.proveedor) || '', unidad: n.unidad || (prev && prev.unidad) || '',
+        fecha, nota: 'Importado de Effi' });
+    });
+    await saveAppData(APPDATA);
+    overlay.remove();
+    renderCostoInsumos();
+    showToast(`Importadas ${i} materias primas de Effi`, 5000);
+  });
+}
+document.getElementById('btnImportarEffi').addEventListener('click', () => document.getElementById('inpImportarEffi').click());
+document.getElementById('inpImportarEffi').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if(f) importarExcelEffi(f); });
 
 
 // ---------- Productos de Siigo (sección aparte del menú, solo administradores) ----------
