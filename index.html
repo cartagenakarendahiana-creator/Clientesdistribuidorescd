@@ -1795,7 +1795,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <label>Proveedor<select id="ciProveedor"><option value="">Todos</option></select></label>
           <label>Actualizado desde<input type="date" id="ciDesde"></label>
           <label>Hasta<input type="date" id="ciHasta"></label>
-          <label>Ver<select id="ciModo"><option value="actual">Precios actuales</option><option value="historial">Historial de actualizaciones</option></select></label>
+          <label>Ver<select id="ciModo"><option value="excel">Todos los datos (Excel de Effi)</option><option value="actual">Precios actuales</option><option value="historial">Historial de actualizaciones</option></select></label>
           <label>Agrupar<select id="ciAgrupar"><option value="categoria">Por categoría</option><option value="proveedor">Por proveedor</option><option value="insumo">Por insumo</option></select></label>
         </div>
         <div class="table-scroll">
@@ -2772,7 +2772,7 @@ const DEFAULT_APPDATA = {
   plantaNovedades:[],        // [{id, operario, tipo, fechaInicio, fechaFin, observaciones}]
   plantaJornada:[],          // [{id, nombre, horaInicio, horaFin, dias, observaciones}]
   pedidosEspeciales:[],      // (sección retirada; los datos que hubiera se conservan) — [{id, numero, fecha, cliente, descripcion, cantidad, valorUnitario, abono, fechaEntrega, estado('pendiente'|'produccion'|'entregado'|'cancelado'), observaciones}] — pedidos a la medida, aparte de los normales
-  insumosCostos:[],          // [{id, insumo, ref?, categoria?, unidad, proveedor, costo, costoPromedio?, fecha('YYYY-MM-DD'), nota}] — una fila por actualización de precio (historial)
+  insumosCostos:[],          // [{id, insumo, ref?, categoria?, unidad, proveedor, costo, costoPromedio?, fecha('YYYY-MM-DD'), nota, effi?:{idEffi, codigoBarras, marca, costoManual, costoPromedio, ultimoCosto, impuesto, enCompras, enVentas, gestionStock, stock, stockPorRecibir}}] — una fila por actualización de precio (historial)
   plantaProductividad:[]     // [{id, operario, operacion, producto, turno, fecha, asignaciones, productividad, estado}] — filas editables del dashboard de Productividad
 };
 // ---------- Firebase: base de datos compartida ----------
@@ -4808,11 +4808,11 @@ function renderCostoInsumos(){
   const palabras = normalizeText(document.getElementById('ciSearch').value || '').split(/\s+/).filter(Boolean);
   const pasa = r => (!provElegido || (provElegido === '__sin' ? !String(r.proveedor || '').trim() : normalizeText(r.proveedor) === normalizeText(provElegido)))
     && (!desde || (r.fecha || '') >= desde) && (!hasta || (r.fecha || '') <= hasta)
-    && palabras.every(w => normalizeText([r.insumo, r.ref, r.categoria, r.proveedor, r.nota].join(' ')).includes(w));
+    && palabras.every(w => normalizeText([r.insumo, r.ref, r.categoria, r.proveedor, r.nota, r.effi && r.effi.codigoBarras, r.effi && r.effi.marca, r.effi && r.effi.idEffi].join(' ')).includes(w));
   // Filas: en "actual" una por insumo+proveedor (su última actualización); en "historial" todas.
   let filas = [];
   hist.forEach(l => {
-    if(modo === 'actual'){ const r = l[l.length - 1]; filas.push({ r, ant: l[l.length - 2], n: l.length }); }
+    if(modo !== 'historial'){ const r = l[l.length - 1]; filas.push({ r, ant: l[l.length - 2], n: l.length }); }
     else l.forEach((r, i) => filas.push({ r, ant: l[i - 1], n: l.length }));
   });
   filas = filas.filter(f => pasa(f.r));
@@ -4832,19 +4832,40 @@ function renderCostoInsumos(){
     || (agrupar === 'insumo' ? String(a.r.proveedor || '').localeCompare(String(b.r.proveedor || '')) : String(a.r.insumo).localeCompare(String(b.r.insumo))));
   const colOtro = agrupar === 'insumo' ? 'Proveedor' : 'Insumo';
   const conProv = agrupar === 'categoria'; // agrupado por categoría se muestra también el proveedor
-  document.getElementById('ciHead').innerHTML = modo === 'actual'
+  // Datos del Excel de Effi de cada materia prima: los del último registro que los trae.
+  const effiDe = new Map();
+  hist.forEach((l, k) => { for(let i = l.length - 1; i >= 0; i--) if(l[i].effi){ effiDe.set(k, l[i].effi); break; } });
+  const dec = n => Number(n).toLocaleString('es-CO', { maximumFractionDigits: 2 });
+  const numEffi = v => (v === '' || v === undefined || v === null) ? '—' : dec(v);
+  const dinEffi = v => (v === '' || v === undefined || v === null) ? '—' : '$' + dec(v);
+  const nCols = modo === 'excel' ? 17 : 8;
+  document.getElementById('ciHead').innerHTML = modo === 'excel'
+    ? `<tr><th>ID Effi</th><th>Referencia</th><th>Código de barras</th><th>Descripción</th><th>Categoría</th><th>Marca</th><th class="num">Costo manual</th><th class="num">Costo promedio</th><th class="num">Último costo</th><th class="num">Costo en la app</th><th>Impuesto</th><th>En compras</th><th>En ventas</th><th>Gestión de stock</th><th class="num">Stock disponible</th><th class="num">Stock por recibir</th><th class="no-print"></th></tr>`
+    : modo === 'actual'
     ? `<tr><th>${colOtro}</th>${conProv ? '<th>Proveedor</th>' : ''}<th>Unidad</th><th class="num">Costo actual</th><th class="num">Costo anterior</th><th>Variación</th><th>Actualizado</th><th class="no-print"></th></tr>`
     : `<tr><th>Fecha</th><th>${colOtro}</th>${conProv ? '<th>Proveedor</th>' : ''}<th>Unidad</th><th class="num">Costo</th><th>Variación</th><th>Nota</th><th class="no-print"></th></tr>`;
   let html = '', grupo = null;
   filas.forEach(({ r, ant, n }) => {
     const g = grupoDe(r);
-    if(g !== grupo){ grupo = g; html += `<tr class="cat-row"><td colspan="8">${escapeHtml(g)}</td></tr>`; }
+    if(g !== grupo){ grupo = g; html += `<tr class="cat-row"><td colspan="${nCols}">${escapeHtml(g)}</td></tr>`; }
     const otro = agrupar === 'insumo' ? escapeHtml(r.proveedor || 'Sin proveedor')
       : escapeHtml(r.insumo) + (r.ref ? `<div style="font-size:11.5px;color:var(--ink-soft);font-weight:400;">${escapeHtml(r.ref)}</div>` : '');
     const tdProv = conProv ? `<td>${escapeHtml(r.proveedor || '—')}</td>` : '';
     const mb = masBarato.get(normalizeText(r.insumo));
     const barato = modo === 'actual' && mb && mb.par === ciPar(r) && [...hist.keys()].filter(k => k.startsWith(normalizeText(r.insumo) + '|')).length > 1 ? '<span class="ci-barato">Más barato</span>' : '';
-    if(modo === 'actual'){
+    if(modo === 'excel'){
+      const e = effiDe.get(ciPar(r)) || {};
+      const cambiado = e.ultimoCosto !== undefined && e.ultimoCosto !== '' && Number(e.ultimoCosto) !== Number(r.costo);
+      html += `<tr><td style="color:var(--ink-soft);">${escapeHtml(e.idEffi || '—')}</td><td style="white-space:nowrap;">${escapeHtml(r.ref || '—')}</td><td>${escapeHtml(e.codigoBarras || '—')}</td>
+        <td style="min-width:220px;"><b>${escapeHtml(r.insumo)}</b>${r.proveedor ? `<div style="font-size:11.5px;color:var(--ink-soft);">${escapeHtml(r.proveedor)}</div>` : ''}</td>
+        <td>${escapeHtml(r.categoria || '—')}</td><td>${escapeHtml(e.marca || '—')}</td>
+        <td class="num">${dinEffi(e.costoManual)}</td><td class="num">${dinEffi(e.costoPromedio)}</td><td class="num">${dinEffi(e.ultimoCosto)}</td>
+        <td class="num" title="${cambiado ? 'Cambiado en la app: distinto al último costo de Effi' : ''}"><b>${dinEffi(Number(r.costo) || 0)}</b>${cambiado ? ' ✎' : ''}<div style="font-size:11px;color:var(--ink-soft);">${fechaCorta(r.fecha)}</div></td>
+        <td>${escapeHtml(e.impuesto || '—')}</td><td>${escapeHtml(e.enCompras || '—')}</td><td>${escapeHtml(e.enVentas || '—')}</td>
+        <td style="min-width:160px;font-size:12.5px;">${escapeHtml(e.gestionStock || '—')}</td>
+        <td class="num ${Number(e.stock) < 0 ? 'ci-sube' : ''}">${numEffi(e.stock)}</td><td class="num">${numEffi(e.stockPorRecibir)}</td>
+        <td class="no-print" style="white-space:nowrap;"><button type="button" class="acc-btn" data-ci-nuevo="${escapeAttr(r.id)}" title="Registrar el precio nuevo (el anterior queda en el historial)">✎ Cambiar precio</button> <button type="button" class="acc-btn" data-ci-ver="${escapeAttr(r.id)}">Historial</button></td></tr>`;
+    }else if(modo === 'actual'){
       html += `<tr><td style="min-width:150px;"><b>${otro}</b>${barato}</td>${tdProv}<td>${escapeHtml(r.unidad || '')}</td><td class="num"><b>${fmt(Number(r.costo) || 0)}</b></td>
         <td class="num">${ant ? fmt(Number(ant.costo) || 0) : '—'}</td><td>${ciVariacion(r, ant) || '—'}</td><td style="white-space:nowrap;">${fechaCorta(r.fecha)}${n > 1 ? ` <span style="font-size:11.5px;color:var(--ink-soft);">(${n} precios)</span>` : ''}</td>
         <td class="no-print" style="white-space:nowrap;"><button type="button" class="acc-btn" data-ci-nuevo="${escapeAttr(r.id)}" title="Registrar el precio nuevo (el anterior queda en el historial)">✎ Cambiar precio</button> <button type="button" class="acc-btn" data-ci-ver="${escapeAttr(r.id)}" title="Ver el historial de este insumo con este proveedor">Historial</button></td></tr>`;
@@ -4854,7 +4875,7 @@ function renderCostoInsumos(){
         <td class="no-print"><button type="button" class="acc-btn" data-ci-edit="${escapeAttr(r.id)}">Editar</button></td></tr>`;
     }
   });
-  body.innerHTML = html || `<tr><td colspan="8" style="color:var(--ink-soft);">${todos.length ? 'No hay costos con estos filtros.' : 'Aún no hay costos de insumos. Toca “+ Registrar costo” o “Importar Excel de Effi”.'}</td></tr>`;
+  body.innerHTML = html || `<tr><td colspan="${nCols}" style="color:var(--ink-soft);">${todos.length ? 'No hay costos con estos filtros.' : 'Aún no hay costos de insumos. Toca “+ Registrar costo” o “Importar Excel de Effi”.'}</td></tr>`;
 }
 // Modal: registrar un costo nuevo (base = otro registro para precargar insumo/proveedor) o editar uno.
 function openCostoInsumoModal({ editarId, baseId } = {}){
@@ -4994,8 +5015,14 @@ function filasEffiACostos(filas){
     if(!insumo) return null;
     const ultimo = num(col(f, 'Último costo', 'Ultimo costo')), manual = num(col(f, 'Costo manual')), promedio = num(col(f, 'Costo promedio'));
     const costo = Math.round((ultimo || manual || promedio || num(col(f, 'Costo'))) * 100) / 100;
+    const dec2 = v => { const t = col(f, ...v); return t === '' ? '' : Math.round(num(t) * 100) / 100; };
     return { insumo, ref: col(f, 'Referencia', 'Código', 'Codigo'), categoria: col(f, 'Categoría', 'Categoria'), proveedor: col(f, 'Proveedor'), unidad: col(f, 'Unidad'),
-      costo, costoPromedio: promedio ? Math.round(promedio * 100) / 100 : '' };
+      costo, costoPromedio: promedio ? Math.round(promedio * 100) / 100 : '',
+      // Todas las columnas del Excel de Effi
+      effi: { idEffi: col(f, 'ID Effi'), codigoBarras: col(f, 'Código de barras', 'Codigo de barras'), marca: col(f, 'Marca'),
+        costoManual: dec2(['Costo manual']), costoPromedio: dec2(['Costo promedio']), ultimoCosto: dec2(['Último costo', 'Ultimo costo']),
+        impuesto: col(f, 'Impuesto'), enCompras: col(f, 'En compras'), enVentas: col(f, 'En ventas'), gestionStock: col(f, 'Gestión de stock', 'Gestion de stock'),
+        stock: dec2(['Stock disponible']), stockPorRecibir: dec2(['Stock por recibir']) } };
   }).filter(Boolean);
 }
 async function importarExcelEffi(file){
@@ -5020,16 +5047,23 @@ async function importarExcelEffi(file){
     <div class="mini-kpis" style="margin-top:10px;">
       <div><small>Nuevas</small><b>${cuenta('nuevo')}</b></div>
       <div><small>Con precio distinto</small><b>${cuenta('cambio')}</b></div>
-      <div><small>Sin cambio (no se agregan)</small><b>${cuenta('igual')}</b></div>
+      <div><small>Mismo precio (se actualizan sus demás datos)</small><b>${cuenta('igual')}</b></div>
     </div>
     <div class="field"><label>Fecha de actualización de estos precios</label><input type="date" id="effiFecha" value="${escapeAttr(fechaArchivo)}"></div>
-    <div class="hint">Las que cambiaron quedan con el precio nuevo y el anterior pasa al historial. Esto es solo para Costo insumos.</div>
-    <div class="modal-actions"><button class="btn-cancel" id="effiCancelar">Cancelar</button><button class="btn-confirm" id="effiOk" ${cuenta('nuevo') + cuenta('cambio') ? '' : 'disabled'}>Importar</button></div>`);
+    <div class="hint">Se guardan todas las columnas del Excel (ID, código de barras, marca, costos, impuesto, stock…). Las que cambiaron de precio quedan con el precio nuevo y el anterior pasa al historial. Esto es solo para Costo insumos.</div>
+    <div class="modal-actions"><button class="btn-cancel" id="effiCancelar">Cancelar</button><button class="btn-confirm" id="effiOk">Importar</button></div>`);
   overlay.querySelector('#effiCancelar').addEventListener('click', () => overlay.remove());
   overlay.querySelector('#effiOk').addEventListener('click', async () => {
     const fecha = overlay.querySelector('#effiFecha').value || fechaArchivo;
     const lista = listaInsumosCostos();
     let i = 0;
+    // Mismo precio: solo se actualizan los datos del Excel en el último registro (sin nueva fila de historial).
+    let actualizados = 0;
+    plan.filter(x => x.tipo === 'igual').forEach(({ n, prev }) => {
+      const r = lista.find(x => x && x.id === prev.id); if(!r) return;
+      r.effi = n.effi; if(n.categoria) r.categoria = n.categoria; if(n.costoPromedio !== '') r.costoPromedio = n.costoPromedio;
+      actualizados++;
+    });
     plan.filter(x => x.tipo !== 'igual').forEach(({ n, prev }) => {
       lista.push({ id: 'ci' + Date.now() + (i++) + Math.random().toString(36).slice(2, 6), ...n,
         // Lo que se escribió a mano en la app (proveedor, unidad) se conserva si Effi no lo trae.
@@ -5039,7 +5073,7 @@ async function importarExcelEffi(file){
     await saveAppData(APPDATA);
     overlay.remove();
     renderCostoInsumos();
-    showToast(`Importadas ${i} materias primas de Effi`, 5000);
+    showToast(`Effi: ${i} precios nuevos o cambiados` + (actualizados ? `, ${actualizados} con sus datos actualizados` : ''), 5000);
   });
 }
 document.getElementById('btnImportarEffi').addEventListener('click', () => document.getElementById('inpImportarEffi').click());
