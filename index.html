@@ -1554,9 +1554,8 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <option value="">Tipo: Todos</option>
           <option value="distribuidor">Tipo: Distribuidor</option>
           <option value="almacen">Tipo: Almacén</option>
-          <option value="proveedor">Tipo: Proveedor</option>
           <option value="hotel">Tipo: Hotel</option>
-          <option value="redes">Tipo: Redes</option>
+          <option value="redes">Tipo: Canal digital</option>
           <option value="sin">Tipo: Sin marcar</option>
         </select>
         <button class="filter-clear-btn" id="btnLimpiarFiltrosTop">Limpiar</button>
@@ -1685,9 +1684,8 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
             <option value="">Todos los tipos de pedido</option>
             <option value="distribuidor">Solo distribuidores</option>
             <option value="almacen">Solo almacenes</option>
-            <option value="proveedor">Solo proveedores</option>
             <option value="hotel">Solo hoteles</option>
-            <option value="redes">Solo redes</option>
+            <option value="redes">Solo canal digital</option>
             <option value="sin">Sin tipo marcado</option>
           </select>
         </div>
@@ -3071,11 +3069,14 @@ function readClienteInfoFields(ov){
 }
 // Build full distributor list (catalog + custom-added), applying name overrides
 // ---------- Tipo de pedido ----------
-// Todo pedido se marca como Distribuidor, Almacén, Proveedor, Hotel o Redes (APPDATA.distTipo[distId]); al
+// Todo pedido se marca como Distribuidor, Almacén, Hotel o Canal digital (APPDATA.distTipo[distId], clave "redes"); al
 // crearlo es obligatorio. Los que se marcaron antes como de hotel (APPDATA.distHotel) cuentan como Hotel.
-const TIPOS_PEDIDO = [['distribuidor', 'Distribuidor'], ['almacen', 'Almacén'], ['proveedor', 'Proveedor'], ['hotel', 'Hotel'], ['redes', 'Redes']];
+const TIPOS_PEDIDO = [['distribuidor', 'Distribuidor'], ['almacen', 'Almacén'], ['hotel', 'Hotel'], ['redes', 'Canal digital']];
 const nombreTipoPedido = t => (TIPOS_PEDIDO.find(x => x[0] === t) || [null, 'Sin tipo'])[1];
-function tipoPedido(distId){ return (APPDATA.distTipo && APPDATA.distTipo[distId]) || (APPDATA.distHotel && APPDATA.distHotel[distId] ? 'hotel' : ''); }
+function tipoPedido(distId){
+  const t = (APPDATA.distTipo && APPDATA.distTipo[distId]) || (APPDATA.distHotel && APPDATA.distHotel[distId] ? 'hotel' : '');
+  return TIPOS_PEDIDO.some(x => x[0] === t) ? t : ''; // un tipo que ya no existe (ej. Proveedor) queda "Sin tipo" para volver a marcarlo
+}
 function marcarTipoPedido(distId, tipo){
   if(!APPDATA.distTipo) APPDATA.distTipo = {};
   if(tipo) APPDATA.distTipo[distId] = tipo; else delete APPDATA.distTipo[distId];
@@ -3086,11 +3087,11 @@ const pasaTipoFiltro = (d, f) => !f || (f === 'sin' ? !d.tipo : d.tipo === f);
 function distribuidoresDelSegmento(){ return getAllDistributors().filter(d => pasaTipoFiltro(d, tipoPedidoFiltro)); }
 const opcionesTipoPedido = (valor, vacio) => `<option value="">${vacio}</option>` + TIPOS_PEDIDO.map(([v, l]) => `<option value="${v}" ${v === valor ? 'selected' : ''}>${l}</option>`).join('');
 function tipoPedidoFieldHtml(valor){
-  return `<div class="field"><label>Tipo de pedido *</label><select id="inpTipoPedido">${opcionesTipoPedido(valor || '', 'Elige: distribuidor, almacén, proveedor, hotel o redes…')}</select></div>`;
+  return `<div class="field"><label>Tipo de pedido *</label><select id="inpTipoPedido">${opcionesTipoPedido(valor || '', 'Elige: distribuidor, almacén, hotel o canal digital…')}</select></div>`;
 }
 function leerTipoPedido(overlay){
   const sel = overlay.querySelector('#inpTipoPedido');
-  if(!sel.value){ showToast('Marca el tipo de pedido: distribuidor, almacén, proveedor, hotel o redes', 4500); sel.focus(); return null; }
+  if(!sel.value){ showToast('Marca el tipo de pedido: distribuidor, almacén, hotel o canal digital', 4500); sel.focus(); return null; }
   return sel.value;
 }
 function getAllDistributors(){
