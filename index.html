@@ -9086,7 +9086,8 @@ function openProduccionModal(groupKey, defaultEtapa){
     });
     lineasBox.addEventListener('change', (e)=>{
       if(!e.target.classList.contains('pl-producto')) return;
-      actualizarPrecioFila(e.target.closest('.prod-linea'), true); // otro producto: nueva sugerencia
+      // Otro producto: nueva sugerencia, salvo que ya hayas escrito el precio (ese no se pisa nunca).
+      actualizarPrecioFila(e.target.closest('.prod-linea'));
     });
     lineasBox.addEventListener('input', (e)=>{
       if(!e.target.classList.contains('pl-precio')) return;
