@@ -292,7 +292,47 @@
   .filtros-fila{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;}
   .filtros-fila label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-soft);}
   .filtros-fila select, .filtros-fila input[type=date]{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);color:var(--ink);}
-  tr.crm-vencido td{background:#FDF1EF;}
+  .crm-barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:4px 0 12px;}
+  .crm-barra .sidebar-tabs{padding:0;border:none;}
+  .crm-toggles{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--white);}
+  .crm-toggle{border:none;background:transparent;padding:7px 14px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .crm-toggle.on{background:var(--ink);color:var(--white);}
+  .crm-conteo{font-size:12px;color:var(--ink-soft);margin:-4px 0 8px;}
+  .crm-tabla td{vertical-align:middle;}
+  .crm-fila{cursor:pointer;}
+  .crm-fila:hover td{background:var(--cream-2);}
+  .crm-persona{display:flex;align-items:center;gap:10px;min-width:190px;}
+  .crm-persona b, .crm-emp{display:block;font-weight:650;color:var(--ink);}
+  .crm-persona small, .crm-sub{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .crm-avatar{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--gold-pale,#F5ECD9);color:var(--gold-dark);font-size:12px;font-weight:800;}
+  .crm-avatar.grande{width:48px;height:48px;font-size:16px;}
+  .crm-seg{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#EEF1F6;color:#3B4A63;margin-right:4px;}
+  .crm-seg-hoteles{background:#E8EEF8;color:#28508C;} .crm-seg-dotacion{background:#F1E9FB;color:#5B2E9E;}
+  .crm-seg-servicio{background:#E6F4EA;color:#21663A;} .crm-seg-distribucion{background:#FFF1DE;color:#8A5A12;}
+  .crm-tipo{display:inline-block;font-size:11px;color:var(--ink-soft);}
+  .crm-tipo.activo{color:#21663A;font-weight:700;}
+  .crm-etapa{display:inline-block;padding:2px 9px;border-radius:6px;background:var(--cream-2);border:1px solid var(--line);font-size:12px;font-weight:600;}
+  .crm-seg-fecha{font-weight:600;white-space:nowrap;}
+  .crm-seg-fecha.vencido{color:#B3261E;} .crm-seg-fecha.pronto{color:#8A6417;}
+  .crm-mute{color:var(--ink-soft);font-size:12.5px;}
+  .crm-accion{display:inline-block;margin-left:4px;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--white);font:inherit;font-size:12px;font-weight:600;color:var(--ink);text-decoration:none;cursor:pointer;}
+  .crm-accion.wa{border-color:#9FD0AE;color:#21663A;background:#F1FAF3;}
+  .crm-accion:hover{border-color:var(--gold);}
+  .crm-vacio{padding:28px 10px;text-align:center;color:var(--ink-soft);}
+  .crm-h3{margin:22px 0 10px;font-size:15px;}
+  .crm-equipo{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+  .crm-miembro{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--white);}
+  .crm-miembro small{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .crm-ficha-head{display:flex;gap:12px;align-items:center;margin-bottom:12px;}
+  .crm-ficha, .crm-form{max-height:60vh;overflow-y:auto;padding-right:4px;}
+  .crm-grupo{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;background:var(--white);}
+  .crm-grupo h4{margin:0 0 8px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-dark);}
+  .crm-dato{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:5px 0;border-top:1px dashed var(--line);font-size:13.5px;}
+  .crm-dato:first-of-type{border-top:none;}
+  .crm-dato > span{color:var(--ink-soft);font-size:12.5px;}
+  .crm-campos{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+  .crm-textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;resize:vertical;}
+  @media (max-width:640px){ .crm-campos{grid-template-columns:1fr;} .crm-dato{grid-template-columns:1fr;gap:2px;} }
   .ci-barato{display:inline-block;white-space:nowrap;margin-left:6px;padding:1px 7px;border-radius:999px;background:#E6F4EA;color:#21663A;font-size:11px;font-weight:600;}
   .ci-sube{color:#B3261E;font-weight:600;} .ci-baja{color:#21663A;font-weight:600;}
   .filtro-etapa-chip{display:inline-flex;align-items:center;gap:4px;background:var(--gold-pale);border:1px solid var(--line-gold);color:var(--gold-dark);border-radius:20px;padding:3px 6px 3px 12px;font-size:12px;font-weight:600;margin-left:10px;vertical-align:middle;}
@@ -1779,29 +1819,33 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
     <div class="page-section">
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>CRM</h2><div class="sub">Prospectos, clientes activos y equipo comercial. Solo lo ven los administradores. <span id="crmInfo"></span></div></div>
+          <div><h2>CRM</h2><div class="sub">Prospectos y clientes activos en una sola lista. Solo lo ven los administradores. <span id="crmInfo"></span></div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;" class="no-print">
             <button class="filter-clear-btn" id="btnImportarCrm" title="Cargar el Excel del CRM (todas sus hojas)">⇪ Importar Excel del CRM</button>
             <input type="file" id="inpImportarCrm" accept=".xlsx" style="display:none;">
-            <button class="global-add-btn" id="btnNuevoCrm">+ Agregar registro</button>
+            <button class="global-add-btn" id="btnNuevoCrm">+ Nuevo contacto</button>
           </div>
         </div>
-        <div class="sidebar-tabs no-print" id="crmTabs" style="margin-bottom:10px;"></div>
-        <div id="crmTitulo" style="font-weight:700;color:var(--gold-dark);margin-bottom:8px;"></div>
         <div class="mini-kpis" id="crmKpis"></div>
+        <div class="crm-barra no-print">
+          <div class="sidebar-tabs" id="crmSegmentos"></div>
+          <div class="crm-toggles" id="crmTipos"></div>
+        </div>
         <div class="filtros-fila no-print">
           <div class="control-search" style="flex:1;min-width:220px;max-width:380px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="crmSearch" placeholder="Buscar nombre, empresa, ciudad, teléfono...">
+            <input type="text" id="crmSearch" placeholder="Buscar nombre, hotel, empresa, ciudad, teléfono...">
           </div>
           <div id="crmFiltros" style="display:contents;"></div>
         </div>
+        <div class="crm-conteo" id="crmConteo"></div>
         <div class="table-scroll">
-          <table>
-            <thead id="crmHead"></thead>
+          <table class="crm-tabla">
+            <thead><tr><th>Contacto</th><th>Empresa / hotel</th><th>Segmento</th><th>Etapa</th><th>Próx. seguimiento</th><th class="no-print"></th></tr></thead>
             <tbody id="crmBody"></tbody>
           </table>
         </div>
+        <div id="crmEquipo"></div>
       </div>
     </div>
   </div>
@@ -5139,16 +5183,18 @@ document.getElementById('btnImportarEffi').addEventListener('click', () => docum
 document.getElementById('inpImportarEffi').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if(f) importarExcelEffi(f); });
 
 // ---------- CRM (solo administradores) ----------
-// Se carga desde el Excel del CRM (todas sus hojas: prospectos, clientes activos, equipo comercial…) y se
-// guarda en el nodo "crm" de la base de datos, que las reglas dejan leer y escribir SOLO a administradores
-// (los datos de contacto no quedan en casaDoradaDatos, que ven todos los usuarios, ni en el código).
-// crm = { importado, archivo, hojas: [{ nombre, titulo, columnas: [{col, nombre}], filas: [{A:'…', B:'…'}] }] }
-let crmDatos = null, crmHoja = 0, crmCargando = null;
+// Una sola lista de contactos con TODA la información del Excel del CRM. Cada hoja del Excel pasa a ser
+// un segmento (Hoteles, Dotación, Servicio, Distribución) y un tipo (Prospecto / Cliente activo); las
+// columnas conocidas se ordenan en campos fijos y las demás quedan en "Otros datos" de la ficha.
+// Se guarda en el nodo "crm" de la base de datos, que las reglas dejan leer y escribir SOLO a
+// administradores (no va en el código ni en casaDoradaDatos, que ven todos los usuarios).
+// crm = { importado, archivo, contactos: [{id, segmento, tipo, nombre, cargo, empresa, …, extra:{columna: valor}}], equipo: [{nombre, comision, estado, pendiente}] }
+let crmDatos = null, crmCargando = null, crmSegmento = '', crmTipo = '', crmOrden = 'seguimiento';
 const crmRef = () => firebase.database().ref('crm');
+const CRM_SEGMENTOS = ['Hoteles', 'Dotación', 'Servicio', 'Distribución'];
+const CRM_TIPOS = ['Prospecto', 'Cliente activo'];
 const crmEsFecha = (nombre) => /fecha|[uú]ltimo contacto|seguimiento|verificad/i.test(nombre || '');
-const crmEsDinero = (nombre) => /\$/.test(nombre || '');
-const crmEsFiltro = (nombre) => /▼/.test(nombre || '');
-const crmLimpio = (nombre) => String(nombre || '').replace(/▼|⚡/g, '').trim();
+const crmLimpio = (nombre) => String(nombre || '').replace(/▼|⚡/g, '').replace(/\bAUTO\b/, '').replace(/\s+/g, ' ').trim();
 const serialAFechaISO = (n) => new Date(Date.UTC(1899, 11, 30) + Math.round(Number(n)) * 86400000).toISOString().slice(0, 10);
 function crmFechaISO(v){
   const t = String(v ?? '').trim();
@@ -5156,8 +5202,45 @@ function crmFechaISO(v){
   if(/^\d{5}(\.\d+)?$/.test(t) && Number(t) > 20000 && Number(t) < 80000) return serialAFechaISO(t);
   return '';
 }
-// Arma cada hoja: busca la fila de encabezados (entre las primeras 6, la de más celdas sin números) y
-// deja arriba el título de la hoja si lo tiene.
+// Campos fijos de cada contacto: [clave, etiqueta, grupo de la ficha, columnas del Excel que van ahí]
+const CRM_CAMPOS = [
+  ['nombre', 'Nombre del contacto', 'Contacto', ['nombre contacto', 'contacto / puerta de entrada', 'linea hotelera']],
+  ['cargo', 'Cargo', 'Contacto', ['cargo', 'cargo / rol publico']],
+  ['whatsapp', 'WhatsApp / teléfono', 'Contacto', ['whatsapp', 'telefono / whatsapp publico', 'telefono']],
+  ['correo', 'Correo', 'Contacto', ['correo', 'email publico', 'email']],
+  ['empresa', 'Empresa / hotel / proyecto', 'Empresa', ['nombre del hotel', 'empresa', 'nombre empresa', 'proyecto']],
+  ['ciudad', 'Ciudad', 'Empresa', ['ciudad']],
+  ['barrio', 'Barrio', 'Empresa', ['barrio']],
+  ['direccion', 'Dirección', 'Empresa', ['direccion']],
+  ['web', 'Sitio web', 'Empresa', ['sitio web', 'fuente web']],
+  ['etapa', 'Etapa / estado', 'Gestión comercial', ['etapa', 'etapa pipeline', 'estado']],
+  ['temperatura', 'Temperatura', 'Gestión comercial', ['temperatura']],
+  ['potencial', 'Potencial', 'Gestión comercial', ['potencial']],
+  ['responsable', 'Responsable', 'Gestión comercial', ['responsable']],
+  ['nivel', 'Nivel', 'Gestión comercial', ['nivel']],
+  ['ultimoContacto', 'Último contacto', 'Seguimiento', ['ultimo contacto']],
+  ['proxSeguimiento', 'Próximo seguimiento', 'Seguimiento', ['prox. seguimiento', 'prox. seguimiento auto']],
+  ['notas', 'Notas', 'Seguimiento', ['obervacion 1', 'obervacion 2', 'observacion 1', 'observacion 2', 'notas', 'notas / resultado', 'siguiente paso', 'pendiente']],
+  ['productos', 'Productos / servicio', 'Compras', ['productos comprados', 'productos principales', 'servicio contratado', 'servicio interes']],
+  ['ultimaCompra', 'Última compra ($)', 'Compras', ['ultima compra ($)', 'ultima compra $', 'ultimo servicio $']],
+  ['fechaUltimaCompra', 'Fecha última compra', 'Compras', ['fecha ultima compra', 'fecha ultimo servicio']],
+  ['totalAcumulado', 'Total acumulado ($)', 'Compras', ['total acumulado ($)', 'total acumulado $']],
+];
+const CRM_FECHAS = ['ultimoContacto', 'proxSeguimiento', 'fechaUltimaCompra'];
+const CRM_DINERO = ['ultimaCompra', 'totalAcumulado'];
+const crmCampoDeColumna = (nombreCol) => {
+  const n = normalizeText(crmLimpio(nombreCol));
+  const c = CRM_CAMPOS.find(([, , , cols]) => cols.includes(n));
+  return c ? c[0] : null;
+};
+function crmSegmentoDeHoja(nombre){
+  const n = normalizeText(nombre);
+  if(/dotac/.test(n)) return 'Dotación';
+  if(/servic/.test(n)) return 'Servicio';
+  if(/dist/.test(n)) return 'Distribución';
+  return 'Hoteles';
+}
+// Lee las hojas del Excel: encabezados (entre las primeras 6 filas, la de más celdas sin números) y filas.
 function crmDesdeHojas(hojas){
   return hojas.map(h => {
     const primeras = h.filas.slice(0, 6);
@@ -5167,41 +5250,79 @@ function crmDesdeHojas(hojas){
       if(vals.length >= 2 && vals.every(v => !/^-?\d+([.,]\d+)?$/.test(v)) && vals.length > max){ max = vals.length; iEnc = i; }
     });
     const enc = iEnc > -1 ? primeras[iEnc] : {};
-    const titulo = iEnc > 0 ? (primeras[0].A || Object.values(primeras[0])[0] || '') : '';
     const datos = h.filas.slice(iEnc + 1);
     const letras = new Set(Object.keys(enc));
     datos.forEach(f => Object.keys(f).forEach(c => letras.add(c)));
     const orden = c => c.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
-    const columnas = [...letras].sort((a, b) => orden(a) - orden(b)).map(col => ({ col, nombre: String(enc[col] || 'Columna ' + col).trim() }));
-    const filas = datos.map(f => {
-      const fila = {};
-      columnas.forEach(({ col, nombre }) => {
-        if(f[col] === undefined) return;
-        fila[col] = crmEsFecha(nombre) ? (crmFechaISO(f[col]) || f[col]) : f[col];
-      });
-      return fila;
-    }).filter(f => Object.keys(f).length);
-    return { nombre: h.nombre, titulo, columnas, filas };
+    const columnas = [...letras].sort((a, b) => orden(a) - orden(b)).map(col => ({ col, nombre: String(enc[col] || '').trim() }));
+    return { nombre: h.nombre, columnas, filas: datos };
   });
+}
+// Hojas → { contactos, equipo }. Nada se pierde: lo que no es un campo fijo va a extra.
+function crmUnificar(hojas){
+  const contactos = [], equipo = [];
+  let n = 0;
+  hojas.forEach(h => {
+    const nh = normalizeText(h.nombre || '');
+    const filas = Array.isArray(h.filas) ? h.filas : Object.values(h.filas || {});
+    if(/team|equipo/.test(nh)){
+      filas.forEach(f => {
+        const g = {}; (h.columnas || []).forEach(({ col, nombre }) => { if(f[col] !== undefined) g[normalizeText(nombre) || col] = f[col]; });
+        const nombre = g['linea hotelera'] || Object.values(f)[0];
+        if(!nombre) return;
+        const comision = Object.values(f).find(v => /^0?\.\d+$/.test(String(v)));
+        equipo.push({ nombre: String(nombre), linea: 'Línea hotelera', comision: comision ? Number(comision) : '', estado: g['estado'] || '', pendiente: g['pendiente'] || '' });
+      });
+      return;
+    }
+    const segmento = crmSegmentoDeHoja(h.nombre), tipo = /activ/.test(nh) ? 'Cliente activo' : 'Prospecto';
+    filas.forEach(f => {
+      const c = { id: 'c' + Date.now().toString(36) + (n++), segmento, tipo, origen: h.nombre, extra: {} };
+      (h.columnas || []).forEach(({ col, nombre }) => {
+        let v = f[col]; if(v === undefined || v === '') return;
+        v = String(v).trim();
+        const campo = crmCampoDeColumna(nombre);
+        // Firebase no acepta . / $ # [ ] en las claves: se cambian por caracteres parecidos.
+        const etiqueta = (crmLimpio(nombre) || ('Columna ' + col)).replace(/\//g, '∕').replace(/\./g, '·').replace(/[$#\[\]]/g, '');
+        if(campo === 'notas'){ c.notas = c.notas ? c.notas + '\n' + v : v; return; }
+        if(campo && CRM_FECHAS.includes(campo)){ c[campo] = crmFechaISO(v) || v; return; }
+        if(campo && CRM_DINERO.includes(campo) && !/^-?\d+(\.\d+)?$/.test(v)){ c.notas = c.notas ? c.notas + '\n' + v : v; return; } // texto en una columna de $: va a notas
+        if(campo && !c[campo]){ c[campo] = v; return; }
+        c.extra[etiqueta] = crmEsFecha(nombre) ? (crmFechaISO(v) || v) : v;
+      });
+      // La columna "Responsable" de Prosp Hoteles trae "Alto/Medio/Bajo": eso es potencial.
+      if(/^(alto|medio|bajo)$/i.test(c.responsable || '') && !c.potencial){ c.potencial = c.responsable; delete c.responsable; }
+      if(!Object.keys(c.extra).length) delete c.extra;
+      if(c.nombre || c.empresa || c.whatsapp || c.correo) contactos.push(c);
+    });
+  });
+  return { contactos, equipo };
 }
 async function cargarCrm(forzar){
   if(crmDatos && !forzar) return crmDatos;
-  if(!crmCargando) crmCargando = crmRef().once('value').then(s => { crmDatos = s.val() || { hojas: [] }; crmCargando = null; return crmDatos; }, err => { crmCargando = null; throw err; });
+  if(!crmCargando) crmCargando = crmRef().once('value').then(async s => {
+    crmDatos = s.val() || {};
+    // CRM guardado con la versión anterior (por hojas): se pasa a la lista única una sola vez.
+    if(crmDatos.hojas && !crmDatos.contactos){
+      const u = crmUnificar((Array.isArray(crmDatos.hojas) ? crmDatos.hojas : Object.values(crmDatos.hojas)).filter(Boolean));
+      crmDatos = { importado: crmDatos.importado || '', archivo: crmDatos.archivo || '', ...u };
+      try{ await crmRef().set(crmDatos); }catch(e){ console.warn('crm', e); }
+    }
+    crmCargando = null; return crmDatos;
+  }, err => { crmCargando = null; throw err; });
   return crmCargando;
 }
-const crmHojas = () => (crmDatos && Array.isArray(crmDatos.hojas) ? crmDatos.hojas : Object.values((crmDatos && crmDatos.hojas) || {})).filter(Boolean);
-const crmFilas = (h) => (Array.isArray(h.filas) ? h.filas : Object.values(h.filas || {})).filter(Boolean);
-function crmCeldaHtml(nombre, v){
-  if(v === undefined || v === null || v === '') return '<span style="color:var(--ink-soft);">—</span>';
-  const t = String(v);
-  if(crmEsFecha(nombre)){ const iso = crmFechaISO(t); if(iso) return escapeHtml(fechaCorta(iso)); }
-  if(crmEsDinero(nombre) && /^-?\d+(\.\d+)?$/.test(t)) return fmt(Number(t));
-  if(/whatsapp|tel[eé]fono|celular/i.test(nombre)){
-    const d = t.replace(/\D/g, '');
-    if(d.length >= 10) return `<a href="https://wa.me/${d.length === 10 ? '57' + d : d}" target="_blank" rel="noopener">${escapeHtml(t)}</a>`;
-  }
-  if(/correo|email/i.test(nombre) && /@/.test(t)) return `<a href="mailto:${escapeAttr(t)}">${escapeHtml(t)}</a>`;
-  return escapeHtml(t);
+const crmContactos = () => (Array.isArray(crmDatos && crmDatos.contactos) ? crmDatos.contactos : Object.values((crmDatos && crmDatos.contactos) || {})).filter(Boolean);
+const crmEquipo = () => (Array.isArray(crmDatos && crmDatos.equipo) ? crmDatos.equipo : Object.values((crmDatos && crmDatos.equipo) || {})).filter(Boolean);
+const crmWaLink = (t) => { const d = String(t || '').split('/')[0].replace(/\D/g, ''); return d.length >= 10 ? 'https://wa.me/' + (d.length === 10 ? '57' + d : d) : ''; };
+const crmIniciales = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
+function crmSegTag(c){ return `<span class="crm-seg crm-seg-${normalizeText(c.segmento || '').replace(/[^a-z]/g, '')}">${escapeHtml(c.segmento || '—')}</span><span class="crm-tipo ${c.tipo === 'Cliente activo' ? 'activo' : ''}">${escapeHtml(c.tipo || '')}</span>`; }
+function crmSeguimientoHtml(c){
+  const d = crmFechaISO(c.proxSeguimiento);
+  if(!d) return '<span class="crm-mute">Sin programar</span>';
+  const hoy = hoyISO(), en7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const cls = d < hoy ? 'vencido' : d <= en7 ? 'pronto' : '';
+  return `<span class="crm-seg-fecha ${cls}">${d < hoy ? '⏰ ' : ''}${escapeHtml(fechaCorta(d))}</span>`;
 }
 async function renderCrm(){
   const body = document.getElementById('crmBody');
@@ -5211,126 +5332,191 @@ async function renderCrm(){
     body.innerHTML = `<tr><td style="color:#B65B2E;">No se pudo leer el CRM (${escapeHtml(err.code || err.message || 'sin permiso')}). Solo los administradores pueden verlo.</td></tr>`;
     return;
   }
-  const hojas = crmHojas();
-  if(crmHoja >= hojas.length) crmHoja = 0;
+  const todos = crmContactos();
   document.getElementById('crmInfo').textContent = crmDatos.importado ? `Importado de "${crmDatos.archivo || 'Excel'}" el ${fechaCorta(String(crmDatos.importado).slice(0, 10))}.` : '';
-  document.getElementById('crmTabs').innerHTML = hojas.map((h, i) => `<button type="button" class="sidebar-tab-btn ${i === crmHoja ? 'active' : ''}" data-crm-hoja="${i}">${escapeHtml(h.nombre)} <span class="count">${crmFilas(h).length}</span></button>`).join('');
-  const head = document.getElementById('crmHead'), filtros = document.getElementById('crmFiltros');
-  if(!hojas.length){
-    head.innerHTML = ''; filtros.innerHTML = ''; document.getElementById('crmKpis').innerHTML = ''; document.getElementById('crmTitulo').textContent = '';
-    body.innerHTML = '<tr><td style="color:var(--ink-soft);">Aún no hay información del CRM. Toca “⇪ Importar Excel del CRM”.</td></tr>';
-    return;
-  }
-  const h = hojas[crmHoja], cols = h.columnas || [], filas = crmFilas(h);
-  document.getElementById('crmTitulo').textContent = h.titulo || '';
-  // Filtros: las columnas que en el Excel son listas desplegables (▼)
-  const elegidos = {};
-  filtros.querySelectorAll('select[data-crm-col]').forEach(s => { if(s.value) elegidos[s.dataset.crmCol] = s.value; });
-  filtros.innerHTML = cols.filter(c => crmEsFiltro(c.nombre)).map(c => {
-    const vals = [...new Set(filas.map(f => f[c.col]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
-    if(!vals.length) return '';
-    return `<label>${escapeHtml(crmLimpio(c.nombre))}<select data-crm-col="${c.col}"><option value="">Todos</option>${vals.map(v => `<option value="${escapeAttr(v)}" ${elegidos[c.col] === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select></label>`;
-  }).join('');
-  const palabras = normalizeText(document.getElementById('crmSearch').value || '').split(/\s+/).filter(Boolean);
-  const vis = filas.map((f, i) => ({ f, i })).filter(({ f }) =>
-    Object.entries(elegidos).every(([c, v]) => f[c] === v) && palabras.every(w => normalizeText(Object.values(f).join(' ')).includes(w)));
-  // Seguimientos: columna "Próx. seguimiento"
-  const colSeg = cols.find(c => /seguimiento/i.test(c.nombre));
   const hoy = hoyISO(), en7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-  const vencidos = colSeg ? filas.filter(f => { const d = crmFechaISO(f[colSeg.col]); return d && d < hoy; }).length : 0;
-  const semana = colSeg ? filas.filter(f => { const d = crmFechaISO(f[colSeg.col]); return d && d >= hoy && d <= en7; }).length : 0;
-  document.getElementById('crmKpis').innerHTML = `<div><small>Registros en esta hoja</small><b>${filas.length}</b></div>`
-    + (colSeg ? `<div><small>Seguimientos vencidos</small><b style="color:${vencidos ? '#B3261E' : 'inherit'};">${vencidos}</b></div><div><small>Seguimientos próximos 7 días</small><b>${semana}</b></div>` : '')
-    + `<div><small>Mostrando</small><b>${vis.length}</b></div>`;
-  head.innerHTML = `<tr>${cols.map(c => `<th class="${crmEsDinero(c.nombre) ? 'num' : ''}">${escapeHtml(crmLimpio(c.nombre))}</th>`).join('')}<th class="no-print"></th></tr>`;
-  body.innerHTML = vis.map(({ f, i }) => {
-    const seg = colSeg ? crmFechaISO(f[colSeg.col]) : '';
-    return `<tr class="${seg && seg < hoy ? 'crm-vencido' : ''}">${cols.map(c => `<td class="${crmEsDinero(c.nombre) ? 'num' : ''}" style="${/nota|observ|obervac|siguiente|estado de inv|productos/i.test(c.nombre) ? 'min-width:220px;' : 'white-space:nowrap;'}">${crmCeldaHtml(c.nombre, f[c.col])}</td>`).join('')}
-      <td class="no-print"><button type="button" class="acc-btn" data-crm-edit="${i}">✎</button></td></tr>`;
-  }).join('') || `<tr><td colspan="${cols.length + 1}" style="color:var(--ink-soft);">${filas.length ? 'Sin resultados con estos filtros.' : 'Esta hoja no tiene registros.'}</td></tr>`;
+  const seg = c => crmFechaISO(c.proxSeguimiento);
+  document.getElementById('crmKpis').innerHTML = `
+    <div><small>Contactos</small><b>${todos.length}</b></div>
+    <div><small>Prospectos</small><b>${todos.filter(c => c.tipo !== 'Cliente activo').length}</b></div>
+    <div><small>Clientes activos</small><b>${todos.filter(c => c.tipo === 'Cliente activo').length}</b></div>
+    <div><small>Seguimientos vencidos</small><b style="color:${todos.some(c => seg(c) && seg(c) < hoy) ? '#B3261E' : 'inherit'};">${todos.filter(c => seg(c) && seg(c) < hoy).length}</b></div>
+    <div><small>Próximos 7 días</small><b>${todos.filter(c => seg(c) && seg(c) >= hoy && seg(c) <= en7).length}</b></div>`;
+  // Segmentos y tipo (botones con conteo)
+  const porTipo = todos.filter(c => !crmTipo || c.tipo === crmTipo);
+  document.getElementById('crmSegmentos').innerHTML = [['', 'Todos'], ...CRM_SEGMENTOS.map(s => [s, s])].map(([v, l]) => {
+    const n = porTipo.filter(c => !v || c.segmento === v).length;
+    return `<button type="button" class="sidebar-tab-btn ${crmSegmento === v ? 'active' : ''}" data-crm-seg="${escapeAttr(v)}">${escapeHtml(l)} <span class="count">${n}</span></button>`;
+  }).join('');
+  document.getElementById('crmTipos').innerHTML = [['', 'Todos'], ['Prospecto', 'Prospectos'], ['Cliente activo', 'Clientes activos']].map(([v, l]) =>
+    `<button type="button" class="crm-toggle ${crmTipo === v ? 'on' : ''}" data-crm-tipo="${escapeAttr(v)}">${escapeHtml(l)}</button>`).join('');
+  const base = porTipo.filter(c => !crmSegmento || c.segmento === crmSegmento);
+  // Filtros con los valores que existen
+  const filtros = [['etapa', 'Etapa / estado'], ['potencial', 'Potencial'], ['responsable', 'Responsable'], ['ciudad', 'Ciudad']];
+  const box = document.getElementById('crmFiltros');
+  const elegidos = {}; box.querySelectorAll('select[data-crm-f]').forEach(s => { if(s.value) elegidos[s.dataset.crmF] = s.value; });
+  box.innerHTML = filtros.map(([k, l]) => {
+    const vals = [...new Map(base.map(c => c[k]).filter(Boolean).map(v => [normalizeText(v), String(v).trim()])).values()].sort((a, b) => a.localeCompare(b, 'es'));
+    if(!vals.length) return '';
+    return `<label>${l}<select data-crm-f="${k}"><option value="">Todos</option>${vals.map(v => `<option value="${escapeAttr(v)}" ${elegidos[k] === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select></label>`;
+  }).join('') + `<label>Ordenar<select id="crmOrden">${[['seguimiento', 'Próximo seguimiento'], ['nombre', 'Nombre'], ['empresa', 'Empresa']].map(([v, l]) => `<option value="${v}" ${crmOrden === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+  const palabras = normalizeText(document.getElementById('crmSearch').value || '').split(/\s+/).filter(Boolean);
+  const texto = c => normalizeText([c.nombre, c.cargo, c.empresa, c.ciudad, c.barrio, c.whatsapp, c.correo, c.etapa, c.responsable, c.notas, c.productos, ...Object.values(c.extra || {})].join(' '));
+  let vis = base.filter(c => Object.entries(elegidos).every(([k, v]) => normalizeText(c[k]) === normalizeText(v)) && palabras.every(w => texto(c).includes(w)));
+  const nom = c => String(c.nombre || c.empresa || '');
+  if(crmOrden === 'nombre') vis.sort((a, b) => nom(a).localeCompare(nom(b), 'es'));
+  else if(crmOrden === 'empresa') vis.sort((a, b) => String(a.empresa || '~').localeCompare(String(b.empresa || '~'), 'es'));
+  else vis.sort((a, b) => (seg(a) || '9999').localeCompare(seg(b) || '9999') || nom(a).localeCompare(nom(b), 'es'));
+  document.getElementById('crmConteo').textContent = `${vis.length} de ${todos.length} contactos`;
+  if(!todos.length){
+    body.innerHTML = `<tr><td colspan="6"><div class="crm-vacio"><b>Aún no hay información del CRM</b><br>Toca “⇪ Importar Excel del CRM” y elige tu archivo: se cargan todas sus hojas en una sola lista.</div></td></tr>`;
+  }else{
+    body.innerHTML = vis.map(c => {
+      const wa = crmWaLink(c.whatsapp);
+      return `<tr class="crm-fila" data-crm-id="${escapeAttr(c.id)}">
+        <td><div class="crm-persona"><span class="crm-avatar">${escapeHtml(crmIniciales(c.nombre || c.empresa))}</span><div><b>${escapeHtml(c.nombre || c.empresa || '—')}</b>${c.cargo ? `<small>${escapeHtml(c.cargo)}</small>` : ''}</div></div></td>
+        <td>${c.nombre && c.empresa ? `<b class="crm-emp">${escapeHtml(c.empresa)}</b>` : '<span class="crm-mute">—</span>'}${c.ciudad ? `<small class="crm-sub">📍 ${escapeHtml(c.ciudad)}</small>` : ''}</td>
+        <td>${crmSegTag(c)}</td>
+        <td>${c.etapa ? `<span class="crm-etapa">${escapeHtml(c.etapa)}</span>` : '<span class="crm-mute">—</span>'}${c.potencial ? `<small class="crm-sub">Potencial: ${escapeHtml(c.potencial)}</small>` : ''}</td>
+        <td>${crmSeguimientoHtml(c)}</td>
+        <td class="no-print" style="white-space:nowrap;text-align:right;">
+          ${wa ? `<a class="crm-accion wa" href="${wa}" target="_blank" rel="noopener" title="Escribir por WhatsApp">WhatsApp</a>` : ''}
+          ${c.correo && /@/.test(c.correo) ? `<a class="crm-accion" href="mailto:${escapeAttr(c.correo)}" title="${escapeAttr(c.correo)}">✉</a>` : ''}
+          <button type="button" class="crm-accion" data-crm-ver="${escapeAttr(c.id)}">Ver ficha</button>
+        </td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="crm-mute" style="padding:18px;">Sin resultados con estos filtros.</td></tr>';
+  }
+  // Equipo comercial
+  const eq = crmEquipo();
+  document.getElementById('crmEquipo').innerHTML = eq.length ? `<h3 class="crm-h3">Equipo comercial</h3><div class="crm-equipo">${eq.map(p => `
+    <div class="crm-miembro"><span class="crm-avatar">${escapeHtml(crmIniciales(p.nombre))}</span><div><b>${escapeHtml(p.nombre)}</b>
+      <small>${escapeHtml(p.linea || '')}${p.comision !== '' && p.comision !== undefined ? ` · Comisión ${escapeHtml(String(Math.round(Number(p.comision) * 1000) / 10))}%` : ''}${p.estado ? ` · ${escapeHtml(p.estado)}` : ''}</small>
+      ${p.pendiente ? `<small>Pendiente: ${escapeHtml(p.pendiente)}</small>` : ''}</div></div>`).join('')}</div>` : '';
 }
-async function guardarCrmHoja(i){
-  const h = crmHojas()[i];
-  await crmRef().child('hojas/' + i + '/filas').set(crmFilas(h));
+async function guardarCrmContactos(cambiar){
+  await cargarCrm(true); // lo último, por si otro administrador cambió algo
+  const lista = crmContactos();
+  cambiar(lista);
+  crmDatos.contactos = lista;
+  await crmRef().child('contactos').set(lista);
 }
-function openCrmFilaModal(i){
-  const h = crmHojas()[crmHoja]; if(!h) return;
-  const filas = crmFilas(h), actual = i !== undefined ? filas[i] : null, f = actual || {};
+function crmValorHtml(k, v){
+  if(v === undefined || v === null || v === '') return '<span class="crm-mute">—</span>';
+  if(CRM_FECHAS.includes(k)){ const d = crmFechaISO(v); if(d) return escapeHtml(fechaCorta(d)); }
+  if(CRM_DINERO.includes(k) && /^-?\d+(\.\d+)?$/.test(String(v))) return fmt(Number(v));
+  if(k === 'whatsapp'){ const wa = crmWaLink(v); if(wa) return `<a href="${wa}" target="_blank" rel="noopener">${escapeHtml(v)}</a>`; }
+  if(k === 'correo' && /@/.test(v)) return `<a href="mailto:${escapeAttr(v)}">${escapeHtml(v)}</a>`;
+  if(k === 'web') return `<a href="${/^https?:/.test(v) ? '' : 'https://'}${escapeAttr(v)}" target="_blank" rel="noopener">${escapeHtml(v)}</a>`;
+  return escapeHtml(String(v)).replace(/\n/g, '<br>');
+}
+function openCrmFicha(id){
+  const c = crmContactos().find(x => x.id === id); if(!c) return;
+  const grupos = [...new Set(CRM_CAMPOS.map(x => x[2]))];
+  const extra = Object.entries(c.extra || {});
   const overlay = openModal(`
-    <h3>${actual ? 'Editar registro' : 'Nuevo registro'} · ${escapeHtml(h.nombre)}</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-height:62vh;overflow-y:auto;padding-right:4px;">
-      ${(h.columnas || []).map(c => {
-        const nombre = crmLimpio(c.nombre), v = f[c.col] ?? '';
-        const largo = /nota|observ|obervac|siguiente|estado de inv|productos/i.test(c.nombre);
-        if(crmEsFecha(c.nombre)) return `<div class="field"><label>${escapeHtml(nombre)}</label><input type="date" data-crm-campo="${c.col}" value="${escapeAttr(crmFechaISO(v))}"></div>`;
-        if(largo) return `<div class="field" style="grid-column:1 / -1;"><label>${escapeHtml(nombre)}</label><textarea data-crm-campo="${c.col}" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;resize:vertical;">${escapeHtml(v)}</textarea></div>`;
-        const opciones = crmEsFiltro(c.nombre) ? [...new Set(filas.map(x => x[c.col]).filter(Boolean))] : [];
-        return `<div class="field"><label>${escapeHtml(nombre)}</label><input type="text" data-crm-campo="${c.col}" value="${escapeAttr(v)}" ${opciones.length ? `list="crmOp${c.col}"` : ''}>${opciones.length ? `<datalist id="crmOp${c.col}">${opciones.map(o => `<option value="${escapeAttr(o)}">`).join('')}</datalist>` : ''}</div>`;
+    <div class="crm-ficha-head"><span class="crm-avatar grande">${escapeHtml(crmIniciales(c.nombre || c.empresa))}</span>
+      <div><h3 style="margin:0;">${escapeHtml(c.nombre || c.empresa || 'Contacto')}</h3><div class="crm-sub">${[c.cargo, c.nombre ? c.empresa : '', c.ciudad].filter(Boolean).map(escapeHtml).join(' · ')}</div><div style="margin-top:6px;">${crmSegTag(c)}</div></div></div>
+    <div class="crm-ficha">
+      ${grupos.map(g => {
+        const campos = CRM_CAMPOS.filter(x => x[2] === g && c[x[0]]);
+        if(!campos.length) return '';
+        return `<div class="crm-grupo"><h4>${g}</h4>${campos.map(([k, l]) => `<div class="crm-dato"><span>${l}</span><div>${crmValorHtml(k, c[k])}</div></div>`).join('')}</div>`;
       }).join('')}
+      ${extra.length ? `<div class="crm-grupo"><h4>Otros datos del Excel</h4>${extra.map(([k, v]) => `<div class="crm-dato"><span>${escapeHtml(k)}</span><div>${crmEsFecha(k) && crmFechaISO(v) ? escapeHtml(fechaCorta(crmFechaISO(v))) : escapeHtml(String(v))}</div></div>`).join('')}</div>` : ''}
+      ${c.origen ? `<div class="crm-sub" style="margin-top:4px;">Hoja de origen: ${escapeHtml(c.origen)}</div>` : ''}
     </div>
     <div class="modal-actions">
-      <button class="btn-cancel" id="crmCancelar">Cancelar</button>
-      ${actual ? '<button class="btn-danger" id="crmEliminar">Eliminar</button>' : ''}
-      <button class="btn-confirm" id="crmGuardar">Guardar</button>
+      <button class="btn-cancel" id="crmFichaCerrar">Cerrar</button>
+      ${crmWaLink(c.whatsapp) ? `<a class="btn-cancel" style="text-align:center;text-decoration:none;" href="${crmWaLink(c.whatsapp)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+      <button class="btn-confirm" id="crmFichaEditar">✎ Editar</button>
     </div>`);
-  overlay.querySelector('#crmCancelar').addEventListener('click', () => overlay.remove());
-  const hojaIdx = crmHoja;
-  const guardar = async (cambiar) => {
-    await cargarCrm(true); // trae lo último por si otro administrador cambió algo
-    const hh = crmHojas()[hojaIdx]; if(!hh){ overlay.remove(); return; }
-    const lista = crmFilas(hh);
-    cambiar(lista);
-    hh.filas = lista;
-    try{ await guardarCrmHoja(hojaIdx); }
+  overlay.querySelector('#crmFichaCerrar').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#crmFichaEditar').addEventListener('click', () => { overlay.remove(); openCrmEditar(id); });
+}
+function openCrmEditar(id){
+  const actual = id ? crmContactos().find(x => x.id === id) : null;
+  const c = actual || { segmento: crmSegmento || 'Hoteles', tipo: crmTipo || 'Prospecto' };
+  const todos = crmContactos();
+  const sugerencias = (k) => [...new Set(todos.map(x => x[k]).filter(Boolean))].slice(0, 200);
+  const grupos = [...new Set(CRM_CAMPOS.map(x => x[2]))];
+  const extra = Object.entries(c.extra || {});
+  const overlay = openModal(`
+    <h3>${actual ? 'Editar contacto' : 'Nuevo contacto'}</h3>
+    <div class="crm-form">
+      <div class="crm-grupo"><h4>Clasificación</h4><div class="crm-campos">
+        <div class="field"><label>Segmento</label><select id="crmESeg">${CRM_SEGMENTOS.map(s => `<option ${s === c.segmento ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div class="field"><label>Tipo</label><select id="crmETipo">${CRM_TIPOS.map(s => `<option ${s === c.tipo ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      </div></div>
+      ${grupos.map(g => `<div class="crm-grupo"><h4>${g}</h4><div class="crm-campos">${CRM_CAMPOS.filter(x => x[2] === g).map(([k, l]) => {
+        const v = c[k] ?? '';
+        if(CRM_FECHAS.includes(k)) return `<div class="field"><label>${l}</label><input type="date" data-crm-k="${k}" value="${escapeAttr(crmFechaISO(v))}"></div>`;
+        if(k === 'notas') return `<div class="field" style="grid-column:1 / -1;"><label>${l}</label><textarea data-crm-k="${k}" rows="3" class="crm-textarea">${escapeHtml(v)}</textarea></div>`;
+        const ops = ['etapa', 'potencial', 'responsable', 'temperatura', 'ciudad', 'cargo'].includes(k) ? sugerencias(k) : [];
+        return `<div class="field"><label>${l}</label><input type="text" data-crm-k="${k}" value="${escapeAttr(v)}" ${ops.length ? `list="crmL_${k}"` : ''}>${ops.length ? `<datalist id="crmL_${k}">${ops.map(o => `<option value="${escapeAttr(o)}">`).join('')}</datalist>` : ''}</div>`;
+      }).join('')}</div></div>`).join('')}
+      ${extra.length ? `<div class="crm-grupo"><h4>Otros datos del Excel</h4><div class="crm-campos">${extra.map(([k, v], i) => `<div class="field"><label>${escapeHtml(k)}</label><input type="text" data-crm-extra="${i}" value="${escapeAttr(v)}"></div>`).join('')}</div></div>` : ''}
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="crmECancelar">Cancelar</button>
+      ${actual ? '<button class="btn-danger" id="crmEEliminar">Eliminar</button>' : ''}
+      <button class="btn-confirm" id="crmEGuardar">Guardar</button>
+    </div>`);
+  overlay.querySelector('#crmECancelar').addEventListener('click', () => overlay.remove());
+  const guardar = async (cambiar, msg) => {
+    try{ await guardarCrmContactos(cambiar); }
     catch(err){ showToast('No se pudo guardar: ' + (err.code || err.message), 6000); return; }
-    overlay.remove(); renderCrm(); showToast('CRM actualizado');
+    overlay.remove(); renderCrm(); showToast(msg);
   };
-  if(actual) overlay.querySelector('#crmEliminar').addEventListener('click', () => {
-    if(!confirm('¿Eliminar este registro del CRM?')) return;
-    const clave = JSON.stringify(actual);
-    guardar(lista => { const j = lista.findIndex(x => JSON.stringify(x) === clave); if(j > -1) lista.splice(j, 1); });
+  if(actual) overlay.querySelector('#crmEEliminar').addEventListener('click', () => {
+    if(!confirm('¿Eliminar este contacto del CRM?')) return;
+    guardar(lista => { const j = lista.findIndex(x => x.id === id); if(j > -1) lista.splice(j, 1); }, 'Contacto eliminado');
   });
-  overlay.querySelector('#crmGuardar').addEventListener('click', () => {
-    const nueva = {};
-    overlay.querySelectorAll('[data-crm-campo]').forEach(el => { const v = el.value.trim(); if(v) nueva[el.dataset.crmCampo] = v; });
-    if(!Object.keys(nueva).length){ showToast('Escribe al menos un dato'); return; }
-    const clave = actual ? JSON.stringify(actual) : null;
-    guardar(lista => {
-      const j = clave ? lista.findIndex(x => JSON.stringify(x) === clave) : -1;
-      if(j > -1) lista[j] = nueva; else lista.unshift(nueva);
-    });
+  overlay.querySelector('#crmEGuardar').addEventListener('click', () => {
+    const nuevo = { id: actual ? actual.id : 'c' + Date.now().toString(36), segmento: overlay.querySelector('#crmESeg').value, tipo: overlay.querySelector('#crmETipo').value };
+    if(actual && actual.origen) nuevo.origen = actual.origen;
+    overlay.querySelectorAll('[data-crm-k]').forEach(el => { const v = el.value.trim(); if(v) nuevo[el.dataset.crmK] = v; });
+    const ex = {}; overlay.querySelectorAll('[data-crm-extra]').forEach(el => { const v = el.value.trim(); if(v) ex[extra[Number(el.dataset.crmExtra)][0]] = v; });
+    if(Object.keys(ex).length) nuevo.extra = ex;
+    if(!nuevo.nombre && !nuevo.empresa){ showToast('Escribe el nombre del contacto o de la empresa'); return; }
+    guardar(lista => { const j = actual ? lista.findIndex(x => x.id === actual.id) : -1; if(j > -1) lista[j] = nuevo; else lista.unshift(nuevo); }, actual ? 'Contacto actualizado' : 'Contacto agregado');
   });
 }
 async function importarExcelCrm(file){
-  let hojas;
-  try{ hojas = crmDesdeHojas(await leerHojasXlsx(file)); }
+  let u;
+  try{ u = crmUnificar(crmDesdeHojas(await leerHojasXlsx(file))); }
   catch(err){ showToast('No se pudo leer el Excel: ' + (err.message || err), 6000); return; }
-  const total = hojas.reduce((a, h) => a + h.filas.length, 0);
-  const hayDatos = crmHojas().length > 0;
+  const porSeg = CRM_SEGMENTOS.map(s => [s, u.contactos.filter(c => c.segmento === s).length]).filter(x => x[1]);
+  const hayDatos = crmContactos().length > 0;
   const overlay = openModal(`
     <h3>Importar el CRM</h3>
-    <div class="hint">Se leyeron <b>${hojas.length}</b> hojas con <b>${total}</b> registros de <b>${escapeHtml(file.name)}</b>:</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;">${hojas.map(h => `<span class="meta-chip">${escapeHtml(h.nombre)}: ${h.filas.length}</span>`).join('')}</div>
+    <div class="hint">Se leyeron <b>${u.contactos.length}</b> contactos de <b>${escapeHtml(file.name)}</b>${u.equipo.length ? ` y <b>${u.equipo.length}</b> personas del equipo comercial` : ''}. Quedan en una sola lista:</div>
+    <div class="mini-kpis" style="margin:10px 0;">${porSeg.map(([s, n]) => `<div><small>${s}</small><b>${n}</b></div>`).join('')}
+      <div><small>Prospectos</small><b>${u.contactos.filter(c => c.tipo === 'Prospecto').length}</b></div><div><small>Clientes activos</small><b>${u.contactos.filter(c => c.tipo === 'Cliente activo').length}</b></div></div>
     ${hayDatos ? '<div class="hint" style="color:#B3261E;">Esto <b>reemplaza</b> lo que hay hoy en el CRM de la página (incluidos los cambios hechos aquí).</div>' : ''}
-    <div class="hint">Queda guardado aparte, solo para administradores.</div>
+    <div class="hint">Todas las columnas del Excel se conservan (las que no se ven en la lista quedan en la ficha de cada contacto). Solo lo ven los administradores.</div>
     <div class="modal-actions"><button class="btn-cancel" id="crmImpCancelar">Cancelar</button><button class="btn-confirm" id="crmImpOk">Importar</button></div>`);
   overlay.querySelector('#crmImpCancelar').addEventListener('click', () => overlay.remove());
   overlay.querySelector('#crmImpOk').addEventListener('click', async () => {
-    const datos = { importado: new Date().toISOString(), archivo: file.name, hojas };
+    const datos = { importado: new Date().toISOString(), archivo: file.name, ...u };
     try{ await crmRef().set(datos); }
     catch(err){ showToast('No se pudo guardar el CRM: ' + (err.code || err.message), 7000); return; }
-    crmDatos = datos; crmHoja = 0;
+    crmDatos = datos; crmSegmento = ''; crmTipo = '';
     overlay.remove(); renderCrm();
-    showToast(`CRM importado: ${total} registros en ${hojas.length} hojas`, 5000);
+    showToast(`CRM importado: ${u.contactos.length} contactos`, 5000);
   });
 }
 document.getElementById('btnImportarCrm').addEventListener('click', () => document.getElementById('inpImportarCrm').click());
 document.getElementById('inpImportarCrm').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if(f) importarExcelCrm(f); });
-document.getElementById('btnNuevoCrm').addEventListener('click', () => { if(crmHojas().length) openCrmFilaModal(); else showToast('Primero importa el Excel del CRM'); });
+document.getElementById('btnNuevoCrm').addEventListener('click', () => openCrmEditar());
 document.getElementById('crmSearch').addEventListener('input', () => renderCrm());
-document.getElementById('crmFiltros').addEventListener('change', () => renderCrm());
-document.getElementById('crmTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-hoja]'); if(!b) return; crmHoja = Number(b.dataset.crmHoja); document.getElementById('crmSearch').value = ''; document.getElementById('crmFiltros').innerHTML = ''; renderCrm(); });
-document.getElementById('crmBody').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-edit]'); if(b) openCrmFilaModal(Number(b.dataset.crmEdit)); });
+document.getElementById('crmFiltros').addEventListener('change', (e) => { if(e.target.id === 'crmOrden') crmOrden = e.target.value; renderCrm(); });
+document.getElementById('crmSegmentos').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-seg]'); if(!b) return; crmSegmento = b.dataset.crmSeg; document.getElementById('crmFiltros').innerHTML = ''; renderCrm(); });
+document.getElementById('crmTipos').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-tipo]'); if(!b) return; crmTipo = b.dataset.crmTipo; renderCrm(); });
+document.getElementById('crmBody').addEventListener('click', (e) => {
+  if(e.target.closest('a')) return;
+  const tr = e.target.closest('[data-crm-ver], .crm-fila'); if(!tr) return;
+  openCrmFicha(tr.dataset.crmVer || tr.dataset.crmId);
+});
 
 
 // ---------- Productos de Siigo (sección aparte del menú, solo administradores) ----------
