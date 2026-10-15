@@ -297,6 +297,14 @@
   .crm-toggles{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--white);}
   .crm-toggle{border:none;background:transparent;padding:7px 14px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
   .crm-toggle.on{background:var(--ink);color:var(--white);}
+  .crm-kicker{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-dark);font-weight:700;margin-bottom:2px;}
+  .crm-fila-vencida td:first-child{box-shadow:inset 3px 0 0 #B3261E;}
+  .crm-notas{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:280px;font-size:12.5px;color:var(--ink);}
+  .crm-etapa.ok{background:#E6F4EA;border-color:#9FD0AE;color:#21663A;}
+  .crm-pot, .crm-prio{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#EEF1F6;color:#3B4A63;}
+  .crm-pot-alto, .crm-prio-a{background:#E6F4EA;color:#21663A;} .crm-pot-medio, .crm-prio-b{background:#FFF6E0;color:#8A6417;} .crm-pot-bajo, .crm-prio-c{background:#F3F3F3;color:#666;}
+  .crm-miembro-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .crm-pendiente{color:#8A6417 !important;margin-top:6px !important;}
   .crm-conteo{font-size:12px;color:var(--ink-soft);margin:-4px 0 8px;}
   .crm-tabla td{vertical-align:middle;}
   .crm-fila{cursor:pointer;}
@@ -1475,9 +1483,25 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
           <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Clientes</button>
-          <button class="nav-dropdown-item" data-nav="crm" type="button">CRM</button>
           <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario · Precios de venta</button>
           <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button" title="Precios de servicio (sugeridos)">Precios de servicio</button>
+        </div>
+      </div>
+      <div class="nav-dropdown" id="navDropdownCrm">
+        <button class="nav-dropdown-btn" id="navBtnCrm" type="button">
+          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          CRM
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="nav-dropdown-item" data-nav="crmprosphoteles" type="button">Prospectos hoteles</button>
+          <button class="nav-dropdown-item" data-nav="crmhotelesactivos" type="button">Hoteles activos</button>
+          <button class="nav-dropdown-item" data-nav="crmprospdotacion" type="button">Prospectos dotación</button>
+          <button class="nav-dropdown-item" data-nav="crmprospservicio" type="button">Prospectos servicio</button>
+          <button class="nav-dropdown-item" data-nav="crmservicioactivos" type="button">Servicio activos</button>
+          <button class="nav-dropdown-item" data-nav="crmprospdist" type="button">Prospectos distribución</button>
+          <button class="nav-dropdown-item" data-nav="crmdistactivos" type="button">Distribuidores activos</button>
+          <button class="nav-dropdown-item" data-nav="crmequipo" type="button">Equipo comercial</button>
         </div>
       </div>
       <div class="nav-dropdown" id="navDropdownSiigo">
@@ -1819,7 +1843,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
     <div class="page-section">
       <div class="page-card">
         <div class="page-card-header">
-          <div><h2>CRM</h2><div class="sub">Prospectos y clientes activos en una sola lista. Solo lo ven los administradores. <span id="crmInfo"></span></div></div>
+          <div><div class="crm-kicker">CRM · Solo administradores</div><h2 id="crmTituloVista">CRM</h2><div class="sub"><span id="crmSubVista"></span> <span id="crmInfo" class="crm-mute"></span></div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;" class="no-print">
             <button class="filter-clear-btn" id="btnImportarCrm" title="Cargar el Excel del CRM (todas sus hojas)">⇪ Importar Excel del CRM</button>
             <input type="file" id="inpImportarCrm" accept=".xlsx" style="display:none;">
@@ -1827,23 +1851,21 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           </div>
         </div>
         <div class="mini-kpis" id="crmKpis"></div>
-        <div class="crm-barra no-print">
-          <div class="sidebar-tabs" id="crmSegmentos"></div>
-          <div class="crm-toggles" id="crmTipos"></div>
-        </div>
-        <div class="filtros-fila no-print">
-          <div class="control-search" style="flex:1;min-width:220px;max-width:380px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="crmSearch" placeholder="Buscar nombre, hotel, empresa, ciudad, teléfono...">
+        <div id="crmLista">
+          <div class="filtros-fila no-print">
+            <div class="control-search" style="flex:1;min-width:220px;max-width:380px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="crmSearch" placeholder="Buscar nombre, hotel, empresa, ciudad, teléfono...">
+            </div>
+            <div id="crmFiltros" style="display:contents;"></div>
           </div>
-          <div id="crmFiltros" style="display:contents;"></div>
-        </div>
-        <div class="crm-conteo" id="crmConteo"></div>
-        <div class="table-scroll">
-          <table class="crm-tabla">
-            <thead><tr><th>Contacto</th><th>Empresa / hotel</th><th>Segmento</th><th>Etapa</th><th>Próx. seguimiento</th><th class="no-print"></th></tr></thead>
-            <tbody id="crmBody"></tbody>
-          </table>
+          <div class="crm-conteo" id="crmConteo"></div>
+          <div class="table-scroll">
+            <table class="crm-tabla">
+              <thead id="crmHead"></thead>
+              <tbody id="crmBody"></tbody>
+            </table>
+          </div>
         </div>
         <div id="crmEquipo"></div>
       </div>
@@ -4015,7 +4037,7 @@ function switchView(viewName){
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
-    if(el) el.style.display = (name === viewName) ? '' : 'none';
+    if(el) el.style.display = (name === viewName || (name === 'crm' && esVistaCrm(viewName))) ? '' : 'none';
   });
   document.querySelectorAll('.nav-dropdown-item').forEach(item=>{
     const itemEtapa = item.dataset.etapaFiltro || null;
@@ -4048,7 +4070,7 @@ function switchView(viewName){
   if(viewName === 'productossiigo') renderProductosSiigo();
   if(viewName === 'clientessiigo') renderClientesSiigo();
   if(viewName === 'costoinsumos') renderCostoInsumos();
-  if(viewName === 'crm') renderCrm();
+  if(esVistaCrm(viewName)){ if(crmVista !== viewName){ crmVista = viewName; document.getElementById('crmFiltros').innerHTML = ''; document.getElementById('crmSearch').value = ''; } renderCrm(); }
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
@@ -4075,7 +4097,14 @@ const NAV_ICONOS = {
   despachos:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
   ventassiigo:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   productossiigo:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M16 14l2 2 3-4"/>',
-  crm:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><path d="M16 6h5M16 10h5M17 14h4"/>',
+  crmprosphoteles:'<path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2"/><circle cx="18" cy="17" r="3"/>',
+  crmhotelesactivos:'<path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 7h2M13 7h2M9 13l2 2 4-4"/>',
+  crmprospdotacion:'<path d="M3 21h18M6 21V10l6-5 6 5v11"/><path d="M10 21v-5h4v5"/>',
+  crmprospservicio:'<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/>',
+  crmservicioactivos:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+  crmprospdist:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
+  crmdistactivos:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><path d="M6 11l2 2 3-3"/>',
+  crmequipo:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
   costoinsumos:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01M9.5 15.5l5-5"/>',
   pedidos:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/>',
   vendedores:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
@@ -5189,7 +5218,7 @@ document.getElementById('inpImportarEffi').addEventListener('change', (e) => { c
 // Se guarda en el nodo "crm" de la base de datos, que las reglas dejan leer y escribir SOLO a
 // administradores (no va en el código ni en casaDoradaDatos, que ven todos los usuarios).
 // crm = { importado, archivo, contactos: [{id, segmento, tipo, nombre, cargo, empresa, …, extra:{columna: valor}}], equipo: [{nombre, comision, estado, pendiente}] }
-let crmDatos = null, crmCargando = null, crmSegmento = '', crmTipo = '', crmOrden = 'seguimiento';
+let crmDatos = null, crmCargando = null, crmOrden = 'seguimiento';
 const crmRef = () => firebase.database().ref('crm');
 const CRM_SEGMENTOS = ['Hoteles', 'Dotación', 'Servicio', 'Distribución'];
 const CRM_TIPOS = ['Prospecto', 'Cliente activo'];
@@ -5324,9 +5353,62 @@ function crmSeguimientoHtml(c){
   const cls = d < hoy ? 'vencido' : d <= en7 ? 'pronto' : '';
   return `<span class="crm-seg-fecha ${cls}">${d < hoy ? '⏰ ' : ''}${escapeHtml(fechaCorta(d))}</span>`;
 }
+// Las 8 páginas del CRM (una por hoja del Excel). Cada una muestra sus propias columnas.
+const crmVal = (c, k) => (c[k] !== undefined && c[k] !== '' ? c[k] : (c.extra || {})[k]);
+const CRM_COL = {
+  contacto: ['Contacto', c => `<div class="crm-persona"><span class="crm-avatar">${escapeHtml(crmIniciales(c.nombre || c.empresa))}</span><div><b>${escapeHtml(c.nombre || '—')}</b>${c.cargo ? `<small>${escapeHtml(c.cargo)}</small>` : ''}</div></div>`],
+  hotel: ['Hotel', c => crmEmpresaHtml(c)],
+  empresa: ['Empresa', c => crmEmpresaHtml(c)],
+  proyecto: ['Proyecto', c => `<b class="crm-emp">${escapeHtml(c.empresa || '—')}</b>${crmVal(c, 'Desarrollador') ? `<small class="crm-sub">${escapeHtml(crmVal(c, 'Desarrollador'))}</small>` : ''}`],
+  ciudad: ['Ciudad', c => c.ciudad ? escapeHtml(c.ciudad) : '<span class="crm-mute">—</span>'],
+  etapa: ['Etapa', c => c.etapa ? `<span class="crm-etapa">${escapeHtml(c.etapa)}</span>` : '<span class="crm-mute">—</span>'],
+  estado: ['Estado', c => c.etapa ? `<span class="crm-etapa ${/activ/i.test(c.etapa) ? 'ok' : ''}">${escapeHtml(c.etapa)}</span>` : '<span class="crm-mute">—</span>'],
+  potencial: ['Potencial', c => c.potencial ? `<span class="crm-pot crm-pot-${normalizeText(c.potencial).replace(/[^a-z]/g, '')}">${escapeHtml(c.potencial)}</span>` : '<span class="crm-mute">—</span>'],
+  temperatura: ['Temperatura', c => c.temperatura ? escapeHtml(c.temperatura) : '<span class="crm-mute">—</span>'],
+  prioridad: ['Prioridad', c => crmVal(c, 'Prioridad') ? `<span class="crm-prio crm-prio-${normalizeText(crmVal(c, 'Prioridad')).replace(/[^a-z]/g, '')}">${escapeHtml(crmVal(c, 'Prioridad'))}</span>` : '<span class="crm-mute">—</span>'],
+  tipoProyecto: ['Tipo', c => crmVal(c, 'Tipo') ? escapeHtml(crmVal(c, 'Tipo')) : '<span class="crm-mute">—</span>'],
+  entrega: ['Entrega', c => crmVal(c, 'Entrega∕estado') ? escapeHtml(crmVal(c, 'Entrega∕estado')) : '<span class="crm-mute">—</span>'],
+  contactoProyecto: ['Contacto', c => c.nombre ? `<b>${escapeHtml(c.nombre)}</b>${c.cargo ? `<small class="crm-sub">${escapeHtml(c.cargo)}</small>` : ''}` : '<span class="crm-mute">Sin contacto aún</span>'],
+  productos: ['Productos / servicio', c => c.productos ? escapeHtml(c.productos) : '<span class="crm-mute">—</span>'],
+  ultimaCompra: ['Última compra', c => (c.ultimaCompra && /^-?\d+(\.\d+)?$/.test(c.ultimaCompra) ? `<b>${fmt(Number(c.ultimaCompra))}</b>` : '<span class="crm-mute">—</span>') + (crmFechaISO(c.fechaUltimaCompra) ? `<small class="crm-sub">${escapeHtml(fechaCorta(crmFechaISO(c.fechaUltimaCompra)))}</small>` : '')],
+  total: ['Total acumulado', c => c.totalAcumulado && /^-?\d+(\.\d+)?$/.test(c.totalAcumulado) ? fmt(Number(c.totalAcumulado)) : '<span class="crm-mute">—</span>'],
+  ultimo: ['Último contacto', c => crmFechaISO(c.ultimoContacto) ? escapeHtml(fechaCorta(crmFechaISO(c.ultimoContacto))) : '<span class="crm-mute">—</span>'],
+  seguimiento: ['Próx. seguimiento', c => crmSeguimientoHtml(c)],
+  notas: ['Notas', c => c.notas ? `<span class="crm-notas" title="${escapeAttr(c.notas)}">${escapeHtml(c.notas.replace(/\n/g, ' · '))}</span>` : '<span class="crm-mute">—</span>'],
+  siguientePaso: ['Siguiente paso', c => c.notas ? `<span class="crm-notas" title="${escapeAttr(c.notas)}">${escapeHtml(c.notas.replace(/\n/g, ' · '))}</span>` : '<span class="crm-mute">—</span>'],
+};
+function crmEmpresaHtml(c){
+  const lugar = [c.barrio, c.ciudad].filter(Boolean).join(' · ');
+  return `${c.empresa ? `<b class="crm-emp">${escapeHtml(c.empresa)}</b>` : '<span class="crm-mute">—</span>'}${lugar ? `<small class="crm-sub">📍 ${escapeHtml(lugar)}</small>` : ''}`;
+}
+const CRM_VISTAS = {
+  crmprosphoteles:   { titulo: 'Prospectos · Hoteles', sub: 'Hoteles a los que se les está vendiendo. Actualiza después de cada visita o contacto.', segmento: 'Hoteles', tipo: 'Prospecto',
+    cols: ['contacto', 'hotel', 'etapa', 'potencial', 'ultimo', 'seguimiento', 'notas'], filtros: [['etapa', 'Etapa'], ['potencial', 'Potencial'], ['ciudad', 'Ciudad'], ['cargo', 'Cargo']] },
+  crmhotelesactivos: { titulo: 'Hoteles activos', sub: 'Hoteles que ya compran: fidelización y recompra.', segmento: 'Hoteles', tipo: 'Cliente activo',
+    cols: ['contacto', 'hotel', 'estado', 'productos', 'ultimaCompra', 'seguimiento', 'notas'], filtros: [['etapa', 'Estado'], ['ciudad', 'Ciudad']] },
+  crmprospdotacion:  { titulo: 'Prospectos · Dotación', sub: 'Proyectos hoteleros y residenciales en construcción que van a necesitar dotación.', segmento: 'Dotación', tipo: 'Prospecto',
+    cols: ['proyecto', 'ciudad', 'tipoProyecto', 'entrega', 'prioridad', 'contactoProyecto', 'siguientePaso'], filtros: [['Prioridad', 'Prioridad'], ['Tipo', 'Tipo'], ['ciudad', 'Ciudad']] },
+  crmprospservicio:  { titulo: 'Prospectos · Servicio', sub: 'Interesados en el servicio de ultrasonido y conforteado.', segmento: 'Servicio', tipo: 'Prospecto',
+    cols: ['contacto', 'empresa', 'productos', 'etapa', 'temperatura', 'seguimiento', 'notas'], filtros: [['etapa', 'Estado'], ['temperatura', 'Temperatura'], ['ciudad', 'Ciudad']] },
+  crmservicioactivos:{ titulo: 'Servicio · Clientes activos', sub: 'Clientes del servicio de ultrasonido y conforteado: recompra y fidelización.', segmento: 'Servicio', tipo: 'Cliente activo',
+    cols: ['contacto', 'empresa', 'productos', 'ultimaCompra', 'total', 'estado', 'seguimiento'], filtros: [['etapa', 'Estado'], ['ciudad', 'Ciudad']] },
+  crmprospdist:      { titulo: 'Prospectos · Distribución', sub: 'Distribuidores y almacenes en proceso comercial.', segmento: 'Distribución', tipo: 'Prospecto',
+    cols: ['contacto', 'empresa', 'etapa', 'temperatura', 'potencial', 'seguimiento', 'notas'], filtros: [['etapa', 'Etapa'], ['temperatura', 'Temperatura'], ['potencial', 'Potencial'], ['ciudad', 'Ciudad']] },
+  crmdistactivos:    { titulo: 'Distribuidores activos', sub: 'Distribuidores que ya compran: recompra y fidelización.', segmento: 'Distribución', tipo: 'Cliente activo',
+    cols: ['contacto', 'empresa', 'productos', 'ultimaCompra', 'total', 'estado', 'seguimiento'], filtros: [['etapa', 'Estado'], ['ciudad', 'Ciudad']] },
+  crmequipo:         { titulo: 'Equipo comercial', sub: 'Personas del equipo comercial, su línea y comisión.', equipo: true },
+};
+let crmVista = 'crmprosphoteles';
+// (declaración de función: se puede usar desde switchView aunque se llame antes de llegar aquí)
+function esVistaCrm(v){ return /^crm(prosphoteles|hotelesactivos|prospdotacion|prospservicio|servicioactivos|prospdist|distactivos|equipo)$/.test(v || ''); }
 async function renderCrm(){
   const body = document.getElementById('crmBody');
   if(!body) return;
+  const vista = CRM_VISTAS[crmVista] || CRM_VISTAS.crmprosphoteles;
+  document.getElementById('crmTituloVista').textContent = vista.titulo;
+  document.getElementById('crmSubVista').textContent = vista.sub;
+  document.getElementById('btnNuevoCrm').style.display = vista.equipo ? 'none' : '';
+  document.getElementById('crmLista').style.display = vista.equipo ? 'none' : '';
   try{ await cargarCrm(); }
   catch(err){
     body.innerHTML = `<tr><td style="color:#B65B2E;">No se pudo leer el CRM (${escapeHtml(err.code || err.message || 'sin permiso')}). Solo los administradores pueden verlo.</td></tr>`;
@@ -5334,64 +5416,62 @@ async function renderCrm(){
   }
   const todos = crmContactos();
   document.getElementById('crmInfo').textContent = crmDatos.importado ? `Importado de "${crmDatos.archivo || 'Excel'}" el ${fechaCorta(String(crmDatos.importado).slice(0, 10))}.` : '';
+  const vacio = !todos.length && !crmEquipo().length;
+  if(vista.equipo){
+    const eq = crmEquipo();
+    document.getElementById('crmKpis').innerHTML = `<div><small>Personas</small><b>${eq.length}</b></div><div><small>Activas</small><b>${eq.filter(p => /activ/i.test(p.estado || '')).length}</b></div><div><small>Con pendientes</small><b>${eq.filter(p => p.pendiente).length}</b></div>`;
+    document.getElementById('crmEquipo').innerHTML = eq.length ? `<div class="crm-equipo">${eq.map(p => `
+      <div class="crm-miembro"><span class="crm-avatar grande">${escapeHtml(crmIniciales(p.nombre))}</span><div><b>${escapeHtml(p.nombre)}</b>
+        <small>${escapeHtml(p.linea || '')}</small>
+        <div class="crm-miembro-tags">${p.comision !== '' && p.comision !== undefined ? `<span class="crm-etapa">Comisión ${escapeHtml(String(Math.round(Number(p.comision) * 1000) / 10))}%</span>` : ''}${p.estado ? `<span class="crm-etapa ok">${escapeHtml(p.estado)}</span>` : ''}</div>
+        ${p.pendiente ? `<small class="crm-pendiente">Pendiente: ${escapeHtml(p.pendiente)}</small>` : ''}</div></div>`).join('')}</div>`
+      : `<div class="crm-vacio"><b>${vacio ? 'Aún no hay información del CRM' : 'No hay equipo comercial en el Excel'}</b>${vacio ? '<br>Toca “⇪ Importar Excel del CRM” y elige tu archivo.' : ''}</div>`;
+    return;
+  }
+  document.getElementById('crmEquipo').innerHTML = '';
+  const base = todos.filter(c => c.segmento === vista.segmento && c.tipo === vista.tipo);
   const hoy = hoyISO(), en7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   const seg = c => crmFechaISO(c.proxSeguimiento);
+  const vencidos = base.filter(c => seg(c) && seg(c) < hoy).length;
+  const esActivos = vista.tipo === 'Cliente activo';
+  const conDinero = base.filter(c => /^-?\d+(\.\d+)?$/.test(c.ultimaCompra || '')).reduce((a, c) => a + Number(c.ultimaCompra), 0);
   document.getElementById('crmKpis').innerHTML = `
-    <div><small>Contactos</small><b>${todos.length}</b></div>
-    <div><small>Prospectos</small><b>${todos.filter(c => c.tipo !== 'Cliente activo').length}</b></div>
-    <div><small>Clientes activos</small><b>${todos.filter(c => c.tipo === 'Cliente activo').length}</b></div>
-    <div><small>Seguimientos vencidos</small><b style="color:${todos.some(c => seg(c) && seg(c) < hoy) ? '#B3261E' : 'inherit'};">${todos.filter(c => seg(c) && seg(c) < hoy).length}</b></div>
-    <div><small>Próximos 7 días</small><b>${todos.filter(c => seg(c) && seg(c) >= hoy && seg(c) <= en7).length}</b></div>`;
-  // Segmentos y tipo (botones con conteo)
-  const porTipo = todos.filter(c => !crmTipo || c.tipo === crmTipo);
-  document.getElementById('crmSegmentos').innerHTML = [['', 'Todos'], ...CRM_SEGMENTOS.map(s => [s, s])].map(([v, l]) => {
-    const n = porTipo.filter(c => !v || c.segmento === v).length;
-    return `<button type="button" class="sidebar-tab-btn ${crmSegmento === v ? 'active' : ''}" data-crm-seg="${escapeAttr(v)}">${escapeHtml(l)} <span class="count">${n}</span></button>`;
-  }).join('');
-  document.getElementById('crmTipos').innerHTML = [['', 'Todos'], ['Prospecto', 'Prospectos'], ['Cliente activo', 'Clientes activos']].map(([v, l]) =>
-    `<button type="button" class="crm-toggle ${crmTipo === v ? 'on' : ''}" data-crm-tipo="${escapeAttr(v)}">${escapeHtml(l)}</button>`).join('');
-  const base = porTipo.filter(c => !crmSegmento || c.segmento === crmSegmento);
-  // Filtros con los valores que existen
-  const filtros = [['etapa', 'Etapa / estado'], ['potencial', 'Potencial'], ['responsable', 'Responsable'], ['ciudad', 'Ciudad']];
+    <div><small>${esActivos ? 'Clientes' : 'Prospectos'}</small><b>${base.length}</b></div>
+    <div><small>Seguimientos vencidos</small><b style="color:${vencidos ? '#B3261E' : 'inherit'};">${vencidos}</b></div>
+    <div><small>Próximos 7 días</small><b>${base.filter(c => seg(c) && seg(c) >= hoy && seg(c) <= en7).length}</b></div>
+    ${esActivos ? `<div><small>Últimas compras registradas</small><b>${conDinero ? fmt(conDinero) : '—'}</b></div>`
+      : vista.segmento === 'Dotación' ? `<div><small>Prioridad A</small><b>${base.filter(c => String(crmVal(c, 'Prioridad') || '').trim().toUpperCase() === 'A').length}</b></div>`
+      : `<div><small>Potencial alto</small><b>${base.filter(c => /alto/i.test(c.potencial || '')).length}</b></div>`}`;
   const box = document.getElementById('crmFiltros');
   const elegidos = {}; box.querySelectorAll('select[data-crm-f]').forEach(s => { if(s.value) elegidos[s.dataset.crmF] = s.value; });
-  box.innerHTML = filtros.map(([k, l]) => {
-    const vals = [...new Map(base.map(c => c[k]).filter(Boolean).map(v => [normalizeText(v), String(v).trim()])).values()].sort((a, b) => a.localeCompare(b, 'es'));
+  box.innerHTML = vista.filtros.map(([k, l]) => {
+    const vals = [...new Map(base.map(c => crmVal(c, k)).filter(Boolean).map(v => [normalizeText(v), String(v).trim()])).values()].sort((a, b) => a.localeCompare(b, 'es'));
     if(!vals.length) return '';
-    return `<label>${l}<select data-crm-f="${k}"><option value="">Todos</option>${vals.map(v => `<option value="${escapeAttr(v)}" ${elegidos[k] === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select></label>`;
-  }).join('') + `<label>Ordenar<select id="crmOrden">${[['seguimiento', 'Próximo seguimiento'], ['nombre', 'Nombre'], ['empresa', 'Empresa']].map(([v, l]) => `<option value="${v}" ${crmOrden === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+    return `<label>${l}<select data-crm-f="${escapeAttr(k)}"><option value="">Todos</option>${vals.map(v => `<option value="${escapeAttr(v)}" ${elegidos[k] === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select></label>`;
+  }).join('') + `<label>Ordenar<select id="crmOrden">${[['seguimiento', 'Próximo seguimiento'], ['nombre', 'Nombre'], ['empresa', vista.segmento === 'Dotación' ? 'Proyecto' : 'Empresa / hotel']].map(([v, l]) => `<option value="${v}" ${crmOrden === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
   const palabras = normalizeText(document.getElementById('crmSearch').value || '').split(/\s+/).filter(Boolean);
   const texto = c => normalizeText([c.nombre, c.cargo, c.empresa, c.ciudad, c.barrio, c.whatsapp, c.correo, c.etapa, c.responsable, c.notas, c.productos, ...Object.values(c.extra || {})].join(' '));
-  let vis = base.filter(c => Object.entries(elegidos).every(([k, v]) => normalizeText(c[k]) === normalizeText(v)) && palabras.every(w => texto(c).includes(w)));
+  let vis = base.filter(c => Object.entries(elegidos).every(([k, v]) => normalizeText(crmVal(c, k)) === normalizeText(v)) && palabras.every(w => texto(c).includes(w)));
   const nom = c => String(c.nombre || c.empresa || '');
   if(crmOrden === 'nombre') vis.sort((a, b) => nom(a).localeCompare(nom(b), 'es'));
   else if(crmOrden === 'empresa') vis.sort((a, b) => String(a.empresa || '~').localeCompare(String(b.empresa || '~'), 'es'));
-  else vis.sort((a, b) => (seg(a) || '9999').localeCompare(seg(b) || '9999') || nom(a).localeCompare(nom(b), 'es'));
-  document.getElementById('crmConteo').textContent = `${vis.length} de ${todos.length} contactos`;
-  if(!todos.length){
-    body.innerHTML = `<tr><td colspan="6"><div class="crm-vacio"><b>Aún no hay información del CRM</b><br>Toca “⇪ Importar Excel del CRM” y elige tu archivo: se cargan todas sus hojas en una sola lista.</div></td></tr>`;
-  }else{
-    body.innerHTML = vis.map(c => {
-      const wa = crmWaLink(c.whatsapp);
-      return `<tr class="crm-fila" data-crm-id="${escapeAttr(c.id)}">
-        <td><div class="crm-persona"><span class="crm-avatar">${escapeHtml(crmIniciales(c.nombre || c.empresa))}</span><div><b>${escapeHtml(c.nombre || c.empresa || '—')}</b>${c.cargo ? `<small>${escapeHtml(c.cargo)}</small>` : ''}</div></div></td>
-        <td>${c.nombre && c.empresa ? `<b class="crm-emp">${escapeHtml(c.empresa)}</b>` : '<span class="crm-mute">—</span>'}${c.ciudad ? `<small class="crm-sub">📍 ${escapeHtml(c.ciudad)}</small>` : ''}</td>
-        <td>${crmSegTag(c)}</td>
-        <td>${c.etapa ? `<span class="crm-etapa">${escapeHtml(c.etapa)}</span>` : '<span class="crm-mute">—</span>'}${c.potencial ? `<small class="crm-sub">Potencial: ${escapeHtml(c.potencial)}</small>` : ''}</td>
-        <td>${crmSeguimientoHtml(c)}</td>
-        <td class="no-print" style="white-space:nowrap;text-align:right;">
-          ${wa ? `<a class="crm-accion wa" href="${wa}" target="_blank" rel="noopener" title="Escribir por WhatsApp">WhatsApp</a>` : ''}
-          ${c.correo && /@/.test(c.correo) ? `<a class="crm-accion" href="mailto:${escapeAttr(c.correo)}" title="${escapeAttr(c.correo)}">✉</a>` : ''}
-          <button type="button" class="crm-accion" data-crm-ver="${escapeAttr(c.id)}">Ver ficha</button>
-        </td></tr>`;
-    }).join('') || '<tr><td colspan="6" class="crm-mute" style="padding:18px;">Sin resultados con estos filtros.</td></tr>';
+  else vis.sort((a, b) => (seg(a) || '9999').localeCompare(seg(b) || '9999') || String(a.empresa || nom(a)).localeCompare(String(b.empresa || nom(b)), 'es'));
+  document.getElementById('crmConteo').textContent = `Mostrando ${vis.length} de ${base.length}`;
+  const cols = vista.cols.map(k => CRM_COL[k]);
+  document.getElementById('crmHead').innerHTML = `<tr>${cols.map(([t]) => `<th>${t}</th>`).join('')}<th class="no-print"></th></tr>`;
+  if(vacio){
+    body.innerHTML = `<tr><td colspan="${cols.length + 1}"><div class="crm-vacio"><b>Aún no hay información del CRM</b><br>Toca “⇪ Importar Excel del CRM” y elige tu archivo: cada hoja queda en su página de este menú.</div></td></tr>`;
+    return;
   }
-  // Equipo comercial
-  const eq = crmEquipo();
-  document.getElementById('crmEquipo').innerHTML = eq.length ? `<h3 class="crm-h3">Equipo comercial</h3><div class="crm-equipo">${eq.map(p => `
-    <div class="crm-miembro"><span class="crm-avatar">${escapeHtml(crmIniciales(p.nombre))}</span><div><b>${escapeHtml(p.nombre)}</b>
-      <small>${escapeHtml(p.linea || '')}${p.comision !== '' && p.comision !== undefined ? ` · Comisión ${escapeHtml(String(Math.round(Number(p.comision) * 1000) / 10))}%` : ''}${p.estado ? ` · ${escapeHtml(p.estado)}` : ''}</small>
-      ${p.pendiente ? `<small>Pendiente: ${escapeHtml(p.pendiente)}</small>` : ''}</div></div>`).join('')}</div>` : '';
+  body.innerHTML = vis.map(c => {
+    const wa = crmWaLink(c.whatsapp);
+    return `<tr class="crm-fila ${seg(c) && seg(c) < hoy ? 'crm-fila-vencida' : ''}" data-crm-id="${escapeAttr(c.id)}">${cols.map(([, f]) => `<td>${f(c)}</td>`).join('')}
+      <td class="no-print" style="white-space:nowrap;text-align:right;">
+        ${wa ? `<a class="crm-accion wa" href="${wa}" target="_blank" rel="noopener" title="Escribir por WhatsApp">WhatsApp</a>` : ''}
+        ${c.correo && /@/.test(c.correo) ? `<a class="crm-accion" href="mailto:${escapeAttr(c.correo)}" title="${escapeAttr(c.correo)}">✉</a>` : ''}
+        <button type="button" class="crm-accion" data-crm-ver="${escapeAttr(c.id)}">Ver ficha</button>
+      </td></tr>`;
+  }).join('') || `<tr><td colspan="${cols.length + 1}"><div class="crm-vacio">${base.length ? 'Sin resultados con estos filtros.' : 'Esta hoja del Excel no tiene registros todavía. Puedes agregarlos con “+ Nuevo contacto”.'}</div></td></tr>`;
 }
 async function guardarCrmContactos(cambiar){
   await cargarCrm(true); // lo último, por si otro administrador cambió algo
@@ -5435,7 +5515,8 @@ function openCrmFicha(id){
 }
 function openCrmEditar(id){
   const actual = id ? crmContactos().find(x => x.id === id) : null;
-  const c = actual || { segmento: crmSegmento || 'Hoteles', tipo: crmTipo || 'Prospecto' };
+  const v = CRM_VISTAS[crmVista] || {};
+  const c = actual || { segmento: v.segmento || 'Hoteles', tipo: v.tipo || 'Prospecto' };
   const todos = crmContactos();
   const sugerencias = (k) => [...new Set(todos.map(x => x[k]).filter(Boolean))].slice(0, 200);
   const grupos = [...new Set(CRM_CAMPOS.map(x => x[2]))];
@@ -5500,7 +5581,7 @@ async function importarExcelCrm(file){
     const datos = { importado: new Date().toISOString(), archivo: file.name, ...u };
     try{ await crmRef().set(datos); }
     catch(err){ showToast('No se pudo guardar el CRM: ' + (err.code || err.message), 7000); return; }
-    crmDatos = datos; crmSegmento = ''; crmTipo = '';
+    crmDatos = datos;
     overlay.remove(); renderCrm();
     showToast(`CRM importado: ${u.contactos.length} contactos`, 5000);
   });
@@ -5510,8 +5591,6 @@ document.getElementById('inpImportarCrm').addEventListener('change', (e) => { co
 document.getElementById('btnNuevoCrm').addEventListener('click', () => openCrmEditar());
 document.getElementById('crmSearch').addEventListener('input', () => renderCrm());
 document.getElementById('crmFiltros').addEventListener('change', (e) => { if(e.target.id === 'crmOrden') crmOrden = e.target.value; renderCrm(); });
-document.getElementById('crmSegmentos').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-seg]'); if(!b) return; crmSegmento = b.dataset.crmSeg; document.getElementById('crmFiltros').innerHTML = ''; renderCrm(); });
-document.getElementById('crmTipos').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-tipo]'); if(!b) return; crmTipo = b.dataset.crmTipo; renderCrm(); });
 document.getElementById('crmBody').addEventListener('click', (e) => {
   if(e.target.closest('a')) return;
   const tr = e.target.closest('[data-crm-ver], .crm-fila'); if(!tr) return;
