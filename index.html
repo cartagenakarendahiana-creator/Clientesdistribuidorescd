@@ -292,6 +292,7 @@
   .filtros-fila{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;}
   .filtros-fila label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-soft);}
   .filtros-fila select, .filtros-fila input[type=date]{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);color:var(--ink);}
+  tr.crm-vencido td{background:#FDF1EF;}
   .ci-barato{display:inline-block;white-space:nowrap;margin-left:6px;padding:1px 7px;border-radius:999px;background:#E6F4EA;color:#21663A;font-size:11px;font-weight:600;}
   .ci-sube{color:#B3261E;font-weight:600;} .ci-baja{color:#21663A;font-weight:600;}
   .filtro-etapa-chip{display:inline-flex;align-items:center;gap:4px;background:var(--gold-pale);border:1px solid var(--line-gold);color:var(--gold-dark);border-radius:20px;padding:3px 6px 3px 12px;font-size:12px;font-weight:600;margin-left:10px;vertical-align:middle;}
@@ -1434,6 +1435,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <button class="nav-dropdown-item" data-nav="pedidos" type="button">Pedidos</button>
           <button class="nav-dropdown-item" data-nav="vendedores" type="button">Vendedores</button>
           <button class="nav-dropdown-item" data-nav="distribuidores" type="button">Clientes</button>
+          <button class="nav-dropdown-item" data-nav="crm" type="button">CRM</button>
           <button class="nav-dropdown-item" data-nav="inventario" type="button">Inventario · Precios de venta</button>
           <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button" title="Precios de servicio (sugeridos)">Precios de servicio</button>
         </div>
@@ -1767,6 +1769,37 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <table>
             <thead><tr><th>NIT</th><th>Cliente</th><th>Ciudad</th><th>Teléfono</th><th>Dirección</th><th>Correo</th></tr></thead>
             <tbody id="cliSiigoBody"><tr><td colspan="6" style="color:var(--ink-soft);">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewCrm" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card">
+        <div class="page-card-header">
+          <div><h2>CRM</h2><div class="sub">Prospectos, clientes activos y equipo comercial. Solo lo ven los administradores. <span id="crmInfo"></span></div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" class="no-print">
+            <button class="filter-clear-btn" id="btnImportarCrm" title="Cargar el Excel del CRM (todas sus hojas)">⇪ Importar Excel del CRM</button>
+            <input type="file" id="inpImportarCrm" accept=".xlsx" style="display:none;">
+            <button class="global-add-btn" id="btnNuevoCrm">+ Agregar registro</button>
+          </div>
+        </div>
+        <div class="sidebar-tabs no-print" id="crmTabs" style="margin-bottom:10px;"></div>
+        <div id="crmTitulo" style="font-weight:700;color:var(--gold-dark);margin-bottom:8px;"></div>
+        <div class="mini-kpis" id="crmKpis"></div>
+        <div class="filtros-fila no-print">
+          <div class="control-search" style="flex:1;min-width:220px;max-width:380px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="crmSearch" placeholder="Buscar nombre, empresa, ciudad, teléfono...">
+          </div>
+          <div id="crmFiltros" style="display:contents;"></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead id="crmHead"></thead>
+            <tbody id="crmBody"></tbody>
           </table>
         </div>
       </div>
@@ -3934,7 +3967,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','clientessiigo','costoinsumos','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','clientessiigo','costoinsumos','crm','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -3971,6 +4004,7 @@ function switchView(viewName){
   if(viewName === 'productossiigo') renderProductosSiigo();
   if(viewName === 'clientessiigo') renderClientesSiigo();
   if(viewName === 'costoinsumos') renderCostoInsumos();
+  if(viewName === 'crm') renderCrm();
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
   if(viewName === 'costosutilidades'){ initUtilidadRealMes(); renderCostosUtilidadesView(); }
@@ -3997,6 +4031,7 @@ const NAV_ICONOS = {
   despachos:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
   ventassiigo:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   productossiigo:'<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M16 14l2 2 3-4"/>',
+  crm:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><path d="M16 6h5M16 10h5M17 14h4"/>',
   costoinsumos:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01M9.5 15.5l5-5"/>',
   pedidos:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/>',
   vendedores:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
@@ -4967,7 +5002,9 @@ document.getElementById('ciBody').addEventListener('click', e => {
 // Lee el .xlsx en el navegador (un .xlsx es un zip con XML adentro). Por cada materia prima agrega un
 // registro de costo con la fecha de la importación SOLO si es nueva o si su costo cambió: así cada
 // importación va armando el historial. No toca Insumos ni los costos de los productos.
-async function leerFilasXlsx(file){
+// Lee TODAS las hojas de un .xlsx en el navegador (un .xlsx es un zip con XML adentro), en el orden del
+// libro: [{nombre, filas:[{A:'…', B:'…'}]}]. Las filas vacías se omiten.
+async function leerHojasXlsx(file){
   const buf = new Uint8Array(await file.arrayBuffer());
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   const dec = new TextDecoder();
@@ -4991,20 +5028,41 @@ async function leerFilasXlsx(file){
   const xml = (t) => new DOMParser().parseFromString(t, 'application/xml');
   const compartidos = [];
   const ss = await leer('xl/sharedStrings.xml');
-  if(ss) xml(ss).querySelectorAll('si').forEach(si => compartidos.push(si.textContent));
-  const hoja = Object.keys(archivos).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort()[0];
-  if(!hoja) throw new Error('El Excel no tiene hojas');
-  const filas = [];
-  xml(await leer(hoja)).querySelectorAll('sheetData > row').forEach(row => {
-    const fila = {};
-    row.querySelectorAll('c').forEach(c => {
-      const col = (c.getAttribute('r') || '').replace(/\d+/g, ''), t = c.getAttribute('t');
-      const v = c.querySelector('v');
-      fila[col] = t === 's' ? (compartidos[Number(v && v.textContent)] || '') : t === 'inlineStr' ? (c.querySelector('is') || c).textContent : (v ? v.textContent : '');
+  if(ss) xml(ss).querySelectorAll('si').forEach(si => compartidos.push([...si.querySelectorAll('t')].map(t => t.textContent).join('')));
+  // Orden y nombre de las hojas (workbook.xml + sus relaciones); si falta, sheet1, sheet2…
+  let hojas = [];
+  const wb = await leer('xl/workbook.xml'), rels = await leer('xl/_rels/workbook.xml.rels');
+  if(wb && rels){
+    const destino = {};
+    xml(rels).querySelectorAll('Relationship').forEach(r => { destino[r.getAttribute('Id')] = r.getAttribute('Target'); });
+    xml(wb).querySelectorAll('sheet').forEach(sh => {
+      const id = sh.getAttribute('r:id') || [...sh.attributes].find(a => /:id$/.test(a.name))?.value;
+      let t = destino[id] || ''; t = t.replace(/^\/?(xl\/)?/, 'xl/');
+      if(archivos[t]) hojas.push({ nombre: sh.getAttribute('name') || t, archivo: t });
     });
-    filas.push(fila);
-  });
-  // Primera fila = encabezados → objetos {Encabezado: valor}
+  }
+  if(!hojas.length) hojas = Object.keys(archivos).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n))
+    .sort((a, b) => Number(a.match(/\d+/)) - Number(b.match(/\d+/))).map(t => ({ nombre: t.replace(/.*\//, ''), archivo: t }));
+  if(!hojas.length) throw new Error('El Excel no tiene hojas');
+  for(const h of hojas){
+    h.filas = [];
+    xml(await leer(h.archivo)).querySelectorAll('sheetData > row').forEach(row => {
+      const fila = {};
+      row.querySelectorAll('c').forEach(c => {
+        const col = (c.getAttribute('r') || '').replace(/\d+/g, ''), t = c.getAttribute('t');
+        const v = c.querySelector('v');
+        const val = t === 's' ? (compartidos[Number(v && v.textContent)] || '') : t === 'inlineStr' ? (c.querySelector('is') || c).textContent : (v ? v.textContent : '');
+        if(col && String(val).trim() !== '') fila[col] = String(val).trim();
+      });
+      if(Object.keys(fila).length) h.filas.push(fila);
+    });
+    delete h.archivo;
+  }
+  return hojas;
+}
+// Primera hoja, con la primera fila como encabezados → objetos {Encabezado: valor}
+async function leerFilasXlsx(file){
+  const filas = (await leerHojasXlsx(file))[0].filas.slice();
   const enc = filas.shift() || {};
   return filas.map(f => Object.fromEntries(Object.entries(enc).map(([col, nombre]) => [String(nombre).trim(), String(f[col] ?? '').trim()])));
 }
@@ -5079,6 +5137,200 @@ async function importarExcelEffi(file){
 }
 document.getElementById('btnImportarEffi').addEventListener('click', () => document.getElementById('inpImportarEffi').click());
 document.getElementById('inpImportarEffi').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if(f) importarExcelEffi(f); });
+
+// ---------- CRM (solo administradores) ----------
+// Se carga desde el Excel del CRM (todas sus hojas: prospectos, clientes activos, equipo comercial…) y se
+// guarda en el nodo "crm" de la base de datos, que las reglas dejan leer y escribir SOLO a administradores
+// (los datos de contacto no quedan en casaDoradaDatos, que ven todos los usuarios, ni en el código).
+// crm = { importado, archivo, hojas: [{ nombre, titulo, columnas: [{col, nombre}], filas: [{A:'…', B:'…'}] }] }
+let crmDatos = null, crmHoja = 0, crmCargando = null;
+const crmRef = () => firebase.database().ref('crm');
+const crmEsFecha = (nombre) => /fecha|[uú]ltimo contacto|seguimiento|verificad/i.test(nombre || '');
+const crmEsDinero = (nombre) => /\$/.test(nombre || '');
+const crmEsFiltro = (nombre) => /▼/.test(nombre || '');
+const crmLimpio = (nombre) => String(nombre || '').replace(/▼|⚡/g, '').trim();
+const serialAFechaISO = (n) => new Date(Date.UTC(1899, 11, 30) + Math.round(Number(n)) * 86400000).toISOString().slice(0, 10);
+function crmFechaISO(v){
+  const t = String(v ?? '').trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  if(/^\d{5}(\.\d+)?$/.test(t) && Number(t) > 20000 && Number(t) < 80000) return serialAFechaISO(t);
+  return '';
+}
+// Arma cada hoja: busca la fila de encabezados (entre las primeras 6, la de más celdas sin números) y
+// deja arriba el título de la hoja si lo tiene.
+function crmDesdeHojas(hojas){
+  return hojas.map(h => {
+    const primeras = h.filas.slice(0, 6);
+    let iEnc = -1, max = 0;
+    primeras.forEach((f, i) => {
+      const vals = Object.values(f);
+      if(vals.length >= 2 && vals.every(v => !/^-?\d+([.,]\d+)?$/.test(v)) && vals.length > max){ max = vals.length; iEnc = i; }
+    });
+    const enc = iEnc > -1 ? primeras[iEnc] : {};
+    const titulo = iEnc > 0 ? (primeras[0].A || Object.values(primeras[0])[0] || '') : '';
+    const datos = h.filas.slice(iEnc + 1);
+    const letras = new Set(Object.keys(enc));
+    datos.forEach(f => Object.keys(f).forEach(c => letras.add(c)));
+    const orden = c => c.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
+    const columnas = [...letras].sort((a, b) => orden(a) - orden(b)).map(col => ({ col, nombre: String(enc[col] || 'Columna ' + col).trim() }));
+    const filas = datos.map(f => {
+      const fila = {};
+      columnas.forEach(({ col, nombre }) => {
+        if(f[col] === undefined) return;
+        fila[col] = crmEsFecha(nombre) ? (crmFechaISO(f[col]) || f[col]) : f[col];
+      });
+      return fila;
+    }).filter(f => Object.keys(f).length);
+    return { nombre: h.nombre, titulo, columnas, filas };
+  });
+}
+async function cargarCrm(forzar){
+  if(crmDatos && !forzar) return crmDatos;
+  if(!crmCargando) crmCargando = crmRef().once('value').then(s => { crmDatos = s.val() || { hojas: [] }; crmCargando = null; return crmDatos; }, err => { crmCargando = null; throw err; });
+  return crmCargando;
+}
+const crmHojas = () => (crmDatos && Array.isArray(crmDatos.hojas) ? crmDatos.hojas : Object.values((crmDatos && crmDatos.hojas) || {})).filter(Boolean);
+const crmFilas = (h) => (Array.isArray(h.filas) ? h.filas : Object.values(h.filas || {})).filter(Boolean);
+function crmCeldaHtml(nombre, v){
+  if(v === undefined || v === null || v === '') return '<span style="color:var(--ink-soft);">—</span>';
+  const t = String(v);
+  if(crmEsFecha(nombre)){ const iso = crmFechaISO(t); if(iso) return escapeHtml(fechaCorta(iso)); }
+  if(crmEsDinero(nombre) && /^-?\d+(\.\d+)?$/.test(t)) return fmt(Number(t));
+  if(/whatsapp|tel[eé]fono|celular/i.test(nombre)){
+    const d = t.replace(/\D/g, '');
+    if(d.length >= 10) return `<a href="https://wa.me/${d.length === 10 ? '57' + d : d}" target="_blank" rel="noopener">${escapeHtml(t)}</a>`;
+  }
+  if(/correo|email/i.test(nombre) && /@/.test(t)) return `<a href="mailto:${escapeAttr(t)}">${escapeHtml(t)}</a>`;
+  return escapeHtml(t);
+}
+async function renderCrm(){
+  const body = document.getElementById('crmBody');
+  if(!body) return;
+  try{ await cargarCrm(); }
+  catch(err){
+    body.innerHTML = `<tr><td style="color:#B65B2E;">No se pudo leer el CRM (${escapeHtml(err.code || err.message || 'sin permiso')}). Solo los administradores pueden verlo.</td></tr>`;
+    return;
+  }
+  const hojas = crmHojas();
+  if(crmHoja >= hojas.length) crmHoja = 0;
+  document.getElementById('crmInfo').textContent = crmDatos.importado ? `Importado de "${crmDatos.archivo || 'Excel'}" el ${fechaCorta(String(crmDatos.importado).slice(0, 10))}.` : '';
+  document.getElementById('crmTabs').innerHTML = hojas.map((h, i) => `<button type="button" class="sidebar-tab-btn ${i === crmHoja ? 'active' : ''}" data-crm-hoja="${i}">${escapeHtml(h.nombre)} <span class="count">${crmFilas(h).length}</span></button>`).join('');
+  const head = document.getElementById('crmHead'), filtros = document.getElementById('crmFiltros');
+  if(!hojas.length){
+    head.innerHTML = ''; filtros.innerHTML = ''; document.getElementById('crmKpis').innerHTML = ''; document.getElementById('crmTitulo').textContent = '';
+    body.innerHTML = '<tr><td style="color:var(--ink-soft);">Aún no hay información del CRM. Toca “⇪ Importar Excel del CRM”.</td></tr>';
+    return;
+  }
+  const h = hojas[crmHoja], cols = h.columnas || [], filas = crmFilas(h);
+  document.getElementById('crmTitulo').textContent = h.titulo || '';
+  // Filtros: las columnas que en el Excel son listas desplegables (▼)
+  const elegidos = {};
+  filtros.querySelectorAll('select[data-crm-col]').forEach(s => { if(s.value) elegidos[s.dataset.crmCol] = s.value; });
+  filtros.innerHTML = cols.filter(c => crmEsFiltro(c.nombre)).map(c => {
+    const vals = [...new Set(filas.map(f => f[c.col]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
+    if(!vals.length) return '';
+    return `<label>${escapeHtml(crmLimpio(c.nombre))}<select data-crm-col="${c.col}"><option value="">Todos</option>${vals.map(v => `<option value="${escapeAttr(v)}" ${elegidos[c.col] === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select></label>`;
+  }).join('');
+  const palabras = normalizeText(document.getElementById('crmSearch').value || '').split(/\s+/).filter(Boolean);
+  const vis = filas.map((f, i) => ({ f, i })).filter(({ f }) =>
+    Object.entries(elegidos).every(([c, v]) => f[c] === v) && palabras.every(w => normalizeText(Object.values(f).join(' ')).includes(w)));
+  // Seguimientos: columna "Próx. seguimiento"
+  const colSeg = cols.find(c => /seguimiento/i.test(c.nombre));
+  const hoy = hoyISO(), en7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const vencidos = colSeg ? filas.filter(f => { const d = crmFechaISO(f[colSeg.col]); return d && d < hoy; }).length : 0;
+  const semana = colSeg ? filas.filter(f => { const d = crmFechaISO(f[colSeg.col]); return d && d >= hoy && d <= en7; }).length : 0;
+  document.getElementById('crmKpis').innerHTML = `<div><small>Registros en esta hoja</small><b>${filas.length}</b></div>`
+    + (colSeg ? `<div><small>Seguimientos vencidos</small><b style="color:${vencidos ? '#B3261E' : 'inherit'};">${vencidos}</b></div><div><small>Seguimientos próximos 7 días</small><b>${semana}</b></div>` : '')
+    + `<div><small>Mostrando</small><b>${vis.length}</b></div>`;
+  head.innerHTML = `<tr>${cols.map(c => `<th class="${crmEsDinero(c.nombre) ? 'num' : ''}">${escapeHtml(crmLimpio(c.nombre))}</th>`).join('')}<th class="no-print"></th></tr>`;
+  body.innerHTML = vis.map(({ f, i }) => {
+    const seg = colSeg ? crmFechaISO(f[colSeg.col]) : '';
+    return `<tr class="${seg && seg < hoy ? 'crm-vencido' : ''}">${cols.map(c => `<td class="${crmEsDinero(c.nombre) ? 'num' : ''}" style="${/nota|observ|obervac|siguiente|estado de inv|productos/i.test(c.nombre) ? 'min-width:220px;' : 'white-space:nowrap;'}">${crmCeldaHtml(c.nombre, f[c.col])}</td>`).join('')}
+      <td class="no-print"><button type="button" class="acc-btn" data-crm-edit="${i}">✎</button></td></tr>`;
+  }).join('') || `<tr><td colspan="${cols.length + 1}" style="color:var(--ink-soft);">${filas.length ? 'Sin resultados con estos filtros.' : 'Esta hoja no tiene registros.'}</td></tr>`;
+}
+async function guardarCrmHoja(i){
+  const h = crmHojas()[i];
+  await crmRef().child('hojas/' + i + '/filas').set(crmFilas(h));
+}
+function openCrmFilaModal(i){
+  const h = crmHojas()[crmHoja]; if(!h) return;
+  const filas = crmFilas(h), actual = i !== undefined ? filas[i] : null, f = actual || {};
+  const overlay = openModal(`
+    <h3>${actual ? 'Editar registro' : 'Nuevo registro'} · ${escapeHtml(h.nombre)}</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-height:62vh;overflow-y:auto;padding-right:4px;">
+      ${(h.columnas || []).map(c => {
+        const nombre = crmLimpio(c.nombre), v = f[c.col] ?? '';
+        const largo = /nota|observ|obervac|siguiente|estado de inv|productos/i.test(c.nombre);
+        if(crmEsFecha(c.nombre)) return `<div class="field"><label>${escapeHtml(nombre)}</label><input type="date" data-crm-campo="${c.col}" value="${escapeAttr(crmFechaISO(v))}"></div>`;
+        if(largo) return `<div class="field" style="grid-column:1 / -1;"><label>${escapeHtml(nombre)}</label><textarea data-crm-campo="${c.col}" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;resize:vertical;">${escapeHtml(v)}</textarea></div>`;
+        const opciones = crmEsFiltro(c.nombre) ? [...new Set(filas.map(x => x[c.col]).filter(Boolean))] : [];
+        return `<div class="field"><label>${escapeHtml(nombre)}</label><input type="text" data-crm-campo="${c.col}" value="${escapeAttr(v)}" ${opciones.length ? `list="crmOp${c.col}"` : ''}>${opciones.length ? `<datalist id="crmOp${c.col}">${opciones.map(o => `<option value="${escapeAttr(o)}">`).join('')}</datalist>` : ''}</div>`;
+      }).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="crmCancelar">Cancelar</button>
+      ${actual ? '<button class="btn-danger" id="crmEliminar">Eliminar</button>' : ''}
+      <button class="btn-confirm" id="crmGuardar">Guardar</button>
+    </div>`);
+  overlay.querySelector('#crmCancelar').addEventListener('click', () => overlay.remove());
+  const hojaIdx = crmHoja;
+  const guardar = async (cambiar) => {
+    await cargarCrm(true); // trae lo último por si otro administrador cambió algo
+    const hh = crmHojas()[hojaIdx]; if(!hh){ overlay.remove(); return; }
+    const lista = crmFilas(hh);
+    cambiar(lista);
+    hh.filas = lista;
+    try{ await guardarCrmHoja(hojaIdx); }
+    catch(err){ showToast('No se pudo guardar: ' + (err.code || err.message), 6000); return; }
+    overlay.remove(); renderCrm(); showToast('CRM actualizado');
+  };
+  if(actual) overlay.querySelector('#crmEliminar').addEventListener('click', () => {
+    if(!confirm('¿Eliminar este registro del CRM?')) return;
+    const clave = JSON.stringify(actual);
+    guardar(lista => { const j = lista.findIndex(x => JSON.stringify(x) === clave); if(j > -1) lista.splice(j, 1); });
+  });
+  overlay.querySelector('#crmGuardar').addEventListener('click', () => {
+    const nueva = {};
+    overlay.querySelectorAll('[data-crm-campo]').forEach(el => { const v = el.value.trim(); if(v) nueva[el.dataset.crmCampo] = v; });
+    if(!Object.keys(nueva).length){ showToast('Escribe al menos un dato'); return; }
+    const clave = actual ? JSON.stringify(actual) : null;
+    guardar(lista => {
+      const j = clave ? lista.findIndex(x => JSON.stringify(x) === clave) : -1;
+      if(j > -1) lista[j] = nueva; else lista.unshift(nueva);
+    });
+  });
+}
+async function importarExcelCrm(file){
+  let hojas;
+  try{ hojas = crmDesdeHojas(await leerHojasXlsx(file)); }
+  catch(err){ showToast('No se pudo leer el Excel: ' + (err.message || err), 6000); return; }
+  const total = hojas.reduce((a, h) => a + h.filas.length, 0);
+  const hayDatos = crmHojas().length > 0;
+  const overlay = openModal(`
+    <h3>Importar el CRM</h3>
+    <div class="hint">Se leyeron <b>${hojas.length}</b> hojas con <b>${total}</b> registros de <b>${escapeHtml(file.name)}</b>:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;">${hojas.map(h => `<span class="meta-chip">${escapeHtml(h.nombre)}: ${h.filas.length}</span>`).join('')}</div>
+    ${hayDatos ? '<div class="hint" style="color:#B3261E;">Esto <b>reemplaza</b> lo que hay hoy en el CRM de la página (incluidos los cambios hechos aquí).</div>' : ''}
+    <div class="hint">Queda guardado aparte, solo para administradores.</div>
+    <div class="modal-actions"><button class="btn-cancel" id="crmImpCancelar">Cancelar</button><button class="btn-confirm" id="crmImpOk">Importar</button></div>`);
+  overlay.querySelector('#crmImpCancelar').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#crmImpOk').addEventListener('click', async () => {
+    const datos = { importado: new Date().toISOString(), archivo: file.name, hojas };
+    try{ await crmRef().set(datos); }
+    catch(err){ showToast('No se pudo guardar el CRM: ' + (err.code || err.message), 7000); return; }
+    crmDatos = datos; crmHoja = 0;
+    overlay.remove(); renderCrm();
+    showToast(`CRM importado: ${total} registros en ${hojas.length} hojas`, 5000);
+  });
+}
+document.getElementById('btnImportarCrm').addEventListener('click', () => document.getElementById('inpImportarCrm').click());
+document.getElementById('inpImportarCrm').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if(f) importarExcelCrm(f); });
+document.getElementById('btnNuevoCrm').addEventListener('click', () => { if(crmHojas().length) openCrmFilaModal(); else showToast('Primero importa el Excel del CRM'); });
+document.getElementById('crmSearch').addEventListener('input', () => renderCrm());
+document.getElementById('crmFiltros').addEventListener('change', () => renderCrm());
+document.getElementById('crmTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-hoja]'); if(!b) return; crmHoja = Number(b.dataset.crmHoja); document.getElementById('crmSearch').value = ''; document.getElementById('crmFiltros').innerHTML = ''; renderCrm(); });
+document.getElementById('crmBody').addEventListener('click', (e) => { const b = e.target.closest('[data-crm-edit]'); if(b) openCrmFilaModal(Number(b.dataset.crmEdit)); });
 
 
 // ---------- Productos de Siigo (sección aparte del menú, solo administradores) ----------
