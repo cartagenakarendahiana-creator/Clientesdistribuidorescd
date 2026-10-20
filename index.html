@@ -1487,23 +1487,8 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <button class="nav-dropdown-item" data-nav="serviciosmaquila" type="button" title="Precios de servicio (sugeridos)">Precios de servicio</button>
         </div>
       </div>
-      <div class="nav-dropdown" id="navDropdownCrm">
-        <button class="nav-dropdown-btn" id="navBtnCrm" type="button">
-          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
-          CRM
-          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
-        </button>
-        <div class="nav-dropdown-menu">
-          <button class="nav-dropdown-item" data-nav="crmprosphoteles" type="button">Prospectos hoteles</button>
-          <button class="nav-dropdown-item" data-nav="crmhotelesactivos" type="button">Hoteles activos</button>
-          <button class="nav-dropdown-item" data-nav="crmprospdotacion" type="button">Prospectos dotación</button>
-          <button class="nav-dropdown-item" data-nav="crmprospservicio" type="button">Prospectos servicio</button>
-          <button class="nav-dropdown-item" data-nav="crmservicioactivos" type="button">Servicio activos</button>
-          <button class="nav-dropdown-item" data-nav="crmprospdist" type="button">Prospectos distribución</button>
-          <button class="nav-dropdown-item" data-nav="crmdistactivos" type="button">Distribuidores activos</button>
-          <button class="nav-dropdown-item" data-nav="crmequipo" type="button">Equipo comercial</button>
-        </div>
-      </div>
+      <!-- CRM oculto del menú por ahora (la página, sus datos y la importación siguen en el código).
+           Para volver a mostrarlo, restaurar aquí el grupo navDropdownCrm con sus 8 ítems (crmprosphoteles … crmequipo). -->
       <div class="nav-dropdown" id="navDropdownSiigo">
         <button class="nav-dropdown-btn" id="navBtnSiigo" type="button">
           <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
@@ -2838,7 +2823,8 @@ const DEFAULT_APPDATA = {
   entregas:{},            // {distId: {lineKey: cantidadEntregada}}
   extras:[],              // [{distId, productoIdx, cantidad, precio}] — líneas agregadas a un pedido
   nuevosDistribuidores:[],// [{id, nombre, fecha}] — clientes creados desde cero
-  customProducts:[],      // [{categoria, producto, medida, precio}] — productos nuevos del catálogo (ej. toallas)
+  customProducts:[],      // [{categoria, producto, medida, precio, codigo?, nota?}] — productos nuevos del catálogo (ej. toallas)
+  productosRetirados:{},  // {idx: true} — productos que ya no están en la lista de precios (se esconden; los pedidos que los tienen siguen igual)
   productOverrides:{},    // {idx: {categoria, producto, medida, precio}} — ediciones a productos ORIGINALES de la lista de precios
   catalogOverrides:{},    // {distId: {lineKey: {productoIdx, cantidad, precio, eliminado}}} — ediciones a líneas originales
   distNameOverrides:{},   // {distId: nuevoNombre} — renombres de clientes/proveedores
@@ -3280,6 +3266,278 @@ function getAllProducts(){
   const overrides = APPDATA.productOverrides || {};
   const base = CATALOG.productos.map((p, idx) => overrides[idx] ? {...p, ...overrides[idx]} : p);
   return [...base, ...(APPDATA.customProducts||[])];
+}
+
+// ---------- Lista de precios distribuidor (13/10/2026) → Inventario ----------
+// Los 144 productos de la "LISTA DE PRECIOS DISTRIBUIDOR" (c = código de barras, cat = sección, p = producto,
+// m = medida, $ = precio, n = "Pronto"/"Consultar" cuando no tiene precio todavía).
+const LISTA_PRECIOS_DISTRIBUIDOR = { fecha: "2026-10-13", productos: [
+  {"c": "7709945442205", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Blanca 90 Gramos Hotelera Sencilla", "m": "100x190 cm", "$": 26000},
+  {"c": "7709945442267", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Blanca 90 Gramos Hotelera Semidoble", "m": "120x190 cm", "$": 29000},
+  {"c": "7709945442229", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Blanca 90 Gramos Hotelera Doble", "m": "140x190 cm", "$": 31000},
+  {"c": "7709945442212", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Blanca 90 Gramos Hotelera Queen", "m": "160x190 cm", "$": 35000},
+  {"c": "7709945442274", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Blanca 90 Gramos Hotelera King", "m": "200x200 cm", "$": 39000},
+  {"c": "7709945442281", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Blanca 90 Gramos Hotelera", "m": "180x190 cm", "$": 39000},
+  {"c": "7709945442236", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Estampada 90 Gramos Sencilla", "m": "100x190 cm", "$": 26000},
+  {"c": "7709945442298", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Estampada 90 Gramos Semidoble", "m": "120x190 cm", "$": 29000},
+  {"c": "7709945442250", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Estampada 90 Gramos Doble", "m": "140x190 cm", "$": 31000},
+  {"c": "7709945442243", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Estampada 90 Gramos Queen", "m": "160x190 cm", "$": 35000},
+  {"c": "7709868599222", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Estampada 90 Gramos King", "m": "200x200 cm", "$": 39000},
+  {"c": "7709868599246", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Unicolor 90 Gramos Embozada Sencilla", "m": "100x190 cm", "$": 26000},
+  {"c": "7709868599239", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Unicolor 90 Gramos Embozada Semidoble", "m": "120x190 cm", "$": 29000},
+  {"c": "7709868599277", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Unicolor 90 Gramos Embozada Doble", "m": "140x190 cm", "$": 31000},
+  {"c": "7709868599291", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Unicolor 90 Gramos Embozada Queen", "m": "160x190 cm", "$": 35000},
+  {"c": "7709868599284", "cat": "JUEGOS DE SÁBANAS SILVER 90 G", "p": "Juego de Sabanas Casa Dorada Silver Unicolor 90 Gramos Embozada King", "m": "200x200 cm", "$": 39000},
+  {"c": "7709211039009", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 hilos Blanca Sencilla", "m": "100x190 cm", "$": 50000},
+  {"c": "7709211039078", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 hilos Blanca Semidoble", "m": "120x190 cm", "$": 60000},
+  {"c": "7709211039061", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 hilos Blanca Doble", "m": "140x190 cm", "$": 62000},
+  {"c": "7709211039054", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 hilos Blanca Queen", "m": "160x190 cm", "$": 66000},
+  {"c": "7709211039016", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 hilos Blanca King con fundas 50x70 cm", "m": "200x200 cm", "$": 76000},
+  {"c": "7709211039092", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos Estampado Sencilla", "m": "100x190 cm", "$": 58000},
+  {"c": "7709251290507", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos Estampado Semidoble", "m": "120x190 cm", "$": 65000},
+  {"c": "7709251290521", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos Estampado Doble", "m": "140x190 cm", "$": 68000},
+  {"c": "7709251290538", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos Estampado Queen", "m": "160x190 cm", "$": 76000},
+  {"c": "7709251290552", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos Estampado King con fundas 50x70 cm", "m": "200x200 cm", "$": 86000},
+  {"c": "7709251290583", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos UNICOLOR Sencilla", "m": "100x190 cm", "$": 58000},
+  {"c": "7709251290545", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos UNICOLOR Semidoble", "m": "120x190 cm", "$": 65000},
+  {"c": "7709251290590", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos UNICOLOR Doble", "m": "140x190 cm", "$": 68000},
+  {"c": "7709251290569", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos UNICOLOR Queen", "m": "160x190 cm", "$": 76000},
+  {"c": "7709251290576", "cat": "JUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "Juego de Sábana Casa Dorada Platinum 180 Hilos UNICOLOR King con fundas 50x70 cm", "m": "200x200 cm", "$": 86000},
+  {"c": "7709298587912", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Blanco 90 Gramos Sencilla", "m": "100x190 cm", "$": 18000},
+  {"c": "7709298587950", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Blanco 90 Gramos Semidoble", "m": "120x190 cm", "$": 20000},
+  {"c": "7709298587998", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Blanco 90 Gramos Doble", "m": "140x190 cm", "$": 22000},
+  {"c": "7709298587936", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Blanco 90 Gramos Queen", "m": "160x190 cm", "$": 24000},
+  {"c": "7709298587929", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Blanco 90 Gramos King con fundas 50x70 cm", "m": "200x200 cm", "$": 26000},
+  {"c": "7709298587943", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Estampada 90 Gramos Sencilla", "m": "100x190 cm", "$": 18000},
+  {"c": "7709298587905", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Estampada 90 Gramos Semidoble", "m": "120x190 cm", "$": 20000},
+  {"c": "7709298587974", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Estampada 90 Gramos Doble", "m": "140x190 cm", "$": 22000},
+  {"c": "7709298587967", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Estampada 90 Gramos Queen", "m": "160x190 cm", "$": 24000},
+  {"c": "7709576078798", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Estampada 90 Gramos King con fundas 50x70 cm", "m": "200x200 cm", "$": 26000},
+  {"c": "7709576078750", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Unicolor 90 Gramos Sencilla", "m": "100x190 cm", "$": 18000},
+  {"c": "7709576078705", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Unicolor 90 Gramos Semidoble", "m": "120x190 cm", "$": 20000},
+  {"c": "7709576078774", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Unicolor 90 Gramos Doble", "m": "140x190 cm", "$": 22000},
+  {"c": "7709576078712", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Unicolor 90 Gramos Queen", "m": "160x190 cm", "$": 24000},
+  {"c": "7709576078736", "cat": "SEMIJUEGOS DE SÁBANAS SILVER 90 G", "p": "Semijuego de Sábanas Casa Dorada Silver Unicolor 90 Gramos King con fundas 50x70 cm", "m": "200x200 cm", "$": 26000},
+  {"c": "7709868599208", "cat": "SEMIJUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "SemiJuego De Sabana Casa Dorada Platinum Algodon Blanca 180 Hilos Sencilla", "m": "100x190 cm", "$": 37000},
+  {"c": "7709868599260", "cat": "SEMIJUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "SemiJuego De Sabana Casa Dorada Platinum Algodon Blanca 180 Hilos Semidoble", "m": "120x190 cm", "$": 43000},
+  {"c": "7709868599253", "cat": "SEMIJUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "SemiJuego De Sabana Casa Dorada Platinum Algodon Blanca 180 Hilos Doble", "m": "140x190 cm", "$": 50000},
+  {"c": "7709868599215", "cat": "SEMIJUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "SemiJuego De Sabana Casa Dorada Platinum Algodon Blanca 180 Hilos Queen", "m": "160x190 cm", "$": 55000},
+  {"c": "7709298587981", "cat": "SEMIJUEGOS DE SÁBANAS PLATINUM 180 HILOS", "p": "SemiJuego De Sabana Casa Dorada Platinum Algodon Blanca 180 Hilos King", "m": "200x200 cm", "$": 60000},
+  {"c": "7709398047248", "cat": "PLUMÓN AIRE 140 G", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor 2 PIEZAS Sencillo", "m": "100x190 cm", "$": 0, "n": "Consultar"},
+  {"c": "7709492791474", "cat": "PLUMÓN AIRE 140 G", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor 3 PIEZAS Doble", "m": "140x190 cm", "$": 75000},
+  {"c": "7709492791450", "cat": "PLUMÓN AIRE 140 G", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor 3 PIEZAS Queen", "m": "160x190 cm", "$": 80000},
+  {"c": "7709875701540", "cat": "PLUMÓN AIRE 140 G", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor 3 PIEZAS King", "m": "200x200 cm", "$": 85000},
+  {"c": "7708991126985", "cat": "PLUMÓN AIRE 140 G — JUEGO COMPLETO", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor Sencillo 4 PIEZAS", "m": "100x190 cm", "$": 0, "n": "Consultar"},
+  {"c": "7708991126916", "cat": "PLUMÓN AIRE 140 G — JUEGO COMPLETO", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor Doble 6 PIEZAS", "m": "140x190 cm", "$": 95000},
+  {"c": "7709009805090", "cat": "PLUMÓN AIRE 140 G — JUEGO COMPLETO", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor Queen 6 PIEZAS", "m": "160x190 cm", "$": 105000},
+  {"c": "7709009805069", "cat": "PLUMÓN AIRE 140 G — JUEGO COMPLETO", "p": "Plumón Aire Casa Dorada 140 gramos Unicolor/Unicolor King 6 PIEZAS", "m": "200x200 cm", "$": 114000},
+  {"c": "7709875701526", "cat": "PLUMÓN ELEGANCE 180 G", "p": "Plumón Elegance Casa Dorada 180 gramos Unicolor/Unicolor 2 PIEZAS Sencillo", "m": "100x190 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709875701588", "cat": "PLUMÓN ELEGANCE 180 G", "p": "Plumón Elegance Casa Dorada 180 gramos Unicolor/Unicolor 3 PIEZAS Doble", "m": "140x190 cm", "$": 89000},
+  {"c": "7709875701533", "cat": "PLUMÓN ELEGANCE 180 G", "p": "Plumón Elegance Casa Dorada 180 gramos Unicolor/Unicolor 3 PIEZAS Queen", "m": "160x190 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709875701571", "cat": "PLUMÓN ELEGANCE 180 G", "p": "Plumón Elegance Casa Dorada 180 gramos Unicolor/Unicolor 3 PIEZAS King", "m": "200x200 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709587528558", "cat": "PLUMÓN LUXURY 180 G", "p": "Plumón Luxury Casa Dorada 180 gramos Unicolor/Unicolor 2 PIEZAS Sencillo", "m": "100x190 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709587528565", "cat": "PLUMÓN LUXURY 180 G", "p": "Plumón Luxury Casa Dorada 180 gramos Unicolor/Unicolor 3 PIEZAS Doble", "m": "140x190 cm", "$": 115000},
+  {"c": "7709587528572", "cat": "PLUMÓN LUXURY 180 G", "p": "Plumón Luxury Casa Dorada 180 gramos Unicolor/Unicolor 3 PIEZAS Queen", "m": "160x190 cm", "$": 125000},
+  {"c": "7709587528527", "cat": "PLUMÓN LUXURY 180 G", "p": "Plumón Luxury Casa Dorada 180 gramos Unicolor/Unicolor 3 PIEZAS King", "m": "200x200 cm", "$": 135000},
+  {"c": "7709486266216", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90 Sencillo REF EMMANUEL", "m": "100x190 cm", "$": 50000},
+  {"c": "7709486266254", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90 Doble REF EMMANUEL", "m": "140x190 cm", "$": 62000},
+  {"c": "7709486266278", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90 Queen REF EMMANUEL", "m": "160x190 cm", "$": 67000},
+  {"c": "7709486266247", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada BLANCO/BLANCO HOTELERO (DOBLE FAZ) G90 King REF EMMANUEL", "m": "200x200 cm", "$": 72000},
+  {"c": "7709720198488", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada ESTAMPADO/ESTAMPADO (DOBLE FAZ) G90 Sencillo REF EMMANUEL", "m": "100x190 cm", "$": 50000},
+  {"c": "7709720198457", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada ESTAMPADO/ESTAMPADO (DOBLE FAZ) G90 Doble REF EMMANUEL", "m": "140x190 cm", "$": 62000},
+  {"c": "7709486266261", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada ESTAMPADO/ESTAMPADO (DOBLE FAZ) G90 Queen REF EMMANUEL", "m": "160x190 cm", "$": 67000},
+  {"c": "7709486266209", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada ESTAMPADO/ESTAMPADO (DOBLE FAZ) G90 King REF EMMANUEL", "m": "200x200 cm", "$": 72000},
+  {"c": "7709486266223", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/ESTAMPADO (DOBLE FAZ) G90 Sencillo REF EMMANUEL", "m": "100x190 cm", "$": 50000},
+  {"c": "7709486266285", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/ESTAMPADO (DOBLE FAZ) G90 Doble REF EMMANUEL", "m": "140x190 cm", "$": 62000},
+  {"c": "7709486266292", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/ESTAMPADO (DOBLE FAZ) G90 Queen REF EMMANUEL", "m": "160x190 cm", "$": 67000},
+  {"c": "7709486266230", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/ESTAMPADO (DOBLE FAZ) G90 King REF EMMANUEL", "m": "200x200 cm", "$": 72000},
+  {"c": "7709720198440", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/UNICOLOR (DOBLE FAZ) G90 Sencillo REF EMMANUEL", "m": "100x190 cm", "$": 50000},
+  {"c": "7709720198419", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/UNICOLOR (DOBLE FAZ) G90 Doble REF EMMANUEL", "m": "140x190 cm", "$": 62000},
+  {"c": "7709720198402", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/UNICOLOR (DOBLE FAZ) G90 Queen REF EMMANUEL", "m": "160x190 cm", "$": 67000},
+  {"c": "7709720198464", "cat": "TENDIDOS DOBLE FAZ G90 — REF. EMMANUEL", "p": "Tendido Ultrasonido Casa Dorada UNICOLOR/UNICOLOR (DOBLE FAZ) G90 King REF EMMANUEL", "m": "200x200 cm", "$": 72000},
+  {"c": "7709587528534", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Estampado Sencillo", "m": "100x190 cm", "$": 30000},
+  {"c": "7709720198495", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Estampado Semidoble", "m": "120x190 cm", "$": 32000},
+  {"c": "7709720198471", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Estampado Doble", "m": "140x190 cm", "$": 34000},
+  {"c": "7709720198433", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Estampado Queen", "m": "160x190 cm", "$": 37000},
+  {"c": "7709720198426", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Estampado King con fundas 50x70 cm", "m": "200x200 cm", "$": 40000},
+  {"c": "7709587528596", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Unicolor Sencillo", "m": "100x190 cm", "$": 30000},
+  {"c": "7709587528510", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Unicolor Semidoble", "m": "120x190 cm", "$": 32000},
+  {"c": "7709587528541", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Unicolor Doble", "m": "140x190 cm", "$": 34000},
+  {"c": "7709587528589", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Unicolor Queen", "m": "160x190 cm", "$": 37000},
+  {"c": "7709587528503", "cat": "TENDIDOS UNIFAZ", "p": "Tendido de Cama Ultrasonido Casa Dorada UNIFAZ Unicolor King con fundas 50x70 cm", "m": "200x200 cm", "$": 40000},
+  {"c": "7709576078729", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado BLANCO Sencillo LÍNEA GOLDEN", "m": "100x190 cm", "$": 28000},
+  {"c": "7709029060097", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado BLANCO Semidoble LÍNEA GOLDEN", "m": "120x190 cm", "$": 31000},
+  {"c": "7709029060080", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado BLANCO Doble LÍNEA GOLDEN", "m": "140x190 cm", "$": 35000},
+  {"c": "7709029060004", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado BLANCO Queen LÍNEA GOLDEN", "m": "160x190 cm", "$": 38000},
+  {"c": "7709029060059", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado BLANCO King LÍNEA GOLDEN", "m": "200x200 cm", "$": 52000},
+  {"c": "7709029060042", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado UNICOLOR Sencillo LÍNEA GOLDEN", "m": "100x190 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709029060066", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado UNICOLOR Semidoble LÍNEA GOLDEN", "m": "120x190 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709029060011", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado UNICOLOR Doble LÍNEA GOLDEN", "m": "140x190 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709029060035", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado UNICOLOR Queen LÍNEA GOLDEN", "m": "160x190 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709029060073", "cat": "PROTECTOR DE COLCHÓN ALGODÓN 180 HILOS — LÍNEA GOLDEN", "p": "Protector de Colchón Casa Dorada Algodón 180 Hilos Acolchado UNICOLOR King LÍNEA GOLDEN", "m": "200x200 cm", "$": 0, "n": "Pronto"},
+  {"c": "7709029060028", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY HOTELERO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry Ajustable HOTELERO Sencillo", "m": "100x190 cm", "$": 30000},
+  {"c": "7709158813588", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY HOTELERO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry Ajustable HOTELERO Semidoble", "m": "120x190 cm", "$": 34000},
+  {"c": "7709158813564", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY HOTELERO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry Ajustable HOTELERO Doble", "m": "140x190 cm", "$": 38500},
+  {"c": "7709158813526", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY HOTELERO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry Ajustable HOTELERO Queen", "m": "160x190 cm", "$": 43000},
+  {"c": "7709158813533", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY HOTELERO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry Ajustable HOTELERO King", "m": "200x200 cm", "$": 52000},
+  {"c": "7709158813502", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY ESTUCHE COMPLETO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry ESTUCHE COMPLETO Sencilla", "m": "100x190 cm", "$": 38000},
+  {"c": "7709158813595", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY ESTUCHE COMPLETO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry ESTUCHE COMPLETO Semidoble", "m": "120x190 cm", "$": 40000},
+  {"c": "7709158813557", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY ESTUCHE COMPLETO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry ESTUCHE COMPLETO Doble", "m": "140x190 cm", "$": 48000},
+  {"c": "7709158813519", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY ESTUCHE COMPLETO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry ESTUCHE COMPLETO Queen", "m": "160x190 cm", "$": 52000},
+  {"c": "7709158813571", "cat": "PROTECTOR DE COLCHÓN ANTIFLUIDO/TERRY ESTUCHE COMPLETO", "p": "Protector de Colchón Casa Dorada Antifluido/Terry ESTUCHE COMPLETO King", "m": "200x200 cm", "$": 58000},
+  {"c": "7709576078743", "cat": "PROTECTOR DE ALMOHADA", "p": "Protector de Almohada Casa Dorada Algodón 180 hilos Acolchado BLANCO G90 Cierre LÍNEA GOLDEN", "m": "50x70 cm", "$": 9000},
+  {"c": "7709576078767", "cat": "PROTECTOR DE ALMOHADA", "p": "Protector de Almohada Casa Dorada Algodón 180 hilos Acolchado UNICOLOR G90 Cierre LÍNEA GOLDEN", "m": "50x70 cm", "$": 9000},
+  {"c": "7709576078781", "cat": "PROTECTOR DE ALMOHADA", "p": "Protector de Almohada Casa Dorada Terry Antifluido Con cierre", "m": "50x70 cm", "$": 9000},
+  {"c": "7708991126923", "cat": "PROTECTOR/FUNDA ULTRASONIDO", "p": "Protector/Funda Casa Dorada Ultrasonido Blanco", "m": "50x70 cm", "$": 8000},
+  {"c": "7708991126909", "cat": "PROTECTOR/FUNDA ULTRASONIDO", "p": "Protector/Funda Casa Dorada Ultrasonido Estampado", "m": "50x70 cm", "$": 8000},
+  {"c": "7709158813540", "cat": "PROTECTOR/FUNDA ULTRASONIDO", "p": "Protector/Funda Casa Dorada Ultrasonido Unicolor", "m": "50x70 cm", "$": 8000},
+  {"c": "7709527742259", "cat": "FUNDAS DE ALMOHADA PLATINUM 180 HILOS", "p": "Funda de Almohada Casa Dorada Platinum 180 Hilos Blanca Paquete Por Dos", "m": "50x70 cm", "$": 10000},
+  {"c": "7709527742266", "cat": "FUNDAS DE ALMOHADA PLATINUM 180 HILOS", "p": "Funda de Almohada Casa Dorada Platinum 180 Hilos Estampada Paquete Por Dos", "m": "50x70 cm", "$": 10000},
+  {"c": "7709211039023", "cat": "FUNDAS DE ALMOHADA PLATINUM 180 HILOS", "p": "Funda de Almohada Casa Dorada Platinum 180 Hilos Unicolor Paquete Por Dos", "m": "50x70 cm", "$": 10000},
+  {"c": "7709211039085", "cat": "FUNDAS DE ALMOHADA SILVER 90 G", "p": "Funda de Almohada Casa Dorada Silver Blanca 90 Gramos (PAR)", "m": "50x70 cm", "$": 7000},
+  {"c": "7709211039030", "cat": "FUNDAS DE ALMOHADA SILVER 90 G", "p": "Funda de Almohada Casa Dorada Silver Estampada 90 Gramos (PAR)", "m": "50x70 cm", "$": 7000},
+  {"c": "7709211039047", "cat": "FUNDAS DE ALMOHADA SILVER 90 G", "p": "Funda de Almohada Casa Dorada Silver Fondo Entero 90 Gramos (PAR)", "m": "50x70 cm", "$": 7000},
+  {"c": "7709527742273", "cat": "ALMOHADAS MEMORY", "p": "Almohada Casa Dorada Memory Cervical Cool Gel Ergo", "m": "50x70 cm", "$": 86000},
+  {"c": "7709527742280", "cat": "ALMOHADAS MEMORY", "p": "Almohada Casa Dorada Memory Cervical Media", "m": "50x70 cm", "$": 62000},
+  {"c": "7709527742211", "cat": "ALMOHADAS MEMORY", "p": "Almohada Casa Dorada Memory Lux Cool Gel Media", "m": "50x70 cm", "$": 85000},
+  {"c": "7709527742228", "cat": "ALMOHADAS MEMORY", "p": "Almohada Casa Dorada Memory Lux Media", "m": "50x70 cm", "$": 62000},
+  {"c": "7709527742297", "cat": "ALMOHADA BASIC", "p": "Almohada Basic Casa Dorada Algodón Siliconado", "m": "50x70 cm", "$": 0, "n": "Consultar"},
+  {"c": "7709527742235", "cat": "COBIJAS PIEL DE CISNE 900 G", "p": "Cobija Casa Dorada Fondo Entero Piel de Cisne 900 Gramos", "m": "200x215 cm", "$": 22000},
+  {"c": "7709527742204", "cat": "COBIJAS PIEL DE CISNE 900 G", "p": "Cobija Casa Dorada Piel de Cisne 900 Gramos Estampada", "m": "200x215 cm", "$": 22000},
+  {"c": "7709527742242", "cat": "COBIJA OVEJERA", "p": "Cobija Casa Dorada Ovejera Troquelada Cuadros 1.6 Kilos", "m": "200x215 cm", "$": 45000},
+  {"c": "7709398047231", "cat": "FORROS DE COJÍN", "p": "Forro de Cojin Casa Dorada LUXURY BRILLANTE", "m": "45x45 cm", "$": 15000},
+  {"c": "7709326882811", "cat": "FORROS DE COJÍN", "p": "Forro de Cojin Casa Dorada Marmolizado", "m": "45x45 cm", "$": 13000},
+  {"c": "7709398047293", "cat": "FORROS DE COJÍN", "p": "Forro de Cojin Casa Dorada Unicolor", "m": "45x45 cm", "$": 9000},
+  {"c": "7709398047286", "cat": "RELLENO DE COJÍN", "p": "Relleno de Cojín Casa Dorada", "m": "45x45 cm", "$": 6500},
+  {"c": "7708991126930", "cat": "JUEGOS DE PIE DE CAMA + 2 FORROS DE COJÍN", "p": "Juego de Pie de Cama + 2 Forros de Cojines Casa Dorada LUXURY BRILLANTE Estándar", "m": "", "$": 40000},
+  {"c": "7708991126961", "cat": "JUEGOS DE PIE DE CAMA + 2 FORROS DE COJÍN", "p": "Juego de Pie de Cama + 2 Forros de Cojines Casa Dorada Marmolizado Estándar", "m": "", "$": 38000},
+  {"c": "7708991126978", "cat": "JUEGOS DE PIE DE CAMA + 2 FORROS DE COJÍN", "p": "Juego de Pie de Cama + 2 Forros de Cojines Casa Dorada Unicolor ECO Estándar", "m": "", "$": 32000},
+  {"c": "7709623832809", "cat": "CORTINAS JACQUARD", "p": "Cortina jacquard Botón CASA DORADA - 2 laterales c/u", "m": "140x220 cm", "$": 37000},
+  {"c": "7708991126954", "cat": "COMBOS SÁBANA + CORTINA", "p": "Juego de Sábana + Cortina Casa Dorada 2 paneles Sencilla", "m": "100x190 cm", "$": 44000},
+  {"c": "7708991126992", "cat": "COMBOS SÁBANA + CORTINA", "p": "Juego de Sábana + Cortina Casa Dorada 2 paneles Semidoble", "m": "120x190 cm", "$": 47000},
+  {"c": "7708991126947", "cat": "COMBOS SÁBANA + CORTINA", "p": "Juego de Sábana + Cortina Casa Dorada 2 paneles Doble", "m": "140x190 cm", "$": 49000}
+]};
+// Rasgos de un producto para emparejar la lista vieja con la nueva.
+function rasgosProducto(nombre, medida){
+  const t = (' ' + String(nombre || '') + ' ' + String(medida || '') + ' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\*/g, 'x').replace(/[.,()]/g, ' ').replace(/golden house|economica/g, ' ').replace(/\s+/g, ' ');
+  const tiene = (re) => re.test(t);
+  let tipo = '';
+  if(tiene(/pie de cama/)) tipo = 'piecama';
+  else if(tiene(/sabana \+ cortina|sabana\+cortina/)) tipo = 'combocortina';
+  else if(tiene(/semijuego/)) tipo = 'semijuego';
+  else if(tiene(/juego de saban/)) tipo = 'juego';
+  else if(tiene(/funda de almohada/)) tipo = 'funda';
+  else if(tiene(/protector ?\/ ?funda/)) tipo = 'protfunda';
+  else if(tiene(/protector de almohada/)) tipo = 'protalmohada';
+  else if(tiene(/protector de colchon/)) tipo = 'protcolchon';
+  else if(tiene(/plumon/)) tipo = 'plumon';
+  else if(tiene(/tendido/)) tipo = 'tendido';
+  else if(tiene(/cobija/)) tipo = 'cobija';
+  else if(tiene(/almohada/)) tipo = 'almohada';
+  else if(tiene(/cortina/)) tipo = 'cortina';
+  else if(tiene(/relleno de cojin/)) tipo = 'relleno';
+  else if(tiene(/forro de cojin/)) tipo = 'forro';
+  // Talla
+  let talla = '';
+  if(tiene(/50 ?x ?70/) && ['funda', 'protfunda', 'protalmohada', 'almohada'].includes(tipo)) talla = '50x70';
+  else if(tiene(/45 ?x ?45/)) talla = '45x45';
+  else if(tiene(/215/)) talla = 'cobija';
+  else if(tiene(/220/)) talla = 'cortina';
+  else if(tiene(/180 ?x ?190/)) talla = '180';
+  else if(tiene(/\b2 ?x ?2\b|200 ?x ?200|\bking\b/)) talla = 'K';
+  else if(tiene(/160 ?x ?190|\bqueen\b|\b160\b/)) talla = 'Q';
+  else if(tiene(/140 ?x ?190|\bdoble\b(?! faz)|\b140 mt/)) talla = 'D';
+  else if(tiene(/120 ?x ?190|semidoble|\b120 mt/)) talla = 'SD';
+  else if(tiene(/\b1 ?x ?1 ?90|100 ?x ?190|sencill|\b1 mt/)) talla = 'S';
+  // Línea / material
+  const lineas = ['silver', 'platinum', 'golden', 'luxury', 'elegance', 'aire', 'terry', 'memory', 'basic', 'piel de cisne', 'ovejera', 'marmolizado', ' eco ', 'brillante', 'jacquard', 'satin', 'microfibra', 'dolcce', 'unifaz', 'estuche', 'infantil', 'cervical', 'lux ', 'gel', 'ergo', 'algodon 180', '180 hilos'].filter(l => t.includes(l));
+  if(tipo === 'tendido' && !lineas.includes('unifaz')) lineas.push('doblefaz');
+  if(tipo === 'plumon' && !/elegance|luxury/.test(t)) lineas.includes('aire') || lineas.push('aire');
+  if(['protcolchon', 'protalmohada'].includes(tipo) && /algodon/.test(t) && !lineas.includes('golden')) lineas.push('golden'); // el algodón 180 hilos ahora es "Línea Golden"
+  if(/antifluido/.test(t) && !lineas.includes('terry')) lineas.push('terry');
+  if(tipo === 'cobija' && !lineas.includes('ovejera') && !lineas.includes('piel de cisne') && !lineas.includes('infantil')) lineas.push('piel de cisne');
+  // Color / acabado
+  const colores = [];
+  if(/blanc[oa]\/blanc[oa]|blanco ?\/ ?blanco/.test(t)) colores.push('blanco/blanco');
+  else if(/unicolor ?\/ ?unicolor/.test(t)) colores.push('unicolor/unicolor');
+  else if(/unicolor ?\/ ?estampad/.test(t)) colores.push('unicolor/estampado');
+  else if(/estampad[oa] ?\/ ?estampad/.test(t)) colores.push('estampado/estampado');
+  else{
+    // Tendido doble faz "Estampado y Unicolor": una cara de cada una = UNICOLOR/ESTAMPADO
+    if(tipo === 'tendido' && !/unifaz/.test(t) && /estampado y unicolor|unicolor y estampado/.test(t)){ colores.push('unicolor/estampado'); return { tipo, talla, lineas: [...new Set(lineas.map(l => l.trim()))].sort(), colores, piezas: (t.match(/(\d) piezas/) || [])[1] || '', conFunda50x1: false }; }
+    if(/blanc[oa]/.test(t)) colores.push('blanco');
+    if(/estampad|\best\b/.test(t)) colores.push('estampado');
+    if(/unicolor/.test(t)) colores.push('unicolor');
+    if(/fondo entero/.test(t)) colores.push('fondoentero');
+  }
+  const piezas = (t.match(/(\d) piezas/) || [])[1] || '';
+  const conFunda50x1 = /50 ?x ?1 mt|0 50 ?x ?1/.test(t);
+  return { tipo, talla, lineas: [...new Set(lineas.map(l => l.trim()))].sort(), colores, piezas, conFunda50x1 };
+}
+// Para cada producto viejo devuelve el índice del nuevo que le corresponde, o -1 si no hay uno solo claro.
+function emparejarProductos(viejos, nuevos){
+  const rn = nuevos.map(n => rasgosProducto(n.producto, n.medida));
+  return viejos.map(v => {
+    const r = rasgosProducto(v.producto, v.medida);
+    if(!r.tipo || r.conFunda50x1) return -1;
+    let cand = rn.map((x, i) => ({ x, i })).filter(({ x }) => x.tipo === r.tipo && x.talla === r.talla && x.lineas.join('|') === r.lineas.join('|'));
+    if(r.piezas) cand = cand.filter(({ x }) => !x.piezas || x.piezas === r.piezas);
+    else if(cand.length > 1) cand = cand.filter(({ x }) => !['4', '6'].includes(x.piezas)); // sin "6 piezas" en el nombre: es el plumón normal
+    if(cand.length > 1 && r.colores.length){
+      const exacto = cand.filter(({ x }) => x.colores.join('|') === r.colores.join('|'));
+      cand = exacto.length ? exacto : cand.filter(({ x }) => x.colores.some(c => r.colores.includes(c)));
+    }
+    // Sin color en el nombre viejo y varias opciones: es la blanca (ej. "Protector de Almohada Algodón … Cierre").
+    if(cand.length > 1 && !r.colores.length){ const b = cand.filter(({ x }) => x.colores.join('|') === 'blanco'); if(b.length === 1) cand = b; }
+    return cand.length === 1 ? cand[0].i : -1;
+  });
+}
+
+// Productos que ya no están en la lista de precios: se esconden del Inventario y de los pedidos nuevos, pero los
+// pedidos que ya los tienen los siguen mostrando igual. APPDATA.productosRetirados[idx] = true.
+function productoRetirado(idx){ const r = APPDATA.productosRetirados; return !!(r && r[idx]); }
+// Una sola vez (la primera vez que entra un administrador): cambia el Inventario por la lista nueva.
+//  - Cada producto viejo con pareja clara en la lista nueva pasa a llamarse como el nuevo (en el Inventario y en
+//    todos los pedidos que lo tienen). El precio de los pedidos ya hechos NO cambia.
+//  - Los productos viejos sin pareja se retiran (se esconden), los nuevos sin pareja se agregan.
+//  - Los precios de servicio de producción del producto viejo se copian al nombre nuevo.
+async function aplicarListaPreciosDistribuidor(){
+  if(!usuarioActual || usuarioActual.rol !== 'admin') return null;
+  if(APPDATA.listaPreciosAplicada === LISTA_PRECIOS_DISTRIBUIDOR.fecha) return null;
+  const baseLen = CATALOG.productos.length;
+  const viejos = getAllProducts();
+  const nuevos = LISTA_PRECIOS_DISTRIBUIDOR.productos.map(x => ({ categoria: x.cat, producto: x.p, medida: x.m, precio: Number(x.$) || 0, codigo: x.c, ...(x.n ? { nota: x.n } : {}) }));
+  const pareja = emparejarProductos(viejos, nuevos);
+  // Los pedidos ya hechos conservan su precio: las líneas agregadas sin precio propio quedan con el de hoy.
+  (APPDATA.extras || []).forEach(ex => { if(ex && (ex.precio === undefined || ex.precio === null)){ const p = viejos[ex.productoIdx]; if(p) ex.precio = Number(p.precio) || 0; } });
+  if(!APPDATA.productOverrides) APPDATA.productOverrides = {};
+  if(!APPDATA.customProducts) APPDATA.customProducts = [];
+  if(!APPDATA.productosRetirados) APPDATA.productosRetirados = {};
+  const servicios = APPDATA.plantaServiciosMaquila || (APPDATA.plantaServiciosMaquila = []);
+  const usado = new Set();
+  let renombrados = 0, retirados = 0, agregados = 0;
+  viejos.forEach((v, idx) => {
+    const n = pareja[idx];
+    if(n < 0){ APPDATA.productosRetirados[idx] = true; retirados++; return; }
+    const nuevo = nuevos[n];
+    if(idx < baseLen) APPDATA.productOverrides[idx] = { ...(APPDATA.productOverrides[idx] || {}), ...nuevo };
+    else APPDATA.customProducts[idx - baseLen] = { ...APPDATA.customProducts[idx - baseLen], ...nuevo };
+    if(usado.has(n)){ APPDATA.productosRetirados[idx] = true; retirados++; } // repetido: queda uno solo visible
+    else renombrados++;
+    usado.add(n);
+    // Precios de servicio de producción: el nombre nuevo hereda los del viejo
+    const kv = normalizeText(claveProductoMedida(v.producto, v.medida)), nombreNuevo = claveProductoMedida(nuevo.producto, nuevo.medida);
+    servicios.filter(x => x && normalizeText(x.servicio) === kv).forEach(x => {
+      if(servicios.some(y => y && y.etapa === x.etapa && normalizeText(y.servicio) === normalizeText(nombreNuevo))) return;
+      servicios.push({ ...x, id: 'p' + Date.now() + Math.random().toString(36).slice(2, 7), servicio: nombreNuevo, categoria: nuevo.categoria, medida: nuevo.medida });
+    });
+  });
+  nuevos.forEach((nuevo, n) => { if(!usado.has(n)){ APPDATA.customProducts.push(nuevo); agregados++; } });
+  APPDATA.listaPreciosAplicada = LISTA_PRECIOS_DISTRIBUIDOR.fecha;
+  await saveAppData(APPDATA);
+  renderAll();
+  showToast(`Inventario actualizado con la lista de precios: ${renombrados} productos cambiados, ${agregados} nuevos y ${retirados} retirados.`, 8000);
+  return { renombrados, agregados, retirados };
 }
 
 // Cambia solo el precio de un producto (original o propio) desde la vista de Inventario
@@ -3980,7 +4238,7 @@ function renderAll(){
 // automáticamente en Producción Diaria, Órdenes de Producción y Costeo de Productos — sin crearlo dos veces.
 // Los campos propios de producción (unidad, tiempo estándar, insumos/materiales) NO se tocan aquí.
 function syncPlantaProductosFromInventario(){
-  const invProducts = getAllProducts();
+  const invProducts = getAllProducts().filter((p, idx) => !productoRetirado(idx));
   if(!APPDATA.plantaProductos) APPDATA.plantaProductos = [];
   const planta = APPDATA.plantaProductos;
   const byNombre = new Map(planta.map(pp => [normalizeText(pp.nombre), pp]));
@@ -5894,7 +6152,7 @@ function renderInventarioView(){
   const term = inventarioSearchTerm.trim();
   const rows = products
     .map((p, idx) => ({p, idx}))
-    .filter(({p}) => matchesProductSearch(p, term));
+    .filter(({p, idx}) => !productoRetirado(idx) && matchesProductSearch(p, term));
   rows.sort((a,b)=> (a.p.categoria||'').localeCompare(b.p.categoria||'') || (a.p.producto||'').localeCompare(b.p.producto||'') || (a.p.medida||'').localeCompare(b.p.medida||''));
 
   let lastCat = null;
@@ -5908,12 +6166,12 @@ function renderInventarioView(){
     const isCustom = idx >= baseLen;
     const isOverridden = !isCustom && APPDATA.productOverrides && APPDATA.productOverrides[idx];
     html += `<tr>
-      <td><span class="prod-name">${escapeHtml(p.producto)}</span>${isOverridden ? '<span class="edited-tag">✎ editado</span>' : ''}${isCustom ? '<span class="edited-tag">producto propio</span>' : ''}</td>
+      <td><span class="prod-name">${escapeHtml(p.producto)}</span>${p.nota ? `<span class="edited-tag" style="background:#FFF6E0;color:#8A6417;">${escapeHtml(p.nota)}</span>` : ''}${p.codigo ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">Cód. ${escapeHtml(p.codigo)}</div>` : ''}</td>
       <td class="inv-medida">${escapeHtml(p.medida||'—')}</td>
       <td class="num"><input type="number" min="0" class="inv-precio-input" data-idx="${idx}" value="${p.precio||0}"></td>
       <td class="row-actions">
         <button class="icon-btn icon-edit inv-edit-btn" data-idx="${idx}" title="Editar producto">✎</button>
-        ${isOverridden ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
+        ${isOverridden && !p.codigo ? `<button class="icon-btn inv-restore-btn" data-idx="${idx}" title="Restaurar el producto original">↺</button>` : ''}
 
         ${isCustom ? `<button class="icon-btn icon-delete inv-delete-btn" data-idx="${idx}" title="Eliminar producto">🗑</button>` : ''}
       </td>
@@ -6766,7 +7024,7 @@ function buildProductOptions(products, term, selectedIdx){
   const t = (term||'').trim();
   return products
     .map((p, idx) => ({p, idx}))
-    .filter(({p}) => matchesProductSearch(p, t))
+    .filter(({p, idx}) => (idx === selectedIdx || !productoRetirado(idx)) && matchesProductSearch(p, t))
     .map(({p, idx}) =>
       `<option value="${idx}" data-precio="${p.precio||0}" ${idx===selectedIdx?'selected':''}>${escapeHtml(p.categoria||'')} — ${escapeHtml(p.producto)} (${escapeHtml(p.medida||'')})</option>`
     ).join('');
@@ -6940,7 +7198,7 @@ function openNewProductModal(){
   `);
 
   function paint(){
-    const categorias = Array.from(new Set(getAllProducts().map(p=>p.categoria).filter(Boolean)));
+    const categorias = Array.from(new Set(getAllProducts().filter((p, i) => !productoRetirado(i)).map(p=>p.categoria).filter(Boolean)));
     overlay.querySelector('#dlCategorias').innerHTML = categorias.map(c=>`<option value="${escapeAttr(c)}">`).join('');
 
     const custom = APPDATA.customProducts || [];
@@ -7060,6 +7318,10 @@ function deleteCustomProduct(idx){
         }
       });
     });
+  }
+  if(APPDATA.productosRetirados){
+    const r = {}; Object.keys(APPDATA.productosRetirados).forEach(k => { const i = Number(k); if(!APPDATA.productosRetirados[k] || i === deletedGlobalIdx) return; r[i > deletedGlobalIdx ? i - 1 : i] = true; });
+    APPDATA.productosRetirados = r;
   }
   APPDATA.customProducts.splice(idx, 1);
 }
@@ -8025,6 +8287,7 @@ async function alCambiarSesion(user){
   if(usuarioActual.rol === 'admin' && !clientesSiigoRevisados){
     clientesSiigoRevisados = true;
     setTimeout(() => quitarClientesSiigoAgregados().catch(e => console.warn('clientes Siigo', e)), 4000);
+    setTimeout(() => aplicarListaPreciosDistribuidor().catch(e => console.warn('lista de precios', e)), 5500);
   }
 }
 function aplicarRol(){
@@ -8747,7 +9010,8 @@ function asegurarServiciosDeInventario(){
     lista.splice(i, 1);
     cambios++;
   }
-  getAllProducts().forEach(p => {
+  getAllProducts().forEach((p, idxP) => {
+    if(productoRetirado(idxP)) return;
     if(!p || !p.producto) return;
     const nombre = claveProductoMedida(p.producto, p.medida);
     ETAPAS_CON_LISTA_PRODUCTOS.forEach(etapa => {
