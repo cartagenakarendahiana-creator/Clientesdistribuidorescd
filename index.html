@@ -3496,6 +3496,22 @@ function emparejarProductos(viejos, nuevos){
 // Productos que ya no están en la lista de precios: se esconden del Inventario y de los pedidos nuevos, pero los
 // pedidos que ya los tienen los siguen mostrando igual. APPDATA.productosRetirados[idx] = true.
 function productoRetirado(idx){ const r = APPDATA.productosRetirados; return !!(r && r[idx]); }
+const esToalla = (p) => /toalla/i.test(String((p && p.producto) || '') + ' ' + String((p && p.categoria) || ''));
+// Las toallas no vienen en la lista de precios distribuidor pero siguen en el Inventario: si quedaron
+// retiradas, se vuelven a mostrar (con la categoría TOALLAS).
+async function mantenerToallasEnInventario(){
+  if(!usuarioActual || usuarioActual.rol !== 'admin' || !APPDATA.productosRetirados) return 0;
+  const baseLen = CATALOG.productos.length;
+  let n = 0;
+  getAllProducts().forEach((p, idx) => {
+    if(!esToalla(p) || !productoRetirado(idx)) return;
+    delete APPDATA.productosRetirados[idx];
+    if(idx >= baseLen && APPDATA.customProducts[idx - baseLen]) APPDATA.customProducts[idx - baseLen].categoria = 'TOALLAS';
+    n++;
+  });
+  if(n){ await saveAppData(APPDATA); renderAll(); showToast(`${n} toallas de vuelta en el Inventario`, 5000); }
+  return n;
+}
 // Una sola vez (la primera vez que entra un administrador): cambia el Inventario por la lista nueva.
 //  - Cada producto viejo con pareja clara en la lista nueva pasa a llamarse como el nuevo (en el Inventario y en
 //    todos los pedidos que lo tienen). El precio de los pedidos ya hechos NO cambia.
@@ -3518,7 +3534,7 @@ async function aplicarListaPreciosDistribuidor(){
   let renombrados = 0, retirados = 0, agregados = 0;
   viejos.forEach((v, idx) => {
     const n = pareja[idx];
-    if(n < 0){ APPDATA.productosRetirados[idx] = true; retirados++; return; }
+    if(n < 0){ if(esToalla(v)) return; APPDATA.productosRetirados[idx] = true; retirados++; return; } // las toallas no están en la lista de precios pero se siguen vendiendo
     const nuevo = nuevos[n];
     if(idx < baseLen) APPDATA.productOverrides[idx] = { ...(APPDATA.productOverrides[idx] || {}), ...nuevo };
     else APPDATA.customProducts[idx - baseLen] = { ...APPDATA.customProducts[idx - baseLen], ...nuevo };
@@ -8287,7 +8303,7 @@ async function alCambiarSesion(user){
   if(usuarioActual.rol === 'admin' && !clientesSiigoRevisados){
     clientesSiigoRevisados = true;
     setTimeout(() => quitarClientesSiigoAgregados().catch(e => console.warn('clientes Siigo', e)), 4000);
-    setTimeout(() => aplicarListaPreciosDistribuidor().catch(e => console.warn('lista de precios', e)), 5500);
+    setTimeout(() => aplicarListaPreciosDistribuidor().then(() => mantenerToallasEnInventario()).catch(e => console.warn('lista de precios', e)), 5500);
   }
 }
 function aplicarRol(){
