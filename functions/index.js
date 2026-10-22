@@ -7,7 +7,7 @@
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onRequest } = require('firebase-functions/v2/https');
-const { defineSecret, defineString } = require('firebase-functions/params');
+const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { SiigoClient } = require('./siigo');
 const { sincronizar, avanzarHistorico: avanzarHistoricoCon, avanzarNotasCreditoHistorico, indexarProductosVendidos, hoyColombia, sumarDias } = require('./sync');
@@ -157,12 +157,13 @@ exports.gestionarUsuarios = onRequest({ cors: true, maxInstances: 2 }, async (re
 
 // API de pedidos para conectar otras apps (ver functions/README.md → "API de pedidos").
 // La clave NO está aquí: el workflow de publicación guarda solo su SHA-256 (del secreto de GitHub
-// API_PEDIDOS_CLAVE) en API_PEDIDOS_CLAVE_HASH. Sin ese secreto la API responde 503.
-const API_PEDIDOS_CLAVE_HASH = defineString('API_PEDIDOS_CLAVE_HASH', { default: '' });
+// API_PEDIDOS_CLAVE) en API_PEDIDOS_CLAVE_HASH (archivo functions/.env, que Firebase carga como variable de
+// entorno). Sin ese secreto la API responde 503. No se usa defineString: un parámetro sin valor hace que la
+// publicación pida el dato y falle cuando corre sola en GitHub.
 let catalogo = null;
 exports.apiPedidos = onRequest({ cors: false, maxInstances: 2, timeoutSeconds: 60 }, async (req, res) => {
   try {
-    const hash = API_PEDIDOS_CLAVE_HASH.value();
+    const hash = /^[0-9a-f]{64}$/i.test(process.env.API_PEDIDOS_CLAVE_HASH || '') ? process.env.API_PEDIDOS_CLAVE_HASH : '';
     if (!hash) throw new pedidosApi.ErrorApi(503, 'La API de pedidos no está activada todavía.');
     const clave = String(req.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (!pedidosApi.claveValida(clave, hash)) throw new pedidosApi.ErrorApi(401, 'Clave de la API incorrecta (encabezado Authorization: Bearer <clave>).');
