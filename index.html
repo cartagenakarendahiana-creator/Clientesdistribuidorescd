@@ -305,6 +305,8 @@
   .api-lista li{margin:3px 0;}
   .api-codigo{background:#1B2230;color:#E8EDF5;border-radius:10px;padding:12px 14px;font-size:12.5px;overflow:auto;max-height:360px;white-space:pre;margin:0;}
   .api-chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;background:#E8EEF8;color:#28508C;white-space:nowrap;}
+  .linea-obs{margin-top:4px;display:inline-block;max-width:420px;padding:3px 8px;border-radius:6px;background:#FFF6E0;border:1px solid #F0D9A0;color:#6B4E12;font-size:12.5px;line-height:1.35;cursor:pointer;white-space:pre-wrap;}
+  @media print{ .linea-obs{background:none;border:none;padding:0;color:#000;font-style:italic;} }
   .mini-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
   .mini-kpis > div{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--white);}
   .mini-kpis small{display:block;font-size:12px;color:var(--ink-soft);}
@@ -1934,7 +1936,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
               <tr><td><code>GET /siigo/clientes</code> · <code>/siigo/productos</code> · <code>/siigo/vendedores</code> · <code>/siigo/estado</code></td><td>Catálogos de Siigo y la última sincronización.</td></tr>
               <tr><td><code>GET /crm</code></td><td>Contactos y equipo comercial del CRM.</td></tr>
               <tr><td><code>GET /datos</code> · <code>GET /datos/{seccion}</code></td><td>Cualquier otra parte de la información tal como está guardada (por ejemplo <code>/datos/entregasLog</code>, <code>/datos/plantaProductos</code>). <code>GET /datos</code> dice qué secciones hay.</td></tr>
-              <tr><td><code>POST /pedidos</code></td><td>Crea un pedido nuevo (aparece en Pedidos generales). Obligatorios: <code>cliente</code>, <code>tipo</code> y <code>lineas</code> (cada una con <code>productoId</code> y <code>cantidad</code>). Opcionales: <code>vendedor</code>, <code>fecha</code>, <code>fechaDespacho</code>, <code>urgente</code>, <code>especial</code>, <code>observaciones</code>, <code>nit</code>, <code>telefono</code>, <code>ciudad</code>, <code>direccion</code>, <code>precio</code> por línea y <code>referenciaExterna</code> (tu número de pedido: si se manda dos veces no se duplica).</td></tr>
+              <tr><td><code>POST /pedidos</code></td><td>Crea un pedido nuevo (aparece en Pedidos generales). Obligatorios: <code>cliente</code>, <code>tipo</code> y <code>lineas</code> (cada una con <code>productoId</code> y <code>cantidad</code>). Opcionales: <code>vendedor</code>, <code>fecha</code>, <code>fechaDespacho</code>, <code>urgente</code>, <code>especial</code>, <code>observaciones</code>, <code>nit</code>, <code>telefono</code>, <code>ciudad</code>, <code>direccion</code>, <code>precio</code> y <code>observacion</code> por línea y <code>referenciaExterna</code> (tu número de pedido: si se manda dos veces no se duplica).</td></tr>
             </tbody>
           </table></div>
           <p class="api-nota">Las fechas van como AAAA-MM-DD. La API solo lee y crea pedidos: no edita ni borra nada; eso se sigue haciendo aquí en la página.</p>
@@ -3812,7 +3814,7 @@ function getOrderLines(distId){
       if(ov.precio !== undefined) precio = ov.precio;
     }
     const prod = products[productoIdx] || p;
-    lines.push({key, productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad, origen:'catalogo', editado: !!ov,
+    lines.push({key, productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad, origen:'catalogo', editado: !!ov, obs: (ov && ov.obs) || '',
       precioLista: ov ? ov.precioLista : null, precioCambiadoPor: ov ? ov.precioCambiadoPor : null, precioCambiadoEl: ov ? ov.precioCambiadoEl : null});
   });
 
@@ -3830,7 +3832,7 @@ function getOrderLines(distId){
     if(ex.distId === distId){
       const prod = products[ex.productoIdx] || {categoria:'', producto:'(producto eliminado)', medida:'', precio:0};
       const precio = (ex.precio !== undefined && ex.precio !== null) ? ex.precio : (prod.precio || 0);
-      lines.push({key:'extra-'+ex.uid, extraIdx:i, productoIdx: ex.productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad:ex.cantidad, origen:'extra',
+      lines.push({key:'extra-'+ex.uid, extraIdx:i, productoIdx: ex.productoIdx, categoria:prod.categoria, producto:prod.producto, medida:prod.medida, precio, cantidad:ex.cantidad, origen:'extra', obs: ex.obs || '',
         precioLista: ex.precioLista ?? null, precioCambiadoPor: ex.precioCambiadoPor || null, precioCambiadoEl: ex.precioCambiadoEl || null});
     }
   });
@@ -4110,7 +4112,8 @@ function renderMain(){
     const pendVal = pend * l.precio;
     rowsHtml += `<tr>
       <td><span class="prod-name">${escapeHtml(l.producto)}</span>${l.editado ? '<span class="edited-tag">✎ editado</span>' : ''}<br>
-          <span class="prod-medida">${escapeHtml(l.medida||'')}</span></td>
+          <span class="prod-medida">${escapeHtml(l.medida||'')}</span>
+          ${l.obs ? `<div class="linea-obs edit-row-btn" data-key="${escapeAttr(l.key)}" title="Observación de este producto (toca para cambiarla)">📝 ${escapeHtml(l.obs)}</div>` : ''}</td>
       <td class="num">${(l.precioCambiadoPor && l.precioLista !== null && l.precioLista !== undefined && Number(l.precio) !== Number(l.precioLista))
         ? `<span class="precio-cambiado" title="Precio de lista ${escapeAttr(fmt(l.precioLista))} · cambiado por ${escapeAttr(l.precioCambiadoPor)}${l.precioCambiadoEl ? ' el ' + escapeAttr(new Date(l.precioCambiadoEl).toLocaleString('es-CO')) : ''}">✎ ${fmt(l.precio)}<small>lista ${fmt(l.precioLista)} · ${escapeHtml(l.precioCambiadoPor)}</small></span>`
         : fmt(l.precio)}</td>
@@ -4952,8 +4955,8 @@ function computeDeudaDetallada(tipo){
       if(pend <= 0) return;
       // El mismo producto en dos líneas del mismo pedido va en una sola fila.
       const igual = filas.find(f => f.distId === d.id && f.producto === l.producto && f.medida === (l.medida || '—') && f.categoria === (l.categoria || 'Sin categoría'));
-      if(igual){ igual.pedido += l.cantidad; igual.entregado += ent; igual.pend += pend; igual.pendVal += pend * l.precio; return; }
-      filas.push({ distId: d.id, cliente: d.nombre, fecha: d.fecha, tipo: d.tipo, ciudad: d.ciudad || '', categoria: l.categoria || 'Sin categoría', producto: l.producto, medida: l.medida || '—', pedido: l.cantidad, entregado: ent, pend, pendVal: pend * l.precio });
+      if(igual){ igual.pedido += l.cantidad; igual.entregado += ent; igual.pend += pend; igual.pendVal += pend * l.precio; if(l.obs) igual.obs = igual.obs ? igual.obs + ' · ' + l.obs : l.obs; return; }
+      filas.push({ distId: d.id, cliente: d.nombre, fecha: d.fecha, tipo: d.tipo, ciudad: d.ciudad || '', categoria: l.categoria || 'Sin categoría', producto: l.producto, medida: l.medida || '—', pedido: l.cantidad, entregado: ent, pend, pendVal: pend * l.precio, obs: l.obs || '' });
     });
   });
   return filas;
@@ -4979,7 +4982,7 @@ function renderDeudaDetallada(modo){
       const u = g.reduce((a, f) => a + f.pend, 0), v = g.reduce((a, f) => a + f.pendVal, 0), c = g[0];
       g.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
       return `<tr class="pv-grupo"><td colspan="6"><b>${++numero}. ${escapeHtml(c.cliente)}</b><span class="pv-meta">Pedido del ${escapeHtml(fechaTxt(c.fecha))}${espera(c.fecha)}${c.tipo ? ' · ' + escapeHtml(nombreTipoPedido(c.tipo)) : ''}${c.ciudad ? ' · ' + escapeHtml(c.ciudad) : ''} · <b>${fmtNum(u)}</b> unidades pendientes</span></td></tr>`
-        + g.map(f => `<tr><td>${escapeHtml(f.producto)}</td><td>${escapeHtml(f.medida)}</td><td class="num">${fmtNum(f.pedido)}</td><td class="num">${fmtNum(f.entregado)}</td><td class="num"><b>${fmtNum(f.pend)}</b></td><td class="num">${fmt(f.pendVal)}</td></tr>`).join('')
+        + g.map(f => `<tr><td>${escapeHtml(f.producto)}${f.obs ? `<div class="linea-obs">📝 ${escapeHtml(f.obs)}</div>` : ''}</td><td>${escapeHtml(f.medida)}</td><td class="num">${fmtNum(f.pedido)}</td><td class="num">${fmtNum(f.entregado)}</td><td class="num"><b>${fmtNum(f.pend)}</b></td><td class="num">${fmt(f.pendVal)}</td></tr>`).join('')
         + `<tr class="pv-subtotal"><td colspan="4">Total ${escapeHtml(c.cliente)}</td><td class="num">${fmtNum(u)}</td><td class="num">${fmt(v)}</td></tr>`;
     }).join('')}</tbody></table>`;
   }else{
@@ -4990,7 +4993,7 @@ function renderDeudaDetallada(modo){
       const u = g.reduce((a, f) => a + f.pend, 0), v = g.reduce((a, f) => a + f.pendVal, 0), c = g[0];
       g.sort((a, b) => b.pend - a.pend || a.cliente.localeCompare(b.cliente, 'es'));
       return `<tr class="pv-grupo"><td colspan="6"><b>${escapeHtml(c.producto)}</b> <span class="pv-meta">${escapeHtml(c.medida)} · ${escapeHtml(c.categoria)} · <b>${fmtNum(u)}</b> unidades pendientes en ${g.length} cliente${g.length > 1 ? 's' : ''}</span></td></tr>`
-        + g.map(f => `<tr><td>${escapeHtml(f.cliente)}</td><td>${escapeHtml(fechaTxt(f.fecha))}</td><td>${escapeHtml(f.ciudad || '—')}</td><td class="num">${fmtNum(f.pedido)}</td><td class="num"><b>${fmtNum(f.pend)}</b></td><td class="num">${fmt(f.pendVal)}</td></tr>`).join('')
+        + g.map(f => `<tr><td>${escapeHtml(f.cliente)}${f.obs ? `<div class="linea-obs">📝 ${escapeHtml(f.obs)}</div>` : ''}</td><td>${escapeHtml(fechaTxt(f.fecha))}</td><td>${escapeHtml(f.ciudad || '—')}</td><td class="num">${fmtNum(f.pedido)}</td><td class="num"><b>${fmtNum(f.pend)}</b></td><td class="num">${fmt(f.pendVal)}</td></tr>`).join('')
         + `<tr class="pv-subtotal"><td colspan="4">Total ${escapeHtml(c.producto)} · ${escapeHtml(c.medida)}</td><td class="num">${fmtNum(u)}</td><td class="num">${fmt(v)}</td></tr>`;
     }).join('')}</tbody></table>`;
   }
@@ -7336,6 +7339,10 @@ function openAddProductModal(distId){
       <label>Precio unitario</label>
       <input type="number" min="0" id="inpPrecioLinea" value="${products[0]?.precio || 0}">
     </div>
+    <div class="field">
+      <label>Observación de este producto (opcional)</label>
+      <textarea id="inpObsLinea" rows="2" placeholder="Ej. colores surtidos, 6 azules y 6 grises, empacar aparte…" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;resize:vertical;"></textarea>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
       <button class="btn-confirm" id="btnConfirm">Agregar</button>
@@ -7357,7 +7364,8 @@ function openAddProductModal(distId){
     const cantidad = parseFloat(overlay.querySelector('#inpCantidad').value) || 0;
     const precio = parseFloat(precioEl.value) || 0;
     if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); return; }
-    APPDATA.extras.push({uid:newExtraUid(), distId, productoIdx, cantidad, precio, ...marcaCambioPrecio(productoIdx, precio)});
+    const obs = overlay.querySelector('#inpObsLinea').value.trim();
+    APPDATA.extras.push({uid:newExtraUid(), distId, productoIdx, cantidad, precio, ...(obs ? { obs } : {}), ...marcaCambioPrecio(productoIdx, precio)});
     await saveAppData(APPDATA);
     overlay.remove();
     renderAll();
@@ -7383,6 +7391,10 @@ function openEditLineModal(distId, line){
     <div class="field">
       <label>Precio unitario</label>
       <input type="number" min="0" id="editPrecio" value="${line.precio}">
+    </div>
+    <div class="field">
+      <label>Observación de este producto (opcional)</label>
+      <textarea id="editObsLinea" rows="2" placeholder="Ej. colores surtidos, 6 azules y 6 grises, empacar aparte…" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;resize:vertical;">${escapeHtml(line.obs || '')}</textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="btnCancel">Cancelar</button>
@@ -7416,15 +7428,18 @@ function openEditLineModal(distId, line){
     const productoIdx = parseInt(selEl.value);
     const cantidad = parseFloat(overlay.querySelector('#editCantidad').value) || 0;
     const precio = parseFloat(precioEl.value) || 0;
+    const obs = overlay.querySelector('#editObsLinea').value.trim();
     if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); return; }
     if(line.origen==='extra'){
       const i = indiceExtraActual(line);
       if(i < 0){ showToast('Esa línea ya no existe (se borró en otro equipo)'); overlay.remove(); renderAll(); return; }
-      APPDATA.extras[i] = {...APPDATA.extras[i], productoIdx, cantidad, precio, ...marcaCambioPrecio(productoIdx, precio, line)};
+      const nueva = {...APPDATA.extras[i], productoIdx, cantidad, precio, ...marcaCambioPrecio(productoIdx, precio, line)};
+      if(obs) nueva.obs = obs; else delete nueva.obs;
+      APPDATA.extras[i] = nueva;
     }else{
       if(!APPDATA.catalogOverrides) APPDATA.catalogOverrides = {};
       if(!APPDATA.catalogOverrides[distId]) APPDATA.catalogOverrides[distId] = {};
-      APPDATA.catalogOverrides[distId][line.key] = {productoIdx, cantidad, precio, ...marcaCambioPrecio(productoIdx, precio, line)};
+      APPDATA.catalogOverrides[distId][line.key] = {productoIdx, cantidad, precio, ...(obs ? { obs } : {}), ...marcaCambioPrecio(productoIdx, precio, line)};
     }
     await saveAppData(APPDATA);
     overlay.remove();
