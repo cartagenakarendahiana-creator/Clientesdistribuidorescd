@@ -1,12 +1,15 @@
 {
   "name": "casa-dorada-functions",
   "private": true,
-  "description": "Funciones en la nube de Casa Dorada: sincronización con Siigo.",
+  "description": "Funciones en la nube de Casa Dorada: sincronización con Siigo y API de pedidos.",
   "main": "index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
-    "test": "node --test test/*.test.js",
-    "backfill": "node scripts/backfill.js"
+    "test": "node scripts/extraer-catalogo.js && node --test test/*.test.js",
+    "backfill": "node scripts/backfill.js",
+    "catalogo": "node scripts/extraer-catalogo.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

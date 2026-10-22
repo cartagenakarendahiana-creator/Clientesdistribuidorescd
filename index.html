@@ -285,6 +285,15 @@
   .info-chip.tipo-pedido select{border:none;background:transparent;font:inherit;font-weight:700;color:inherit;cursor:pointer;}
   .info-chip.tipo-pedido.sin{background:#FDECEA;border-color:#F2B8B5;color:#B3261E;}
   .badge.saldado{background:var(--white);color:var(--gold-dark);border:1px solid var(--gold);}
+  .pv-detalle{width:100%;}
+  .pv-detalle tr.pv-grupo td{background:var(--cream-2);border-top:2px solid var(--line);padding-top:10px;}
+  .pv-detalle .pv-meta{display:block;font-size:12px;color:var(--ink-soft);margin-top:2px;font-weight:400;}
+  .pv-detalle tr.pv-subtotal td{font-weight:700;border-bottom:1px solid var(--line);}
+  @media print{ .pv-detalle tr.pv-grupo{break-inside:avoid;} }
+  .rep-desp-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:0 0 10px;}
+  .rep-desp-resumen > div{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--white);}
+  .rep-desp-resumen small{display:block;font-size:11.5px;color:var(--ink-soft);}
+  .rep-desp-resumen b{display:block;font-size:18px;margin-top:2px;}
   .mini-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
   .mini-kpis > div{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--white);}
   .mini-kpis small{display:block;font-size:12px;color:var(--ink-soft);}
@@ -1726,11 +1735,16 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <button class="print-btn-modal no-print" id="btnImprimirPedidosView">🖨 Imprimir</button>
         </div>
         <div class="print-header">
-          <h2>Casa Dorada · Deuda total por producto</h2>
+          <h2 id="pvTituloImpresion">Casa Dorada · Deuda total por producto</h2>
           <div class="sub">Impreso el <span id="pvFechaImpresion"></span></div>
         </div>
         <div class="debt-report-toolbar no-print">
-          <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría o medida...">
+          <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría, medida o cliente...">
+          <select id="pedidosViewModo" title="Cómo ver lo que se debe" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);">
+            <option value="producto">Ver: total por producto</option>
+            <option value="cliente">Ver: qué se le debe a cada cliente (del pedido más viejo al más nuevo)</option>
+            <option value="productoclientes">Ver: cada producto y a quién se le debe</option>
+          </select>
           <select id="pedidosViewTipo" title="Qué pedidos incluir" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);">
             <option value="">Todos los tipos de pedido</option>
             <option value="distribuidor">Solo distribuidores</option>
@@ -1741,11 +1755,12 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           </select>
         </div>
         <div class="debt-report-totals">
-          <div class="pd-card"><div class="lab">Productos con deuda</div><div class="v" id="pvCountLines">0</div></div>
+          <div class="pd-card"><div class="lab" id="pvCountLinesLbl">Productos con deuda</div><div class="v" id="pvCountLines">0</div></div>
           <div class="pd-card"><div class="lab">Unidades pendientes</div><div class="v" id="pvUnid">0</div></div>
           <div class="pd-card"><div class="lab">Se debe en total</div><div class="v" id="pvVal">$0</div></div>
         </div>
-        <div class="table-scroll">
+        <div id="pvDetalle" class="table-scroll" style="display:none;"></div>
+        <div class="table-scroll" id="pvResumenTabla">
           <table>
             <colgroup>
               <col style="width:14%"><col style="width:38%"><col style="width:16%">
@@ -4794,9 +4809,76 @@ function computeDebtGroups(tipo){
   rows.sort((a,b)=> (totCat[b.categoria] - totCat[a.categoria]) || a.categoria.localeCompare(b.categoria) || (b.pend - a.pend) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
   return rows;
 }
+// Lo que se le debe a cada cliente (cada pedido aparte), línea por línea: producto, pedido, entregado y pendiente.
+function computeDeudaDetallada(tipo){
+  const filas = [];
+  getAllDistributors().filter(d => pasaTipoFiltro(d, tipo)).forEach(d => {
+    getOrderLines(d.id).forEach(l => {
+      const ent = Math.min(getEntregado(d.id, l.key), l.cantidad);
+      const pend = l.cantidad - ent;
+      if(pend <= 0) return;
+      // El mismo producto en dos líneas del mismo pedido va en una sola fila.
+      const igual = filas.find(f => f.distId === d.id && f.producto === l.producto && f.medida === (l.medida || '—') && f.categoria === (l.categoria || 'Sin categoría'));
+      if(igual){ igual.pedido += l.cantidad; igual.entregado += ent; igual.pend += pend; igual.pendVal += pend * l.precio; return; }
+      filas.push({ distId: d.id, cliente: d.nombre, fecha: d.fecha, tipo: d.tipo, ciudad: d.ciudad || '', categoria: l.categoria || 'Sin categoría', producto: l.producto, medida: l.medida || '—', pedido: l.cantidad, entregado: ent, pend, pendVal: pend * l.precio });
+    });
+  });
+  return filas;
+}
+function renderDeudaDetallada(modo){
+  const box = document.getElementById('pvDetalle');
+  const t = pedidosViewSearchTerm.trim();
+  const tipoEl = document.getElementById('pedidosViewTipo');
+  const palabras = normalizeText(t).split(/\s+/).filter(Boolean);
+  const filas = computeDeudaDetallada(tipoEl ? tipoEl.value : '').filter(f => palabras.every(w => normalizeText([f.cliente, f.categoria, f.producto, f.medida, f.ciudad].join(' ')).includes(w)));
+  const fechaTxt = (f) => f ? (fechaToInputValue(f) ? fechaToInputValue(f).split('-').reverse().join('/') : String(f)) : 'sin fecha';
+  let html = '';
+  if(modo === 'cliente'){
+    const grupos = new Map();
+    filas.forEach(f => { if(!grupos.has(f.distId)) grupos.set(f.distId, []); grupos.get(f.distId).push(f); });
+    // Del pedido más viejo al más nuevo (primero los que llevan más tiempo esperando); sin fecha, al final.
+    const tiempo = (f) => { const t = parseFechaToTime(f); return t === null ? Infinity : t; };
+    const lista = [...grupos.values()].sort((a, b) => tiempo(a[0].fecha) - tiempo(b[0].fecha) || a[0].cliente.localeCompare(b[0].cliente, 'es'));
+    const hoyT = new Date(); hoyT.setHours(0, 0, 0, 0);
+    const espera = (f) => { const t = parseFechaToTime(f); if(t === null) return ''; const dias = Math.max(0, Math.round((hoyT - t) / 86400000)); return ` · <b>${dias === 0 ? 'hoy' : dias === 1 ? 'hace 1 día' : 'hace ' + dias + ' días'}</b>`; };
+    let numero = 0;
+    html = `<table class="pv-detalle"><thead><tr><th>Producto</th><th>Medida</th><th class="num">Pedido</th><th class="num">Entregado</th><th class="num">Pendiente</th><th class="num">Valor pendiente</th></tr></thead><tbody>${lista.map(g => {
+      const u = g.reduce((a, f) => a + f.pend, 0), v = g.reduce((a, f) => a + f.pendVal, 0), c = g[0];
+      g.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
+      return `<tr class="pv-grupo"><td colspan="6"><b>${++numero}. ${escapeHtml(c.cliente)}</b><span class="pv-meta">Pedido del ${escapeHtml(fechaTxt(c.fecha))}${espera(c.fecha)}${c.tipo ? ' · ' + escapeHtml(nombreTipoPedido(c.tipo)) : ''}${c.ciudad ? ' · ' + escapeHtml(c.ciudad) : ''} · <b>${fmtNum(u)}</b> unidades pendientes</span></td></tr>`
+        + g.map(f => `<tr><td>${escapeHtml(f.producto)}</td><td>${escapeHtml(f.medida)}</td><td class="num">${fmtNum(f.pedido)}</td><td class="num">${fmtNum(f.entregado)}</td><td class="num"><b>${fmtNum(f.pend)}</b></td><td class="num">${fmt(f.pendVal)}</td></tr>`).join('')
+        + `<tr class="pv-subtotal"><td colspan="4">Total ${escapeHtml(c.cliente)}</td><td class="num">${fmtNum(u)}</td><td class="num">${fmt(v)}</td></tr>`;
+    }).join('')}</tbody></table>`;
+  }else{
+    const grupos = new Map();
+    filas.forEach(f => { const k = f.categoria + '|' + f.producto + '|' + f.medida; if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(f); });
+    const lista = [...grupos.values()].sort((a, b) => a[0].categoria.localeCompare(b[0].categoria) || a[0].producto.localeCompare(b[0].producto) || a[0].medida.localeCompare(b[0].medida));
+    html = `<table class="pv-detalle"><thead><tr><th>Cliente</th><th>Fecha del pedido</th><th>Ciudad</th><th class="num">Pedido</th><th class="num">Pendiente</th><th class="num">Valor pendiente</th></tr></thead><tbody>${lista.map(g => {
+      const u = g.reduce((a, f) => a + f.pend, 0), v = g.reduce((a, f) => a + f.pendVal, 0), c = g[0];
+      g.sort((a, b) => b.pend - a.pend || a.cliente.localeCompare(b.cliente, 'es'));
+      return `<tr class="pv-grupo"><td colspan="6"><b>${escapeHtml(c.producto)}</b> <span class="pv-meta">${escapeHtml(c.medida)} · ${escapeHtml(c.categoria)} · <b>${fmtNum(u)}</b> unidades pendientes en ${g.length} cliente${g.length > 1 ? 's' : ''}</span></td></tr>`
+        + g.map(f => `<tr><td>${escapeHtml(f.cliente)}</td><td>${escapeHtml(fechaTxt(f.fecha))}</td><td>${escapeHtml(f.ciudad || '—')}</td><td class="num">${fmtNum(f.pedido)}</td><td class="num"><b>${fmtNum(f.pend)}</b></td><td class="num">${fmt(f.pendVal)}</td></tr>`).join('')
+        + `<tr class="pv-subtotal"><td colspan="4">Total ${escapeHtml(c.producto)} · ${escapeHtml(c.medida)}</td><td class="num">${fmtNum(u)}</td><td class="num">${fmt(v)}</td></tr>`;
+    }).join('')}</tbody></table>`;
+  }
+  box.innerHTML = filas.length ? html : '<div style="padding:20px;text-align:center;color:var(--ink-soft);">No hay nada pendiente por entregar con estos filtros.</div>';
+  document.getElementById('pvCountLines').textContent = new Set(filas.map(f => modo === 'cliente' ? f.distId : f.categoria + '|' + f.producto + '|' + f.medida)).size;
+  document.getElementById('pvCountLinesLbl').textContent = modo === 'cliente' ? 'Pedidos con deuda' : 'Productos con deuda';
+  document.getElementById('pvUnid').textContent = fmtNum(filas.reduce((a, f) => a + f.pend, 0));
+  document.getElementById('pvVal').textContent = fmt(filas.reduce((a, f) => a + f.pendVal, 0));
+  if(typeof ocultarValoresTrabajador === 'function') ocultarValoresTrabajador();
+}
 function renderPedidosView(){
   const tbody = document.getElementById('pvBody');
   if(!tbody) return;
+  const modo = (document.getElementById('pedidosViewModo') || {}).value || 'producto';
+  const titulos = { producto: 'Deuda total por producto', cliente: 'Lo que se le debe a cada cliente', productoclientes: 'Cada producto y a quién se le debe' };
+  document.getElementById('pvTituloImpresion').textContent = 'Casa Dorada · ' + titulos[modo];
+  document.getElementById('pvDetalle').style.display = modo === 'producto' ? 'none' : '';
+  document.getElementById('pvResumenTabla').style.display = modo === 'producto' ? '' : 'none';
+  const fechaElP = document.getElementById('pvFechaImpresion'); if(fechaElP) fechaElP.textContent = new Date().toLocaleDateString('es-CO');
+  if(modo !== 'producto'){ renderDeudaDetallada(modo); return; }
+  document.getElementById('pvCountLinesLbl').textContent = 'Productos con deuda';
   const tipoEl = document.getElementById('pedidosViewTipo');
   const rows = computeDebtGroups(tipoEl ? tipoEl.value : '');
   const t = pedidosViewSearchTerm.trim();
@@ -5908,6 +5990,7 @@ document.getElementById('btnImportarClientesBase').addEventListener('click', ()=
   if(confirm(`Se van a importar hasta ${CLIENTES_BASE.length} clientes del reporte (NIT, teléfono, ciudad y dirección).\n\nLos datos que ya tengas escritos no se sobrescriben. ¿Continuar?`)) importarClientesBase();
 });
 document.getElementById('pedidosViewTipo').addEventListener('change', () => renderPedidosView());
+document.getElementById('pedidosViewModo').addEventListener('change', () => renderPedidosView());
 document.getElementById('searchClientesView').addEventListener('input', (e)=>{ clientesViewTerm = e.target.value; renderDistribuidoresView(); });
 
 // ---------- Unificar clientes duplicados ----------
@@ -10884,10 +10967,19 @@ function renderReportes(){
     <tr class="total"><td></td><td colspan="3">Total</td><td class="num">${fmtNum(d.pedidos.reduce((s, x) => s + x.unidades, 0))}</td><td class="num">${fmt(d.valorPedidos)}</td></tr>
     </tbody></table>` : vacio('Sin pedidos nuevos en este período.'), fmtNum(d.pedidos.length));
 
-  html += seccion('Despachos', d.despachos.length ? `<table class="rep-tabla">
-    <thead><tr><th class="n">#</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Transportadora</th><th class="num">Valor factura</th><th class="num">Flete</th><th class="num">% flete</th></tr></thead><tbody>
-    ${d.despachos.map((x, k) => { const vf = Number(x.valorFactura) || 0, fl = Number(x.valorFlete) || 0; return `<tr><td class="n">${k + 1}</td><td class="fecha">${fCorta(x.fecha)}</td><td>${escapeHtml(x.cliente || '')}</td><td>${escapeHtml(x.ciudad || '')}</td><td>${escapeHtml(x.transportadora || '')}</td><td class="num">${fmt(vf)}</td><td class="num">${fmt(fl)}</td><td class="num">${vf ? (fl / vf * 100).toFixed(1) + '%' : '—'}</td></tr>`; }).join('')}
-    <tr class="total"><td></td><td colspan="4">Total</td><td class="num">${fmt(d.valorDespachos)}</td><td class="num">${fmt(d.fletes)}</td><td class="num">${d.valorDespachos ? (d.fletes / d.valorDespachos * 100).toFixed(1) + '%' : '—'}</td></tr>
+  const bultosDesp = (k) => d.despachos.reduce((s, x) => s + (Number(x[k]) || 0), 0);
+  const totDesp = { bultos: bultosDesp('bultos'), cajas: bultosDesp('cajas'), yutes: bultosDesp('yutes') };
+  html += seccion('Despachos', d.despachos.length ? `<div class="rep-desp-resumen">
+      <div><small>Despachos</small><b>${fmtNum(d.despachos.length)}</b></div>
+      <div><small>Cajas despachadas</small><b>${fmtNum(totDesp.cajas)}</b></div>
+      <div><small>Yutes despachados</small><b>${fmtNum(totDesp.yutes)}</b></div>
+      <div><small>Bultos despachados</small><b>${fmtNum(totDesp.bultos)}</b></div>
+      <div><small>Total empaques</small><b>${fmtNum(totDesp.cajas + totDesp.yutes + totDesp.bultos)}</b></div>
+    </div>
+    <table class="rep-tabla">
+    <thead><tr><th class="n">#</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Transportadora</th><th class="num">Cajas</th><th class="num">Yutes</th><th class="num">Bultos</th><th class="num">Valor factura</th><th class="num">Flete</th><th class="num">% flete</th></tr></thead><tbody>
+    ${d.despachos.map((x, k) => { const vf = Number(x.valorFactura) || 0, fl = Number(x.valorFlete) || 0; const n = (v) => Number(v) ? fmtNum(Number(v)) : '—'; return `<tr><td class="n">${k + 1}</td><td class="fecha">${fCorta(x.fecha)}</td><td>${escapeHtml(x.cliente || '')}</td><td>${escapeHtml(x.ciudad || '')}</td><td>${escapeHtml(x.transportadora || '')}</td><td class="num">${n(x.cajas)}</td><td class="num">${n(x.yutes)}</td><td class="num">${n(x.bultos)}</td><td class="num">${fmt(vf)}</td><td class="num">${fmt(fl)}</td><td class="num">${vf ? (fl / vf * 100).toFixed(1) + '%' : '—'}</td></tr>`; }).join('')}
+    <tr class="total"><td></td><td colspan="4">Total</td><td class="num">${fmtNum(totDesp.cajas)}</td><td class="num">${fmtNum(totDesp.yutes)}</td><td class="num">${fmtNum(totDesp.bultos)}</td><td class="num">${fmt(d.valorDespachos)}</td><td class="num">${fmt(d.fletes)}</td><td class="num">${d.valorDespachos ? (d.fletes / d.valorDespachos * 100).toFixed(1) + '%' : '—'}</td></tr>
     </tbody></table>` : vacio('Sin despachos en este período.'), fmtNum(d.despachos.length));
 
   html += seccion('Gastos adicionales', d.gastos.length ? `<table class="rep-tabla">
