@@ -1897,7 +1897,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
     <div class="page-section">
       <div class="page-card" id="apiContenido">
         <div class="page-card-header">
-          <div><h2>API de pedidos</h2><div class="sub">Para conectar otros programas (por ejemplo uno hecho en Visual Studio) con esta página: leer productos y pedidos, y crear pedidos nuevos. Usa la misma información de la página.</div></div>
+          <div><h2>API de pedidos</h2><div class="sub">Para conectar otros programas (por ejemplo uno hecho en Visual Studio) con esta página: <b>leer toda la información</b> (pedidos, clientes, despachos, facturas, producción, costos, Siigo, CRM…) y crear pedidos nuevos. Usa la misma información de la página.</div></div>
         </div>
         <div class="api-bloque">
           <h3>1. Dirección</h3>
@@ -1921,10 +1921,23 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
               <tr><td><code>GET /productos</code></td><td>Productos del Inventario con su <b>productoId</b>, categoría, medida, código de barras y precio (abajo están todos).</td></tr>
               <tr><td><code>GET /pedidos</code></td><td>Todos los pedidos con sus líneas, entregado y pendiente. Filtros: <code>?estado=pendiente|entregado</code>, <code>tipo=distribuidor|almacen|hotel|redes</code>, <code>cliente=</code>, <code>vendedor=</code>, <code>desde=AAAA-MM-DD</code>, <code>hasta=AAAA-MM-DD</code>.</td></tr>
               <tr><td><code>GET /pedidos/{id}</code></td><td>Un pedido.</td></tr>
+              <tr><td><code>GET /secciones</code></td><td>Lista de todo lo que se puede leer y cuántos registros tiene cada parte.</td></tr>
+              <tr><td><code>GET /clientes</code></td><td>Clientes con NIT, teléfono, ciudad, dirección, cuántos pedidos tienen, unidades y valor pendiente, y fecha del último pedido. Filtro: <code>?cliente=</code>.</td></tr>
+              <tr><td><code>GET /despachos</code></td><td>Despachos (cajas, yutes, bultos, transportadora, valor factura, flete…). Filtros: <code>?desde=</code>, <code>hasta=</code>, <code>cliente=</code>.</td></tr>
+              <tr><td><code>GET /facturas</code></td><td>Facturas hechas en la página. Filtros: <code>?desde=</code>, <code>hasta=</code>, <code>cliente=</code>.</td></tr>
+              <tr><td><code>GET /produccion</code></td><td>Producción diaria con su precio de servicio. Filtros: <code>?desde=</code>, <code>hasta=</code>, <code>etapa=Corte|Taller|Ultrasonido|Confortadora</code>.</td></tr>
+              <tr><td><code>GET /precios-servicio</code></td><td>Precios de servicio por etapa. Filtro: <code>?etapa=</code>.</td></tr>
+              <tr><td><code>GET /insumos</code></td><td>Costo de insumos con su historial de precios.</td></tr>
+              <tr><td><code>GET /gastos</code> · <code>GET /costos-fijos</code></td><td>Gastos adicionales (con <code>?desde=</code>, <code>hasta=</code>) y centro de costos.</td></tr>
+              <tr><td><code>GET /vendedores</code></td><td>Vendedores.</td></tr>
+              <tr><td><code>GET /siigo/ventas</code> · <code>GET /siigo/facturas</code></td><td>Ventas por día y facturas de Siigo. Obligatorio <code>?desde=</code> y <code>hasta=</code> (ventas hasta 400 días; facturas hasta 62 días).</td></tr>
+              <tr><td><code>GET /siigo/clientes</code> · <code>/siigo/productos</code> · <code>/siigo/vendedores</code> · <code>/siigo/estado</code></td><td>Catálogos de Siigo y la última sincronización.</td></tr>
+              <tr><td><code>GET /crm</code></td><td>Contactos y equipo comercial del CRM.</td></tr>
+              <tr><td><code>GET /datos</code> · <code>GET /datos/{seccion}</code></td><td>Cualquier otra parte de la información tal como está guardada (por ejemplo <code>/datos/entregasLog</code>, <code>/datos/plantaProductos</code>). <code>GET /datos</code> dice qué secciones hay.</td></tr>
               <tr><td><code>POST /pedidos</code></td><td>Crea un pedido nuevo (aparece en Pedidos generales). Obligatorios: <code>cliente</code>, <code>tipo</code> y <code>lineas</code> (cada una con <code>productoId</code> y <code>cantidad</code>). Opcionales: <code>vendedor</code>, <code>fecha</code>, <code>fechaDespacho</code>, <code>urgente</code>, <code>especial</code>, <code>observaciones</code>, <code>nit</code>, <code>telefono</code>, <code>ciudad</code>, <code>direccion</code>, <code>precio</code> por línea y <code>referenciaExterna</code> (tu número de pedido: si se manda dos veces no se duplica).</td></tr>
             </tbody>
           </table></div>
-          <p class="api-nota">La API no edita ni borra pedidos: eso se sigue haciendo aquí en la página.</p>
+          <p class="api-nota">Las fechas van como AAAA-MM-DD. La API solo lee y crea pedidos: no edita ni borra nada; eso se sigue haciendo aquí en la página.</p>
         </div>
         <div class="api-bloque">
           <h3>4. Ejemplo en Visual Studio (C#) <button type="button" class="acc-btn no-print" data-copiar="apiEjemploCs">Copiar</button></h3>
@@ -1940,6 +1953,11 @@ string productos = await http.GetStringAsync(api + &quot;/productos&quot;);
 
 // Pedidos pendientes
 string pendientes = await http.GetStringAsync(api + &quot;/pedidos?estado=pendiente&quot;);
+
+// Despachos de septiembre, clientes y todo lo que se puede leer
+string despachos = await http.GetStringAsync(api + &quot;/despachos?desde=2026-09-01&amp;hasta=2026-09-30&quot;);
+string clientes = await http.GetStringAsync(api + &quot;/clientes&quot;);
+string secciones = await http.GetStringAsync(api + &quot;/secciones&quot;);
 
 // Crear un pedido
 var json = &quot;&quot;&quot;
