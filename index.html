@@ -3635,20 +3635,26 @@ function emparejarProductos(viejos, nuevos){
 // Productos que ya no están en la lista de precios: se esconden del Inventario y de los pedidos nuevos, pero los
 // pedidos que ya los tienen los siguen mostrando igual. APPDATA.productosRetirados[idx] = true.
 function productoRetirado(idx){ const r = APPDATA.productosRetirados; return !!(r && r[idx]); }
-const esToalla = (p) => /toalla/i.test(String((p && p.producto) || '') + ' ' + String((p && p.categoria) || ''));
-// Las toallas no vienen en la lista de precios distribuidor pero siguen en el Inventario: si quedaron
-// retiradas, se vuelven a mostrar (con la categoría TOALLAS).
+// Productos que NO vienen en la lista de precios distribuidor pero se siguen vendiendo: si quedaron retirados,
+// se vuelven a mostrar en el Inventario con su categoría. [categoría, prueba sobre "producto categoría"]
+const PRODUCTOS_FUERA_DE_LISTA = [
+  ['TOALLAS', /toalla/i],
+  ['LÍNEA DOLCCE', /semijuego.*dolcce|cortina dolcce|duo coj[ií]n/i],
+];
+const categoriaFueraDeLista = (p) => { const t = String((p && p.producto) || '') + ' ' + String((p && p.categoria) || ''); const r = PRODUCTOS_FUERA_DE_LISTA.find(([, re]) => re.test(t)); return r ? r[0] : ''; };
+const esToalla = (p) => !!categoriaFueraDeLista(p);
 async function mantenerToallasEnInventario(){
   if(!usuarioActual || usuarioActual.rol !== 'admin' || !APPDATA.productosRetirados) return 0;
   const baseLen = CATALOG.productos.length;
   let n = 0;
   getAllProducts().forEach((p, idx) => {
-    if(!esToalla(p) || !productoRetirado(idx)) return;
+    const cat = categoriaFueraDeLista(p);
+    if(!cat || !productoRetirado(idx)) return;
     delete APPDATA.productosRetirados[idx];
-    if(idx >= baseLen && APPDATA.customProducts[idx - baseLen]) APPDATA.customProducts[idx - baseLen].categoria = 'TOALLAS';
+    if(idx >= baseLen && APPDATA.customProducts[idx - baseLen]) APPDATA.customProducts[idx - baseLen].categoria = cat;
     n++;
   });
-  if(n){ await saveAppData(APPDATA); renderAll(); showToast(`${n} toallas de vuelta en el Inventario`, 5000); }
+  if(n){ await saveAppData(APPDATA); renderAll(); showToast(`${n} producto${n > 1 ? 's' : ''} de vuelta en el Inventario (toallas / Dolcce)`, 5000); }
   return n;
 }
 // Una sola vez (la primera vez que entra un administrador): cambia el Inventario por la lista nueva.
