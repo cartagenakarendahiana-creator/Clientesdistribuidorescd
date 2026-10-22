@@ -7,11 +7,12 @@
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onRequest } = require('firebase-functions/v2/https');
-const { defineSecret } = require('firebase-functions/params');
+const { defineSecret, defineString } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { SiigoClient } = require('./siigo');
 const { sincronizar, avanzarHistorico: avanzarHistoricoCon, avanzarNotasCreditoHistorico, indexarProductosVendidos, hoyColombia, sumarDias } = require('./sync');
 const accesos = require('./accesos');
+const pedidosApi = require('./pedidos');
 
 admin.initializeApp();
 
@@ -151,5 +152,31 @@ exports.gestionarUsuarios = onRequest({ cors: true, maxInstances: 2 }, async (re
     res.json(await accesos.gestionarUsuarios({ db: admin.database(), auth: admin.auth(), idToken: tokenDe(req), accion, usuario, clave, rol }));
   } catch (err) {
     responderError(res, err);
+  }
+});
+
+// API de pedidos para conectar otras apps (ver functions/README.md → "API de pedidos").
+// La clave NO está aquí: el workflow de publicación guarda solo su SHA-256 (del secreto de GitHub
+// API_PEDIDOS_CLAVE) en API_PEDIDOS_CLAVE_HASH. Sin ese secreto la API responde 503.
+const API_PEDIDOS_CLAVE_HASH = defineString('API_PEDIDOS_CLAVE_HASH', { default: '' });
+let catalogo = null;
+exports.apiPedidos = onRequest({ cors: false, maxInstances: 2, timeoutSeconds: 60 }, async (req, res) => {
+  try {
+    const hash = API_PEDIDOS_CLAVE_HASH.value();
+    if (!hash) throw new pedidosApi.ErrorApi(503, 'La API de pedidos no está activada todavía.');
+    const clave = String(req.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    if (!pedidosApi.claveValida(clave, hash)) throw new pedidosApi.ErrorApi(401, 'Clave de la API incorrecta (encabezado Authorization: Bearer <clave>).');
+    catalogo = catalogo || require('./catalogo.json');
+    const r = await pedidosApi.atender({
+      db: admin.database(), catalogo, metodo: req.method, ruta: req.path, query: req.query || {}, body: req.body,
+    });
+    res.status(r.status).json({ ok: true, ...r.json });
+  } catch (err) {
+    if (err instanceof pedidosApi.ErrorApi) {
+      res.status(err.status).json({ ok: false, mensaje: err.message });
+      return;
+    }
+    console.error(err);
+    res.status(500).json({ ok: false, mensaje: 'Error del servidor. Intenta de nuevo.' });
   }
 });

@@ -121,3 +121,53 @@ Pasos, en orden:
 2. Unir el cambio a main (publica la app y las funciones).
 3. Entrar una vez con el administrador y crear el usuario de "Solo lectura" para el reporte.
 4. GitHub → Actions → "Publicar reglas de la base de datos" → Run workflow.
+
+## API de pedidos (para conectar otras apps)
+
+Dirección: `https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos`
+
+Cada llamada lleva el encabezado `Authorization: Bearer <clave>`. La clave se guarda **solo** como secreto de
+GitHub `API_PEDIDOS_CLAVE` (Settings → Secrets and variables → Actions); al publicar se guarda únicamente su
+SHA-256. Sin ese secreto la API responde 503. Para cambiar la clave: cambia el secreto y vuelve a correr
+"Publicar funciones de Siigo". Úsala desde el servidor de la otra app, no desde código que corra en el navegador
+del cliente (ahí cualquiera la vería).
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /productos` | Productos del Inventario con su `id`, categoría, medida, precio de lista, `codigo` (de barras) y `nota` ("Pronto"/"Consultar"). `?todos=1` incluye los retirados (`retirado: true`). |
+| `GET /pedidos` | Todos los pedidos. Filtros opcionales: `?estado=pendiente\|entregado\|sin_productos`, `tipo=distribuidor\|almacen\|hotel\|redes\|sin`, `cliente=`, `vendedor=`, `desde=AAAA-MM-DD`, `hasta=AAAA-MM-DD` (fecha del pedido). |
+| `GET /pedidos/{id}` | Un pedido. |
+| `POST /pedidos` | Crea un pedido (como "+ Nuevo pedido" en la app). |
+
+Cada pedido trae: `id, cliente, nit, telefono, ciudad, direccion, fecha, vendedor, fechaDespacho, tipo, tipoNombre, urgente, especial,
+observaciones[], referenciaExterna, estado, totales{unidades, entregadas, pendientes, valor, valorPendiente},
+lineas[{linea, productoId, categoria, producto, medida, cantidad, precio, subtotal, entregado, pendiente}]`.
+
+Crear un pedido:
+
+```bash
+curl -X POST https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos/pedidos \
+  -H "Authorization: Bearer $CLAVE" -H "Content-Type: application/json" \
+  -d '{
+    "cliente": "Tiendas la Ganga Pamplona",
+    "tipo": "distribuidor",
+    "vendedor": "Julian Aristizabal",
+    "fecha": "2026-10-05",
+    "fechaDespacho": "2026-10-12",
+    "urgente": false,
+    "especial": false,
+    "observaciones": "Entregar en la mañana",
+    "referenciaExterna": "OTRA-APP-1234",
+    "nit": "", "telefono": "", "ciudad": "", "direccion": "",
+    "lineas": [ { "productoId": 65, "cantidad": 3 }, { "productoId": 0, "cantidad": 2, "precio": 25000 } ]
+  }'
+```
+
+- Obligatorios: `cliente`, `tipo` (`distribuidor`, `almacen`, `hotel` o `redes` = canal digital, igual que en la
+  app) y `lineas` (cada una con `productoId` de `GET /productos` y `cantidad`). Sin `precio` se usa el precio de
+  lista. Los productos retirados del Inventario no se pueden pedir.
+- Si el cliente ya existe (aunque cambien tildes o mayúsculas) se usa ese cliente; si no, se crea.
+- `referenciaExterna` (recomendado): el número del pedido en la otra app. Si se manda dos veces el mismo, no
+  se duplica: responde 200 con el pedido ya creado (201 cuando lo crea).
+- La API no edita ni borra pedidos; eso se sigue haciendo en la app.
+- Errores: `{ "ok": false, "mensaje": "..." }` con 400 (datos), 401 (clave), 404 (no existe) o 503 (API apagada).
