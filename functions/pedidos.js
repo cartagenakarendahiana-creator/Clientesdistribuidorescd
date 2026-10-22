@@ -78,13 +78,13 @@ function lineasDe(catalogo, d, prods, distId) {
       if (ov.cantidad !== undefined) cantidad = ov.cantidad;
       if (ov.precio !== undefined) precio = ov.precio;
     }
-    lineas.push({ key, productoId, cantidad, precio });
+    lineas.push({ key, productoId, cantidad, precio, obs: (ov && ov.obs) || '' });
   });
   lista(d.extras).forEach((ex, i) => {
     if (ex.distId !== distId) return;
     const uid = ex.uid !== undefined && ex.uid !== null ? ex.uid : String(i);
     const prod = prods[ex.productoIdx];
-    lineas.push({ key: 'extra-' + uid, productoId: ex.productoIdx, cantidad: ex.cantidad, precio: ex.precio ?? (prod ? prod.precio : 0) });
+    lineas.push({ key: 'extra-' + uid, productoId: ex.productoIdx, cantidad: ex.cantidad, precio: ex.precio ?? (prod ? prod.precio : 0), obs: ex.obs || '' });
   });
   const entregas = (d.entregas || {})[distId] || {};
   return lineas.map((l) => {
@@ -93,6 +93,7 @@ function lineasDe(catalogo, d, prods, distId) {
     return {
       linea: l.key, productoId: l.productoId, categoria: prod.categoria, producto: prod.producto, medida: prod.medida,
       cantidad, precio, subtotal: cantidad * precio, entregado, pendiente: Math.max(0, cantidad - entregado),
+      observacion: l.obs,
     };
   });
 }
@@ -162,7 +163,8 @@ function validarNuevoPedido(body, prods) {
       precio = Number(l.precio);
       if (!Number.isFinite(precio) || precio < 0) throw new ErrorApi(400, `Línea ${i + 1}: "precio" no es válido.`);
     }
-    return { productoId, cantidad, precio };
+    const obs = texto(l.observacion, 500);
+    return obs ? { productoId, cantidad, precio, obs } : { productoId, cantidad, precio };
   });
   return {
     cliente,
@@ -214,7 +216,7 @@ async function crearPedido({ db, catalogo, body }) {
     id, nombre, fecha: p.fecha, vendedor: p.vendedor, fechaDespacho: p.fechaDespacho, creadoPorApi: true,
     ...(p.referenciaExterna ? { referenciaExterna: p.referenciaExterna } : {}),
   }]);
-  await agregarALista(db, 'extras', p.lineas.map((l) => ({ distId: id, productoIdx: l.productoId, cantidad: l.cantidad, precio: l.precio, uid: uidLinea() })));
+  await agregarALista(db, 'extras', p.lineas.map((l) => ({ distId: id, productoIdx: l.productoId, cantidad: l.cantidad, precio: l.precio, ...(l.obs ? { obs: l.obs } : {}), uid: uidLinea() })));
 
   const updates = {};
   updates[`distTipo/${id}`] = p.tipo;

@@ -150,7 +150,7 @@ del cliente (ahí cualquiera la vería).
 
 Cada pedido trae: `id, cliente, nit, telefono, ciudad, direccion, fecha, vendedor, fechaDespacho, tipo, tipoNombre, urgente, especial,
 observaciones[], referenciaExterna, estado, totales{unidades, entregadas, pendientes, valor, valorPendiente},
-lineas[{linea, productoId, categoria, producto, medida, cantidad, precio, subtotal, entregado, pendiente}]`.
+lineas[{linea, productoId, categoria, producto, medida, cantidad, precio, subtotal, entregado, pendiente, observacion}]`.
 
 Crear un pedido:
 
@@ -168,13 +168,14 @@ curl -X POST https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos/ped
     "observaciones": "Entregar en la mañana",
     "referenciaExterna": "OTRA-APP-1234",
     "nit": "", "telefono": "", "ciudad": "", "direccion": "",
-    "lineas": [ { "productoId": 65, "cantidad": 3 }, { "productoId": 0, "cantidad": 2, "precio": 25000 } ]
+    "lineas": [ { "productoId": 65, "cantidad": 3 }, { "productoId": 0, "cantidad": 2, "precio": 25000, "observacion": "6 azules y 6 grises" } ]
   }'
 ```
 
 - Obligatorios: `cliente`, `tipo` (`distribuidor`, `almacen`, `hotel` o `redes` = canal digital, igual que en la
   app) y `lineas` (cada una con `productoId` de `GET /productos` y `cantidad`). Sin `precio` se usa el precio de
-  lista. Los productos retirados del Inventario no se pueden pedir.
+  lista. Cada línea puede llevar `observacion` (se ve al lado del producto en el pedido). Los productos
+  retirados del Inventario no se pueden pedir.
 - Si el cliente ya existe (aunque cambien tildes o mayúsculas) se usa ese cliente; si no, se crea.
 - `referenciaExterna` (recomendado): el número del pedido en la otra app. Si se manda dos veces el mismo, no
   se duplica: responde 200 con el pedido ya creado (201 cuando lo crea).
