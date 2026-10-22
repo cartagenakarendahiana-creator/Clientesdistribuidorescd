@@ -294,6 +294,17 @@
   .rep-desp-resumen > div{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--white);}
   .rep-desp-resumen small{display:block;font-size:11.5px;color:var(--ink-soft);}
   .rep-desp-resumen b{display:block;font-size:18px;margin-top:2px;}
+  .api-bloque{border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:12px;background:var(--white);}
+  .api-bloque h3{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .api-bloque p{margin:6px 0;font-size:13.5px;}
+  .api-url{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .api-url code, .api-bloque td code, .api-bloque p code{background:var(--cream-2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:12.5px;word-break:break-all;}
+  .api-bloque td:first-child code{white-space:nowrap;word-break:normal;}
+  .api-nota{font-size:12.5px;color:var(--ink-soft);font-weight:400;}
+  .api-lista{margin:6px 0 0 18px;padding:0;font-size:13.5px;}
+  .api-lista li{margin:3px 0;}
+  .api-codigo{background:#1B2230;color:#E8EDF5;border-radius:10px;padding:12px 14px;font-size:12.5px;overflow:auto;max-height:360px;white-space:pre;margin:0;}
+  .api-chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;background:#E8EEF8;color:#28508C;white-space:nowrap;}
   .mini-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
   .mini-kpis > div{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--white);}
   .mini-kpis small{display:block;font-size:12px;color:var(--ink-soft);}
@@ -1520,6 +1531,16 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <button class="nav-dropdown-item" data-nav="costoinsumos" type="button">Costo insumos</button>
         </div>
       </div>
+      <div class="nav-dropdown" id="navDropdownConexiones">
+        <button class="nav-dropdown-btn" id="navBtnConexiones" type="button">
+          <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          Conexiones
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 15.5-5-5 1.4-1.4 3.6 3.6 3.6-3.6 1.4 1.4z"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="nav-dropdown-item" data-nav="api" type="button">API de pedidos</button>
+        </div>
+      </div>
       <div class="nav-dropdown" id="navDropdownProduccion">
         <button class="nav-dropdown-btn" id="navBtnProduccion" type="button">
           <svg class="dots" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
@@ -1868,6 +1889,91 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           </div>
         </div>
         <div id="crmEquipo"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewApi" class="view-section" style="display:none;">
+    <div class="page-section">
+      <div class="page-card" id="apiContenido">
+        <div class="page-card-header">
+          <div><h2>API de pedidos</h2><div class="sub">Para conectar otros programas (por ejemplo uno hecho en Visual Studio) con esta página: leer productos y pedidos, y crear pedidos nuevos. Usa la misma información de la página.</div></div>
+        </div>
+        <div class="api-bloque">
+          <h3>1. Dirección</h3>
+          <div class="api-url"><code>https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos</code><button type="button" class="acc-btn no-print" data-copiar="url">Copiar</button></div>
+          <p class="api-nota">Cada llamada lleva el encabezado <code>Authorization: Bearer &lt;tu clave&gt;</code>.</p>
+        </div>
+        <div class="api-bloque">
+          <h3>2. Clave</h3>
+          <p>La clave es el secreto <b>API_PEDIDOS_CLAVE</b> de GitHub (repositorio → Settings → Secrets and variables → Actions). Por seguridad la página no la guarda ni la muestra.</p>
+          <ul class="api-lista">
+            <li>Úsala solo en tu programa (Visual Studio, un servidor). Nunca la pongas en una página web: ahí cualquiera la vería.</li>
+            <li>Para cambiarla: cambia el secreto en GitHub y vuelve a correr <b>Actions → "Publicar funciones de Siigo"</b>.</li>
+            <li>Si abres la dirección en el navegador sin clave y dice <i>"Clave de la API incorrecta"</i>, la API está encendida; si dice <i>"no está activada"</i>, falta el secreto.</li>
+          </ul>
+        </div>
+        <div class="api-bloque">
+          <h3>3. Qué se puede hacer</h3>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Llamada</th><th>Para qué</th></tr></thead>
+            <tbody>
+              <tr><td><code>GET /productos</code></td><td>Productos del Inventario con su <b>productoId</b>, categoría, medida, código de barras y precio (abajo están todos).</td></tr>
+              <tr><td><code>GET /pedidos</code></td><td>Todos los pedidos con sus líneas, entregado y pendiente. Filtros: <code>?estado=pendiente|entregado</code>, <code>tipo=distribuidor|almacen|hotel|redes</code>, <code>cliente=</code>, <code>vendedor=</code>, <code>desde=AAAA-MM-DD</code>, <code>hasta=AAAA-MM-DD</code>.</td></tr>
+              <tr><td><code>GET /pedidos/{id}</code></td><td>Un pedido.</td></tr>
+              <tr><td><code>POST /pedidos</code></td><td>Crea un pedido nuevo (aparece en Pedidos generales). Obligatorios: <code>cliente</code>, <code>tipo</code> y <code>lineas</code> (cada una con <code>productoId</code> y <code>cantidad</code>). Opcionales: <code>vendedor</code>, <code>fecha</code>, <code>fechaDespacho</code>, <code>urgente</code>, <code>especial</code>, <code>observaciones</code>, <code>nit</code>, <code>telefono</code>, <code>ciudad</code>, <code>direccion</code>, <code>precio</code> por línea y <code>referenciaExterna</code> (tu número de pedido: si se manda dos veces no se duplica).</td></tr>
+            </tbody>
+          </table></div>
+          <p class="api-nota">La API no edita ni borra pedidos: eso se sigue haciendo aquí en la página.</p>
+        </div>
+        <div class="api-bloque">
+          <h3>4. Ejemplo en Visual Studio (C#) <button type="button" class="acc-btn no-print" data-copiar="apiEjemploCs">Copiar</button></h3>
+          <pre class="api-codigo" id="apiEjemploCs">using System.Net.Http;
+using System.Text;
+
+var http = new HttpClient();
+http.DefaultRequestHeaders.Add(&quot;Authorization&quot;, &quot;Bearer &quot; + miClave); // tu clave (el secreto API_PEDIDOS_CLAVE)
+var api = &quot;https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos&quot;;
+
+// Productos con su productoId
+string productos = await http.GetStringAsync(api + &quot;/productos&quot;);
+
+// Pedidos pendientes
+string pendientes = await http.GetStringAsync(api + &quot;/pedidos?estado=pendiente&quot;);
+
+// Crear un pedido
+var json = &quot;&quot;&quot;
+{
+  &quot;cliente&quot;: &quot;Tiendas la Ganga Pamplona&quot;,
+  &quot;tipo&quot;: &quot;distribuidor&quot;,
+  &quot;vendedor&quot;: &quot;Julian&quot;,
+  &quot;fecha&quot;: &quot;2026-10-22&quot;,
+  &quot;referenciaExterna&quot;: &quot;VS-0001&quot;,
+  &quot;lineas&quot;: [ { &quot;productoId&quot;: 0, &quot;cantidad&quot;: 6 } ]
+}
+&quot;&quot;&quot;;
+var resp = await http.PostAsync(api + &quot;/pedidos&quot;, new StringContent(json, Encoding.UTF8, &quot;application/json&quot;));
+string respuesta = await resp.Content.ReadAsStringAsync();</pre>
+        </div>
+        <div class="api-bloque">
+          <h3>5. Productos y su productoId <span class="api-nota" id="apiProductosConteo"></span></h3>
+          <div class="control-search no-print" style="max-width:380px;margin-bottom:10px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="apiBuscarProducto" placeholder="Buscar producto, medida o código...">
+          </div>
+          <div class="table-scroll" style="max-height:420px;overflow:auto;"><table>
+            <thead><tr><th class="num">productoId</th><th>Producto</th><th>Medida</th><th>Código</th><th class="num">Precio</th></tr></thead>
+            <tbody id="apiProductosBody"></tbody>
+          </table></div>
+        </div>
+        <div class="api-bloque">
+          <h3>6. Pedidos que han entrado por la API <span class="api-nota" id="apiPedidosConteo"></span></h3>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Cliente</th><th>Fecha</th><th>Referencia</th><th>Tipo</th><th class="num">Unidades</th><th class="num">Valor</th></tr></thead>
+            <tbody id="apiPedidosBody"></tbody>
+          </table></div>
+          <p class="api-nota">Toca un pedido para abrirlo. En la lista de pedidos también llevan la marca <span class="api-chip">API</span>.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -3196,7 +3302,7 @@ function leerTipoPedido(overlay){
 }
 function getAllDistributors(){
   const base = CATALOG.distribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha}));
-  const custom = APPDATA.nuevosDistribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha, vendedor: d.vendedor, fechaDespacho: d.fechaDespacho}));
+  const custom = APPDATA.nuevosDistribuidores.map(d => ({id: d.id, nombre: d.nombre, fecha: d.fecha, vendedor: d.vendedor, fechaDespacho: d.fechaDespacho, creadoPorApi: !!d.creadoPorApi}));
   const eliminados = APPDATA.distribuidoresEliminados || [];
   const all = [...base, ...custom].filter(d => !eliminados.includes(d.id));
   return all.map(d => ({
@@ -3792,6 +3898,7 @@ function renderDistItemHtml(d){
         <div class="dist-name">${escapeHtml(d.nombre)}</div>
         ${d.urgente ? `<span class="urgente-badge">🔥 Urgente</span>` : ''}
         ${d.especial ? `<span class="especial-badge">⭐ Especial</span>` : ''}
+        ${d.creadoPorApi ? `<span class="api-chip" title="Este pedido entró por la API">API</span>` : ''}
         ${vencido ? `<span class="vencido-badge">⏰ Vencido</span>` : ''}
         <button class="icon-btn icon-edit rename-dist-btn" data-id="${escapeAttr(d.id)}" title="Editar cliente">✎</button>
       </div>
@@ -4322,7 +4429,7 @@ function switchView(viewName){
   if(['produccion','ordenesproduccion','plantaproductos','produccioncostos','costosutilidades','dashcorte','dashtaller','dashultrasonido','dashconfortadora'].includes(viewName)){
     syncPlantaProductosFromInventario();
   }
-  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','clientessiigo','costoinsumos','crm','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
+  ['resumen','reportes','despachos','facturas','ventassiigo','productossiigo','clientessiigo','costoinsumos','crm','api','pedidos','vendedores','distribuidores','inventario','productividad','produccion','produccioncostos','costosutilidades',
    'operarios','plantaproductos','insumos','operaciones','asignaciones','ordenesproduccion','costosfijos','gastosadicionales','novedades','jornadalaboral','serviciosmaquila','dashcorte','dashtaller','dashultrasonido','dashconfortadora'
   ].forEach(name=>{
     const el = document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -4359,6 +4466,7 @@ function switchView(viewName){
   if(viewName === 'productossiigo') renderProductosSiigo();
   if(viewName === 'clientessiigo') renderClientesSiigo();
   if(viewName === 'costoinsumos') renderCostoInsumos();
+  if(viewName === 'api') renderApiView();
   if(esVistaCrm(viewName)){ if(crmVista !== viewName){ crmVista = viewName; document.getElementById('crmFiltros').innerHTML = ''; document.getElementById('crmSearch').value = ''; } renderCrm(); }
   if(viewName === 'productividad') renderProduccionView();
   if(viewName === 'produccioncostos'){ initCostosProductosView(); renderCostosProductosView(); }
@@ -4394,6 +4502,7 @@ const NAV_ICONOS = {
   crmprospdist:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
   crmdistactivos:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><path d="M6 11l2 2 3-3"/>',
   crmequipo:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
+  api:'<path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13.5 6l-3 12"/>',
   costoinsumos:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01M9.5 15.5l5-5"/>',
   pedidos:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/>',
   vendedores:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 15c2.6.1 4.3 1.6 5 4.5"/>',
@@ -5566,6 +5675,39 @@ async function importarExcelEffi(file){
 }
 document.getElementById('btnImportarEffi').addEventListener('click', () => document.getElementById('inpImportarEffi').click());
 document.getElementById('inpImportarEffi').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if(f) importarExcelEffi(f); });
+
+// ---------- API de pedidos (sección de ayuda, solo administradores) ----------
+// La API vive aparte (función apiPedidos en Firebase); esta página solo la explica y muestra lo que entra por ella.
+const API_PEDIDOS_URL = 'https://us-central1-pedidos-nuevo.cloudfunctions.net/apiPedidos';
+function renderApiView(){
+  const box = document.getElementById('apiContenido');
+  if(!box) return;
+  const productos = getAllProducts().map((p, id) => ({ ...p, id })).filter(p => !productoRetirado(p.id));
+  const term = normalizeText((document.getElementById('apiBuscarProducto') || {}).value || '');
+  const palabras = term.split(/\s+/).filter(Boolean);
+  const visibles = productos.filter(p => palabras.every(w => normalizeText([p.id, p.categoria, p.producto, p.medida, p.codigo].join(' ')).includes(w)));
+  const porApi = (APPDATA.nuevosDistribuidores || []).filter(x => x && x.creadoPorApi && !(APPDATA.distribuidoresEliminados || []).includes(x.id));
+  const dist = new Map(getAllDistributors().map(d => [d.id, d]));
+  document.getElementById('apiProductosBody').innerHTML = visibles.slice(0, 400).map(p => `<tr><td class="num"><b>${p.id}</b></td><td>${escapeHtml(p.producto)}</td><td>${escapeHtml(p.medida || '—')}</td><td style="color:var(--ink-soft);">${escapeHtml(p.codigo || '')}</td><td class="num">${p.precio ? fmt(p.precio) : (p.nota ? escapeHtml(p.nota) : '—')}</td></tr>`).join('')
+    || '<tr><td colspan="5" style="color:var(--ink-soft);">Sin resultados.</td></tr>';
+  document.getElementById('apiProductosConteo').textContent = `${visibles.length} de ${productos.length} productos`;
+  document.getElementById('apiPedidosBody').innerHTML = porApi.slice().reverse().map(x => {
+    const d = dist.get(x.id), t = distTotals(x.id);
+    return `<tr class="api-pedido" data-api-dist="${escapeAttr(x.id)}" style="cursor:pointer;"><td>${escapeHtml(d ? d.nombre : x.nombre)}</td><td>${escapeHtml(x.fecha || '—')}</td><td>${escapeHtml(x.referenciaExterna || '—')}</td><td>${escapeHtml(d ? nombreTipoPedido(d.tipo) : '')}</td><td class="num">${fmtNum(t.numLines ? getOrderLines(x.id).reduce((a, l) => a + (Number(l.cantidad) || 0), 0) : 0)}</td><td class="num">${fmt(t.totalPedido)}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" style="color:var(--ink-soft);">Todavía no ha entrado ningún pedido por la API.</td></tr>';
+  document.getElementById('apiPedidosConteo').textContent = porApi.length ? `${porApi.length} pedido${porApi.length > 1 ? 's' : ''}` : '';
+}
+document.getElementById('apiContenido').addEventListener('click', async (e) => {
+  const c = e.target.closest('[data-copiar]');
+  if(c){
+    const txt = c.dataset.copiar === 'url' ? API_PEDIDOS_URL : (document.getElementById(c.dataset.copiar) || {}).textContent || '';
+    try{ await navigator.clipboard.writeText(txt); showToast('Copiado'); }catch(err){ showToast('No se pudo copiar: selecciónalo y cópialo a mano'); }
+    return;
+  }
+  const tr = e.target.closest('[data-api-dist]');
+  if(tr){ selectedDistId = tr.dataset.apiDist; switchView('resumen'); renderAll(); }
+});
+document.getElementById('apiBuscarProducto').addEventListener('input', () => renderApiView());
 
 // ---------- CRM (solo administradores) ----------
 // Una sola lista de contactos con TODA la información del Excel del CRM. Cada hoja del Excel pasa a ser
