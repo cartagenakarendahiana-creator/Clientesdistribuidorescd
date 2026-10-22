@@ -1742,7 +1742,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
           <input type="text" id="pedidosViewSearch" placeholder="Filtrar por producto, categoría, medida o cliente...">
           <select id="pedidosViewModo" title="Cómo ver lo que se debe" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);">
             <option value="producto">Ver: total por producto</option>
-            <option value="cliente">Ver: qué se le debe a cada cliente</option>
+            <option value="cliente">Ver: qué se le debe a cada cliente (del pedido más viejo al más nuevo)</option>
             <option value="productoclientes">Ver: cada producto y a quién se le debe</option>
           </select>
           <select id="pedidosViewTipo" title="Qué pedidos incluir" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13.5px;background:var(--white);">
@@ -4836,11 +4836,16 @@ function renderDeudaDetallada(modo){
   if(modo === 'cliente'){
     const grupos = new Map();
     filas.forEach(f => { if(!grupos.has(f.distId)) grupos.set(f.distId, []); grupos.get(f.distId).push(f); });
-    const lista = [...grupos.values()].sort((a, b) => a[0].cliente.localeCompare(b[0].cliente, 'es') || String(a[0].fecha || '').localeCompare(String(b[0].fecha || '')));
+    // Del pedido más viejo al más nuevo (primero los que llevan más tiempo esperando); sin fecha, al final.
+    const tiempo = (f) => { const t = parseFechaToTime(f); return t === null ? Infinity : t; };
+    const lista = [...grupos.values()].sort((a, b) => tiempo(a[0].fecha) - tiempo(b[0].fecha) || a[0].cliente.localeCompare(b[0].cliente, 'es'));
+    const hoyT = new Date(); hoyT.setHours(0, 0, 0, 0);
+    const espera = (f) => { const t = parseFechaToTime(f); if(t === null) return ''; const dias = Math.max(0, Math.round((hoyT - t) / 86400000)); return ` · <b>${dias === 0 ? 'hoy' : dias === 1 ? 'hace 1 día' : 'hace ' + dias + ' días'}</b>`; };
+    let numero = 0;
     html = `<table class="pv-detalle"><thead><tr><th>Producto</th><th>Medida</th><th class="num">Pedido</th><th class="num">Entregado</th><th class="num">Pendiente</th><th class="num">Valor pendiente</th></tr></thead><tbody>${lista.map(g => {
       const u = g.reduce((a, f) => a + f.pend, 0), v = g.reduce((a, f) => a + f.pendVal, 0), c = g[0];
       g.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto) || a.medida.localeCompare(b.medida));
-      return `<tr class="pv-grupo"><td colspan="6"><b>${escapeHtml(c.cliente)}</b><span class="pv-meta">Pedido del ${escapeHtml(fechaTxt(c.fecha))}${c.tipo ? ' · ' + escapeHtml(nombreTipoPedido(c.tipo)) : ''}${c.ciudad ? ' · ' + escapeHtml(c.ciudad) : ''} · <b>${fmtNum(u)}</b> unidades pendientes</span></td></tr>`
+      return `<tr class="pv-grupo"><td colspan="6"><b>${++numero}. ${escapeHtml(c.cliente)}</b><span class="pv-meta">Pedido del ${escapeHtml(fechaTxt(c.fecha))}${espera(c.fecha)}${c.tipo ? ' · ' + escapeHtml(nombreTipoPedido(c.tipo)) : ''}${c.ciudad ? ' · ' + escapeHtml(c.ciudad) : ''} · <b>${fmtNum(u)}</b> unidades pendientes</span></td></tr>`
         + g.map(f => `<tr><td>${escapeHtml(f.producto)}</td><td>${escapeHtml(f.medida)}</td><td class="num">${fmtNum(f.pedido)}</td><td class="num">${fmtNum(f.entregado)}</td><td class="num"><b>${fmtNum(f.pend)}</b></td><td class="num">${fmt(f.pendVal)}</td></tr>`).join('')
         + `<tr class="pv-subtotal"><td colspan="4">Total ${escapeHtml(c.cliente)}</td><td class="num">${fmtNum(u)}</td><td class="num">${fmt(v)}</td></tr>`;
     }).join('')}</tbody></table>`;
