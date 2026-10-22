@@ -6,9 +6,8 @@
 
 const crypto = require('crypto');
 
-class ErrorApi extends Error {
-  constructor(status, mensaje) { super(mensaje); this.status = status; }
-}
+const { ErrorApi } = require('./errores');
+const { leer } = require('./lectura');
 
 // Secciones de casaDoradaDatos que se necesitan para armar los pedidos.
 const SECCIONES = [
@@ -284,7 +283,11 @@ async function atender({ db, catalogo, metodo, ruta, query, body }) {
     const r = await crearPedido({ db, catalogo, body });
     return { status: r.creado ? 201 : 200, json: r };
   }
-  throw new ErrorApi(404, 'Ruta no encontrada. Usa GET /productos, GET /pedidos, GET /pedidos/{id} o POST /pedidos.');
+  if (metodo === 'GET') {
+    const r = await leer({ db, partes, query, armarPedidosConDatos: async () => { const d = await leerDatos(db); return { d, pedidos: armarPedidos(catalogo, d) }; } });
+    if (r) return r;
+  }
+  throw new ErrorApi(404, 'Ruta no encontrada. Consulta GET /secciones para ver todo lo que se puede leer, o POST /pedidos para crear un pedido.');
 }
 
 module.exports = { atender, armarPedidos, productos, crearPedido, claveValida, ErrorApi, clienteKey };

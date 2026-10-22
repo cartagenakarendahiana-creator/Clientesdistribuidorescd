@@ -138,6 +138,15 @@ del cliente (ahí cualquiera la vería).
 | `GET /pedidos` | Todos los pedidos. Filtros opcionales: `?estado=pendiente\|entregado\|sin_productos`, `tipo=distribuidor\|almacen\|hotel\|redes\|sin`, `cliente=`, `vendedor=`, `desde=AAAA-MM-DD`, `hasta=AAAA-MM-DD` (fecha del pedido). |
 | `GET /pedidos/{id}` | Un pedido. |
 | `POST /pedidos` | Crea un pedido (como "+ Nuevo pedido" en la app). |
+| `GET /secciones` | Todo lo que se puede leer y cuántos registros hay. |
+| `GET /clientes` | Clientes con contacto y resumen de pedidos (`?cliente=`). |
+| `GET /despachos`, `/facturas` | Con `?desde=`, `hasta=`, `cliente=`. Los despachos no traen la foto de la guía (`tieneFotoGuia`). |
+| `GET /produccion` | Producción diaria (`?desde=`, `hasta=`, `etapa=`). |
+| `GET /precios-servicio`, `/insumos`, `/gastos`, `/costos-fijos`, `/vendedores` | Resto de la información de la app. |
+| `GET /siigo/ventas`, `/siigo/facturas` | Siigo por fechas (`desde` y `hasta` obligatorios; ventas ≤ 400 días, facturas ≤ 62). |
+| `GET /siigo/clientes`, `/siigo/productos`, `/siigo/vendedores`, `/siigo/estado` | Catálogos de Siigo. |
+| `GET /crm` | Contactos y equipo comercial del CRM. |
+| `GET /datos`, `/datos/{seccion}` | Cualquier sección de `casaDoradaDatos` tal cual (nunca `auth` ni `usuarios`). |
 
 Cada pedido trae: `id, cliente, nit, telefono, ciudad, direccion, fecha, vendedor, fechaDespacho, tipo, tipoNombre, urgente, especial,
 observaciones[], referenciaExterna, estado, totales{unidades, entregadas, pendientes, valor, valorPendiente},
