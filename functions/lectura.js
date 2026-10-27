@@ -62,6 +62,11 @@ function filtrar(items, q, { campoCliente = 'cliente', campoFecha = 'fecha', ext
     return extra ? extra(x) : true;
   });
 }
+// Turno de un registro de Ultrasonido (igual que en la app: los antiguos sin turno lo toman de las observaciones).
+function turnoUltrasonido(x) {
+  if (x.turno === 'Turno 1' || x.turno === 'Turno 2') return x.turno;
+  return /segundo turno|turno (dos|2)\b|2 ?pm a 10/.test(String(x.observaciones || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')) ? 'Turno 2' : 'Turno 1';
+}
 const respuesta = (nombre, items) => ({ status: 200, json: { total: items.length, [nombre]: items } });
 
 // Clientes: los registrados y los que tienen pedidos, con su información de contacto y un resumen.
@@ -109,7 +114,8 @@ async function leer({ db, partes, query, armarPedidosConDatos }) {
   if (r0 === 'facturas' && partes.length === 1) return respuesta('facturas', filtrar(lista(await seccion(db, 'facturas')), query));
   if (r0 === 'produccion' && partes.length === 1) {
     const etapa = query.etapa ? norm(query.etapa) : '';
-    return respuesta('produccion', filtrar(lista(await seccion(db, 'plantaProduccionDiaria')), query, { campoCliente: 'producto', extra: (x) => !etapa || norm(x.etapa).startsWith(etapa) }));
+    const items = lista(await seccion(db, 'plantaProduccionDiaria')).map((x) => (x.etapa === 'Ultrasonido' ? { ...x, turno: turnoUltrasonido(x) } : x));
+    return respuesta('produccion', filtrar(items, query, { campoCliente: 'producto', extra: (x) => !etapa || norm(x.etapa).startsWith(etapa) }));
   }
   if (r0 === 'gastos' && partes.length === 1) return respuesta('gastos', filtrar(lista(await seccion(db, 'plantaGastosAdicionales')), query, { campoCliente: 'concepto' }));
   if (r0 === 'costos-fijos' && partes.length === 1) return respuesta('costosFijos', lista(await seccion(db, 'plantaCostosFijos')));
@@ -153,4 +159,4 @@ async function leer({ db, partes, query, armarPedidosConDatos }) {
   return null;
 }
 
-module.exports = { leer, clientesDe, decodificar };
+module.exports = { leer, clientesDe, decodificar, turnoUltrasonido };
