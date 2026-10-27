@@ -305,6 +305,7 @@
   .api-lista li{margin:3px 0;}
   .api-codigo{background:#1B2230;color:#E8EDF5;border-radius:10px;padding:12px 14px;font-size:12.5px;overflow:auto;max-height:360px;white-space:pre;margin:0;}
   .api-chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;background:#E8EEF8;color:#28508C;white-space:nowrap;}
+  .turno-chip{display:inline-block;margin-left:4px;padding:2px 8px;border-radius:999px;background:#E6EFE7;color:#2F5A35;font-size:11.5px;font-weight:600;white-space:nowrap;}
   .linea-obs{margin-top:4px;display:inline-block;max-width:420px;padding:3px 8px;border-radius:6px;background:#FFF6E0;border:1px solid #F0D9A0;color:#6B4E12;font-size:12.5px;line-height:1.35;cursor:pointer;white-space:pre-wrap;}
   @media print{ .linea-obs{background:none;border:none;padding:0;color:#000;font-style:italic;} }
   .mini-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
@@ -1927,7 +1928,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
               <tr><td><code>GET /clientes</code></td><td>Clientes con NIT, teléfono, ciudad, dirección, cuántos pedidos tienen, unidades y valor pendiente, y fecha del último pedido. Filtro: <code>?cliente=</code>.</td></tr>
               <tr><td><code>GET /despachos</code></td><td>Despachos (cajas, yutes, bultos, transportadora, valor factura, flete…). Filtros: <code>?desde=</code>, <code>hasta=</code>, <code>cliente=</code>.</td></tr>
               <tr><td><code>GET /facturas</code></td><td>Facturas hechas en la página. Filtros: <code>?desde=</code>, <code>hasta=</code>, <code>cliente=</code>.</td></tr>
-              <tr><td><code>GET /produccion</code></td><td>Producción diaria con su precio de servicio. Filtros: <code>?desde=</code>, <code>hasta=</code>, <code>etapa=Corte|Taller|Ultrasonido|Confortadora</code>.</td></tr>
+              <tr><td><code>GET /produccion</code></td><td>Producción diaria con su precio de servicio. Filtros: <code>?desde=</code>, <code>hasta=</code>, <code>etapa=Corte|Taller|Ultrasonido|Confortadora</code>. Los registros de Ultrasonido traen <code>turno</code> (Turno 1 / Turno 2).</td></tr>
               <tr><td><code>GET /precios-servicio</code></td><td>Precios de servicio por etapa. Filtro: <code>?etapa=</code>.</td></tr>
               <tr><td><code>GET /insumos</code></td><td>Costo de insumos con su historial de precios.</td></tr>
               <tr><td><code>GET /gastos</code> · <code>GET /costos-fijos</code></td><td>Gastos adicionales (con <code>?desde=</code>, <code>hasta=</code>) y centro de costos.</td></tr>
@@ -8789,6 +8790,26 @@ function normEtapa(e){ return ETAPAS_PRODUCCION.some(x => x.key === e) ? e : 'Ta
 const ETAPA_UNIDAD_LABEL = { Corte:'Unidades', Taller:'Unidades', Ultrasonido:'Metros', Confortadora:'Unidades' };
 function unidadLabelEtapa(etapa){ return ETAPA_UNIDAD_LABEL[etapa] || 'Unidades'; }
 
+// Turnos de trabajo por etapa: la máquina de Ultrasonido trabaja en dos turnos con personal y
+// producción distintos. Cada registro de esa etapa guarda su turno (campo "turno").
+const TURNOS_POR_ETAPA = {
+  Ultrasonido: [
+    { key:'Turno 1', label:'Turno 1 (primer turno)' },
+    { key:'Turno 2', label:'Turno 2 (2 pm a 10 pm)' }
+  ]
+};
+function turnosDeEtapa(etapa){ return TURNOS_POR_ETAPA[normEtapa(etapa)] || null; }
+// Turno de un registro. Los registros guardados antes de existir el campo se leen de las
+// observaciones ("segundo turno", "2 pm a 10 pm"); si no dicen nada, eran del único turno: Turno 1.
+function turnoDeRegistro(r){
+  const turnos = r && turnosDeEtapa(r.etapa);
+  if(!turnos) return '';
+  if(r.turno && turnos.some(t => t.key === r.turno)) return r.turno;
+  const obs = normalizeText(r.observaciones || '');
+  if(/segundo turno|turno (dos|2)\b|2 ?pm a 10/.test(obs)) return 'Turno 2';
+  return 'Turno 1';
+}
+
 // Filtro por etapa activo (si el usuario entró desde el submenú "Costos Fijos" / "Gastos Adicionales"
 // eligiendo una etapa puntual en vez de "General"); null = sin filtro, muestra todas las etapas.
 const plantaEtapaFiltro = { costosfijos: null, gastosadicionales: null };
@@ -9404,12 +9425,12 @@ function renderProduccionRegistros(body, term){
   raw.forEach((item, idx) => {
     if(!produccionPasaFiltros(item)) return;
     const key = produccionGrupoKey(item, idx);
-    if(!grupos.has(key)) grupos.set(key, { key, fecha: item.fecha, etapa: normEtapa(item.etapa), obs: item.observaciones || '', lineas: [] });
+    if(!grupos.has(key)) grupos.set(key, { key, fecha: item.fecha, etapa: normEtapa(item.etapa), turno: turnoDeRegistro(item), obs: item.observaciones || '', lineas: [] });
     grupos.get(key).lineas.push(item);
   });
   let lista = [...grupos.values()];
   if(term){
-    lista = lista.filter(g => [g.fecha, g.etapa, g.obs, ...g.lineas.map(l => l.producto)].some(v => String(v ?? '').toLowerCase().includes(term)));
+    lista = lista.filter(g => [g.fecha, g.etapa, g.turno, g.obs, ...g.lineas.map(l => l.producto)].some(v => String(v ?? '').toLowerCase().includes(term)));
   }
   if(!lista.length){
     body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:24px 10px;">${raw.length ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay registros. Usa el botón "+ Nuevo" para crear el primero.'}</td></tr>`;
@@ -9429,7 +9450,7 @@ function renderProduccionRegistros(body, term){
     return `
       <tr class="prod-reg-row">
         <td>${escapeHtml(g.fecha || '—')}</td>
-        <td><span class="badge ${g.etapa==='Corte'?'debe':'saldado'}">${escapeHtml(g.etapa)}</span></td>
+        <td><span class="badge ${g.etapa==='Corte'?'debe':'saldado'}">${escapeHtml(g.etapa)}</span>${g.turno ? ` <span class="turno-chip">${escapeHtml(g.turno)}</span>` : ''}</td>
         <td><button type="button" class="icon-btn" data-prod-toggle="${k}" title="Ver desglose" style="margin-right:6px;">${abierto ? '▾' : '▸'}</button>${g.lineas.length} producto${g.lineas.length>1?'s':''}</td>
         <td class="num">${fmtNum(total)}</td>
         <td class="num"><strong>${valor ? fmt(valor) : '—'}</strong>${faltan ? ' <span title="Hay productos sin precio de servicio (defínelos en Precios de servicio)" style="color:#B65B2E;">⚠</span>' : ''}</td>
@@ -10042,6 +10063,12 @@ function openProduccionModal(groupKey, defaultEtapa){
         ${ETAPAS_PRODUCCION.map(e => `<option value="${e.key}" ${etapaActual===e.key?'selected':''}>${escapeHtml(e.label)}</option>`).join('')}
       </select>
     </div>
+    <div class="field" id="pp_turno_box" style="${turnosDeEtapa(etapaActual) ? '' : 'display:none;'}"><label>Turno *</label>
+      <select id="pp_turno">
+        <option value="">Selecciona el turno</option>
+        ${(TURNOS_POR_ETAPA.Ultrasonido).map(t => `<option value="${escapeAttr(t.key)}" ${editing && turnoDeRegistro(record)===t.key?'selected':''}>${escapeHtml(t.label)}</option>`).join('')}
+      </select>
+    </div>
     <div class="field"><label>Productos y cantidades *</label>
       <div id="pp_lineas">${editing ? lineasGrupo.map(o => filaHtml(o.it.producto, o.it.cantidad, tienePrecioPropio(o.it) ? Number(o.it.precioServicio) : undefined)).join('') : filaHtml('', '')}</div>
       <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">El precio marcado como <em>sugerido</em> viene de "Precios de servicio"; cámbialo si hoy es distinto. Puedes repetir un producto con otro precio.</div>
@@ -10129,6 +10156,7 @@ function openProduccionModal(groupKey, defaultEtapa){
   const idxsGrupo = (l) => l.map((it, i) => (it && ((it.id && idsGrupo.has(it.id)) || produccionGrupoKey(it, i) === groupKey)) ? i : -1).filter(i => i > -1);
   overlay.querySelector('#pp_etapa').addEventListener('change', (e)=>{
     etapaActual = normEtapa(e.target.value);
+    overlay.querySelector('#pp_turno_box').style.display = turnosDeEtapa(etapaActual) ? '' : 'none';
     const validas = opcionesPara(etapaActual);
     lineasBox.querySelectorAll('.prod-linea').forEach(linea => {
       const sel = linea.querySelector('.pl-producto');
@@ -10186,7 +10214,9 @@ function openProduccionModal(groupKey, defaultEtapa){
     const fecha = overlay.querySelector('#pp_fecha').value;
     const etapa = normEtapa(overlay.querySelector('#pp_etapa').value);
     const obs = overlay.querySelector('#pp_obs').value;
+    const turno = turnosDeEtapa(etapa) ? overlay.querySelector('#pp_turno').value : '';
     if(!fecha){ showToast('Completa el campo "Fecha"'); overlay.querySelector('#pp_fecha').focus(); return; }
+    if(turnosDeEtapa(etapa) && !turno){ showToast('Elige el turno'); overlay.querySelector('#pp_turno').focus(); return; }
     // Cada fila guarda el precio que tiene escrito (el sugerido o el que pusiste), SOLO para este
     // registro. Si un producto se repite con el MISMO precio se suman las cantidades; con precios
     // distintos quedan como filas separadas.
@@ -10218,13 +10248,14 @@ function openProduccionModal(groupKey, defaultEtapa){
         const previa = pi > -1 ? previas.splice(pi, 1)[0] : {};
         const fila = {...previa, id: previa.id || ('p' + Date.now() + n + Math.random().toString(36).slice(2,7)), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precio, observaciones: obs};
         delete fila.taller;
+        if(turno) fila.turno = turno; else delete fila.turno;
         return fila;
       });
       freshList.splice(posInsercion, 0, ...filasNuevas);
     } else {
       const registroId = 'r' + Date.now() + Math.random().toString(36).slice(2,6);
       lineas.forEach(({prod, cant, precio}, n) => {
-        freshList.push({ id: 'p' + Date.now() + n + Math.random().toString(36).slice(2,7), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precio, observaciones: obs });
+        freshList.push({ id: 'p' + Date.now() + n + Math.random().toString(36).slice(2,7), registroId, fecha, etapa, producto: prod, cantidad: cant, precioServicio: precio, observaciones: obs, ...(turno ? { turno } : {}) });
       });
     }
     await saveAppData(APPDATA);
@@ -11439,7 +11470,7 @@ function registrosProduccionEtapaFiltrados(etapa, desde, hasta, producto){
     if(tH !== null && t > tH) return;
     if(producto && item.producto !== producto) return;
     const gkey = produccionGrupoKey(item, idx);
-    if(!grupos.has(gkey)) grupos.set(gkey, { key: gkey, fecha: item.fecha, productos: [], cantidad: 0 });
+    if(!grupos.has(gkey)) grupos.set(gkey, { key: gkey, fecha: item.fecha, turno: turnoDeRegistro(item), productos: [], cantidad: 0 });
     const g = grupos.get(gkey);
     g.productos.push(item.producto || '—');
     g.cantidad += Number(item.cantidad) || 0;
@@ -11451,15 +11482,47 @@ function renderDashEtapaRegistrosTabla(key, desde, hasta, producto){
   const tbody = document.getElementById('dashE_' + key + '_registrosBody');
   if(!tbody) return;
   const lista = registrosProduccionEtapaFiltrados(key, desde, hasta, producto);
+  const conTurno = !!turnosDeEtapa(key);
   tbody.innerHTML = lista.length ? lista.map(g => `<tr>
-      <td>${escapeHtml(g.fecha || '—')}</td>
+      <td>${escapeHtml(g.fecha || '—')}</td>${conTurno ? `<td><span class="turno-chip" style="margin:0;">${escapeHtml(g.turno || '—')}</span></td>` : ''}
       <td>${escapeHtml(g.productos.join(', '))}</td>
       <td class="num">${fmtNum(g.cantidad)}</td>
       <td class="row-actions no-print">
         <button class="icon-btn icon-edit" data-dash-prod-edit="${escapeAttr(g.key)}" title="Editar registro">✎</button>
         <button class="icon-btn icon-delete" data-dash-prod-del="${escapeAttr(g.key)}" title="Eliminar registro completo">🗑</button>
       </td>
-    </tr>`).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:16px 10px;">Sin registros en este periodo. Usa "+ Nuevo registro" para crear el primero.</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="${conTurno ? 5 : 4}" style="text-align:center;color:var(--ink-soft);padding:16px 10px;">Sin registros en este periodo. Usa "+ Nuevo registro" para crear el primero.</td></tr>`;
+}
+
+// Producción del periodo separada por turno (solo etapas con turnos, p. ej. Ultrasonido).
+function renderDashEtapaTurnos(key, desde, hasta, producto){
+  const turnos = turnosDeEtapa(key);
+  const tbody = document.getElementById('dashE_' + key + '_turnosBody');
+  const stats = document.getElementById('dashE_' + key + '_turnosStats');
+  if(!turnos || !tbody || !stats) return;
+  const precioDe = crearResolvedorPrecioServicio();
+  const por = new Map(turnos.map(t => [t.key, { cant: 0, cobro: 0, registros: new Set(), servicios: new Map() }]));
+  getPlantaList('produccion').forEach((r, idx) => {
+    if(!r || normEtapa(r.etapa) !== key) return;
+    if(desde && (!r.fecha || r.fecha < desde)) return;
+    if(hasta && (!r.fecha || r.fecha > hasta)) return;
+    if(producto && r.producto !== producto) return;
+    const t = por.get(turnoDeRegistro(r));
+    if(!t) return;
+    const cant = Number(r.cantidad) || 0, cobro = cant * precioServicioDeFila(precioDe, key, r);
+    t.cant += cant; t.cobro += cobro; t.registros.add(produccionGrupoKey(r, idx));
+    const s = t.servicios.get(r.producto || '—') || { cant: 0, cobro: 0 };
+    s.cant += cant; s.cobro += cobro; t.servicios.set(r.producto || '—', s);
+  });
+  const unidad = unidadLabelEtapa(key).toLowerCase();
+  stats.innerHTML = turnos.map(t => { const x = por.get(t.key); return `<div class="prod-stat"><div class="num">${fmtNum(x.cant)}</div><div class="lbl">${escapeHtml(t.label)} · ${unidad}</div><div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">${x.registros.size} registro${x.registros.size === 1 ? '' : 's'} · ${fmt(x.cobro)}</div></div>`; }).join('');
+  const filas = [];
+  turnos.forEach(t => {
+    const x = por.get(t.key);
+    [...x.servicios.entries()].sort((a, b) => b[1].cant - a[1].cant).forEach(([nombre, s]) => filas.push(`<tr><td style="white-space:nowrap;">${escapeHtml(t.key)}</td><td>${escapeHtml(nombre)}</td><td class="num">${fmtNum(s.cant)}</td><td class="num">${s.cobro ? fmt(s.cobro) : '—'}</td></tr>`));
+    if(x.servicios.size) filas.push(`<tr style="background:var(--cream-2);"><td colspan="2" style="font-weight:700;">Total ${escapeHtml(t.key)}</td><td class="num" style="font-weight:700;">${fmtNum(x.cant)}</td><td class="num" style="font-weight:700;">${fmt(x.cobro)}</td></tr>`);
+  });
+  tbody.innerHTML = filas.length ? filas.join('') : `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:16px 10px;">Sin producción en este periodo.</td></tr>`;
 }
 
 function dashEtapaHtml(e){
@@ -11491,6 +11554,15 @@ function dashEtapaHtml(e){
         <div class="prod-stat"><div class="num" id="${id('gastos')}">–</div><div class="lbl">Gastos adicionales</div></div>
         <div class="prod-stat"><div class="num" id="${id('neta')}">–</div><div class="lbl">Utilidad</div></div>
       </div>
+      ${TURNOS_POR_ETAPA[k] ? `<div class="prod-table-wrap" style="margin-top:14px;">
+        <h3 style="margin:0 0 4px;font-size:14px;">Producción por turno</h3>
+        <div class="sub" style="margin-bottom:8px;">Lo que hizo cada turno en el periodo, por separado.</div>
+        <div class="prod-stat-grid" id="${id('turnosStats')}" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:10px;"></div>
+        <table class="prod-table">
+          <thead><tr><th>Turno</th><th>${esServ ? 'Servicio' : 'Producto'}</th><th class="num">${escapeHtml(unidadLabelEtapa(k))}</th><th class="num">Cobro del servicio</th></tr></thead>
+          <tbody id="${id('turnosBody')}"></tbody>
+        </table>
+      </div>` : ''}
       <div class="prod-grid" style="margin-top:14px;">
         <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Costos, Cobro del servicio y Utilidad del Periodo</h3><div class="prod-chart-box"><canvas id="${id('chartResumen')}"></canvas></div></div>
         <div class="prod-card col-6" style="box-shadow:none;border:1px solid var(--line);"><h3>Tendencia de Utilidad (6 meses hasta el periodo)</h3><div class="prod-chart-box"><canvas id="${id('chartTendencia')}"></canvas></div></div>
@@ -11516,7 +11588,7 @@ function dashEtapaHtml(e){
           </div>
         </div>
         <table class="prod-table">
-          <thead><tr><th>Fecha</th><th>Producto(s)</th><th class="num">Cantidad</th><th></th></tr></thead>
+          <thead><tr><th>Fecha</th>${TURNOS_POR_ETAPA[k] ? '<th>Turno</th>' : ''}<th>Producto(s)</th><th class="num">Cantidad</th><th></th></tr></thead>
           <tbody id="${id('registrosBody')}"></tbody>
         </table>
       </div>
@@ -11558,6 +11630,7 @@ function renderDashEtapa(key){
   q('periodo').textContent = periodoTxt + (producto ? ' · ' + producto : '');
   dashEtapaUltimo[key] = { d, periodoTxt, producto, esServ };
   renderDashEtapaRegistrosTabla(key, regDesde, regHasta, producto);
+  renderDashEtapaTurnos(key, regDesde, regHasta, producto);
 
   const sinCostoVariable = key === 'Corte' || key === 'Ultrasonido' || key === 'Confortadora';
   q('unidades').textContent = fmtNum(d.unidades);
