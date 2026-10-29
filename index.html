@@ -8513,9 +8513,13 @@ function showApp(){
 }
 
 // ---------- Usuarios y roles ----------
-// Administrador: ve todo. Trabajador: solo Clientes/Pedidos, Despachos, Inventario, Precios de servicio y
-// Producción Diaria, con precios de productos y de servicios pero SIN totales, deudas, cobros ni facturación.
-const VISTAS_TRABAJADOR = ['resumen', 'pedidos', 'distribuidores', 'despachos', 'inventario', 'serviciosmaquila', 'produccion'];
+// Administrador: ve todo. Trabajador: solo Clientes/Pedidos, Despachos, Inventario, Precios de servicio,
+// Producción Diaria, Gastos Adicionales y los Dashboards de producción. Ve precios de productos y de servicios
+// pero SIN totales, deudas, cobros ni facturación, salvo en Gastos Adicionales y los Dashboards de producción,
+// que ve completos (con cobros, costos y utilidad).
+const VISTAS_TRABAJADOR_CON_VALORES = ['gastosadicionales', 'dashcorte', 'dashtaller', 'dashultrasonido', 'dashconfortadora', 'costosutilidades'];
+const VISTAS_TRABAJADOR = ['resumen', 'pedidos', 'distribuidores', 'despachos', 'inventario', 'serviciosmaquila', 'produccion', ...VISTAS_TRABAJADOR_CON_VALORES];
+const SEL_VISTAS_CON_VALORES = VISTAS_TRABAJADOR_CON_VALORES.map(v => '#view' + v.charAt(0).toUpperCase() + v.slice(1)).join(', ');
 let usuarioActual = null; // { usuario, rol }
 const esTrabajador = () => !!usuarioActual && usuarioActual.rol === 'trabajador';
 
@@ -8599,7 +8603,7 @@ function ocultarValoresTrabajador(){
   const raiz = document.getElementById('appRoot');
   if(!raiz) return;
   raiz.querySelectorAll('table').forEach(t => {
-    if(montoDeDespacho(t)) return;
+    if(montoDeDespacho(t) || t.closest(SEL_VISTAS_CON_VALORES)) return;
     const ths = t.querySelectorAll(':scope > thead > tr:first-child > th');
     if(!ths.length) return;
     const ocultar = new Set();
@@ -8611,14 +8615,17 @@ function ocultarValoresTrabajador(){
     });
   });
   raiz.querySelectorAll('.kpi-card, .prod-stat, .tcard, .pd-card, .rep-kpi').forEach(c => {
-    if(c.closest('#mainPanel .totals-row')) return; // los totales de cada pedido los ven todos los usuarios
+    if(c.closest('#mainPanel .totals-row') || c.closest(SEL_VISTAS_CON_VALORES)) return; // los totales de cada pedido los ven todos los usuarios
     const lab = c.querySelector('.lab, .lbl, .label');
     if(lab && esDinero(lab.textContent)) c.classList.add('oculto-trabajador');
   });
   raiz.querySelectorAll('.page-card').forEach(c => {
+    if(c.closest(SEL_VISTAS_CON_VALORES)) return;
     const h2 = c.querySelector('h2');
     if(h2 && /cobro|facturad/i.test(h2.textContent)) c.classList.add('oculto-trabajador');
   });
+  // Ventanas abiertas desde Gastos Adicionales o un Dashboard de producción: se ven completas.
+  if(VISTAS_TRABAJADOR_CON_VALORES.includes(currentView)) return;
   document.querySelectorAll('.modal-overlay .field').forEach(f => {
     const lab = f.querySelector('label');
     if(montoDeDespacho(f)) return;
@@ -8718,7 +8725,7 @@ function openChangeAuthModal(){
   };
   const overlay = openModal(`
     <h3>Usuarios</h3>
-    <div class="hint">Los <b>administradores</b> ven todo. Los <b>trabajadores</b> solo ven Clientes y Pedidos, Despachos, Inventario, Precios de servicio y Producción Diaria; ven precios de productos y servicios, pero no totales, deudas, cobros ni facturación. <b>Solo lectura</b> ve todo pero no puede cambiar nada (sirve para el reporte diario).</div>
+    <div class="hint">Los <b>administradores</b> ven todo. Los <b>trabajadores</b> solo ven Clientes y Pedidos, Despachos, Inventario, Precios de servicio, Producción Diaria, Gastos Adicionales y los Dashboards de producción; ven precios de productos y servicios, pero no totales, deudas, cobros ni facturación (los Dashboards de producción y los Gastos Adicionales sí los ven completos). <b>Solo lectura</b> ve todo pero no puede cambiar nada (sirve para el reporte diario).</div>
     <div class="table-scroll" style="margin:10px 0;"><table><thead><tr><th>Usuario</th><th>Rol</th><th></th></tr></thead><tbody id="usrLista"></tbody></table></div>
     <h4 style="margin:14px 0 6px;">Agregar usuario</h4>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
