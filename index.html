@@ -1422,6 +1422,128 @@ body.con-sidebar.rol-trabajador .nav-dropdown-item.oculto-trabajador,
 body.con-sidebar.rol-trabajador .nav-dropdown-sub-toggle.oculto-trabajador,
 body.con-sidebar.rol-trabajador .nav-dropdown.oculto-trabajador,
 body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{display:none !important;}
+
+/* ================= Capa de acabado profesional (solo pantalla) =================
+   Unifica campos, botones, tablas, tarjetas y animaciones. No cambia la impresión ni la lógica. */
+@media screen{
+  :root{
+    --pro-ring:0 0 0 3px rgba(201,162,90,.28);
+    --pro-border:#E4E7EC;
+    --pro-border-hover:#CDD2DA;
+    --pro-shadow-hover:0 4px 10px -2px rgba(16,24,40,.08), 0 2px 4px -2px rgba(16,24,40,.04);
+    --pro-ease:cubic-bezier(.2,.7,.2,1);
+  }
+  html{scroll-behavior:smooth;}
+  body{text-rendering:optimizeLegibility;font-feature-settings:"cv11","ss01";}
+  ::selection{background:rgba(201,162,90,.28);color:inherit;}
+
+  /* Barras de desplazamiento finas y discretas */
+  *{scrollbar-width:thin;scrollbar-color:#CBD0D8 transparent;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#CBD0D8;border-radius:999px;border:3px solid transparent;background-clip:content-box;}
+  ::-webkit-scrollbar-thumb:hover{background-color:#9AA3B0;}
+  body.con-sidebar .nav-tabs{scrollbar-color:#2E3644 transparent;}
+  body.con-sidebar .nav-tabs::-webkit-scrollbar-thumb{background-color:#2E3644;}
+
+  /* Campos sin estilo propio: mismo aspecto en toda la app (prioridad baja, cualquier regla con clase manda) */
+  :where(#appRoot, .modal) :where(input[type="text"], input[type="search"], input[type="number"], input[type="email"],
+    input[type="tel"], input[type="date"], input[type="month"], input[type="password"], input:not([type]), textarea, select){
+    font-family:var(--font);font-size:13.5px;color:var(--ink);
+    padding:9px 12px;border:1px solid var(--pro-border);border-radius:10px;background:#fff;
+    transition:border-color .15s, box-shadow .15s, background-color .15s;
+  }
+  :where(#appRoot, .modal) :where(input, textarea, select):hover{border-color:var(--pro-border-hover);}
+  #appRoot input:focus, #appRoot select:focus, #appRoot textarea:focus,
+  .modal input:focus, .modal select:focus, .modal textarea:focus,
+  .login-field input:focus{
+    outline:none !important;border-color:var(--gold) !important;box-shadow:var(--pro-ring) !important;
+  }
+  ::placeholder{color:#98A2B3;opacity:1;}
+
+  /* Barra de búsqueda/filtros de Pedidos y reportes de deuda: alineada y en una sola fila */
+  .debt-report-toolbar{gap:10px !important;}
+  .debt-report-toolbar > input{flex:2 1 280px !important;min-width:220px;}
+  .debt-report-toolbar > .ssel-wrap, .debt-report-toolbar > select{flex:1 1 220px !important;width:auto !important;}
+
+  /* Botones: foco accesible y respuesta al toque */
+  button{transition:background-color .15s, border-color .15s, color .15s, box-shadow .15s, transform .08s;}
+  button:not(:disabled):active{transform:translateY(1px);}
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible{outline:none !important;box-shadow:var(--pro-ring) !important;}
+  button:disabled{opacity:.55;cursor:not-allowed;}
+  .global-add-btn, .btn-confirm, .new-dist-btn, .acc-btn.acc-primary, .login-btn:not(.btn-instalar-app){
+    box-shadow:0 1px 2px rgba(16,24,40,.12), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  }
+  .filter-btn:hover, .print-btn-modal:hover{border-color:var(--pro-border-hover) !important;background:#F9FAFB !important;}
+
+  /* Tarjetas de métricas: números alineados, leve elevación al pasar el mouse */
+  .kpi-card, .pd-card, .debt-report-totals .pd-card{font-variant-numeric:tabular-nums;}
+  .kpi-card{border-radius:14px !important;transition:box-shadow .2s var(--pro-ease), transform .2s var(--pro-ease), border-color .2s;}
+  .kpi-card:hover{box-shadow:var(--pro-shadow-hover) !important;transform:translateY(-1px);border-color:var(--pro-border-hover) !important;}
+  .kpi-card .lab{letter-spacing:.05em !important;}
+  .debt-report-totals .pd-card{background:#fff !important;border:1px solid var(--pro-border);border-radius:12px !important;padding:12px 14px !important;}
+  .debt-report-totals .pd-card .v{font-size:19px !important;letter-spacing:-.01em;}
+
+  /* Tarjetas y paneles */
+  .page-card, .main-card, .prod-view .prod-card, .sidebar, .control-panel-row{border-radius:16px !important;}
+  .dist-item{transition:background-color .15s, border-color .15s, box-shadow .15s !important;}
+  .dist-item:hover{box-shadow:var(--pro-shadow-hover);border-color:var(--pro-border-hover) !important;}
+
+  /* Tablas: números tabulares, encabezado fijo dentro de su contenedor, filas cómodas */
+  table{font-variant-numeric:tabular-nums;}
+  .table-scroll thead th, .tabla-limitada thead th{position:sticky;top:0;z-index:1;}
+  tbody tr{transition:background-color .12s;}
+  tbody tr:last-child td{border-bottom:none;}
+  /* Celda de acciones (✎ 🗑): como celda de tabla normal, así su borde queda alineado con el resto de la fila */
+  td.row-actions{display:table-cell !important;text-align:right;vertical-align:middle;}
+  td.row-actions > * + *{margin-left:2px;}
+
+  /* Estados vacíos más sobrios */
+  .empty-state, .registry-empty, .obs-empty, .crm-vacio, .rep-vacio{color:#667085 !important;}
+
+  /* Entrada suave al cambiar de vista */
+  @keyframes pro-aparecer{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  #appRoot .page-section, #appRoot .kpi-strip, #appRoot .control-panel, #appRoot .layout{animation:pro-aparecer .28s var(--pro-ease) both;}
+  .modal{animation:pro-aparecer .22s var(--pro-ease) both;}
+  .modal-overlay{background:rgba(16,24,40,.45) !important;backdrop-filter:blur(4px) !important;}
+
+  /* Aviso flotante (toast): esquina inferior derecha en computador, con entrada animada */
+  .toast{font-weight:500;padding:12px 18px !important;transform:translate(-50%, 8px);transition:opacity .25s, transform .25s var(--pro-ease) !important;}
+  .toast.show{transform:translate(-50%, 0);}
+  @media (min-width: 900px){
+    .toast{left:auto !important;right:24px;transform:translateY(8px);max-width:380px;}
+    .toast.show{transform:none;}
+  }
+
+  /* Menú lateral: indicador del ítem activo más claro */
+  body.con-sidebar .nav-dropdown-item{border-radius:10px !important;transition:background-color .15s, color .15s !important;}
+  body.con-sidebar .nav-dropdown-item.active{box-shadow:inset 3px 0 0 var(--cd-gold-2, #D9B66E);}
+
+  /* Pantalla de entrada */
+  .login-lado{position:relative;background:linear-gradient(180deg,#FFFFFF 0%,#F6F7F9 100%);}
+  .login-lado::after{content:"© Casa Dorada · Acceso privado";position:absolute;left:0;right:0;bottom:20px;text-align:center;font-size:12px;color:#98A2B3;letter-spacing:.02em;}
+  .login-card{animation:pro-aparecer .4s var(--pro-ease) both;}
+  .login-btn:not(.btn-instalar-app){letter-spacing:.01em;}
+  .login-field{position:relative;}
+  .login-ver-clave{position:absolute;right:6px;bottom:6px;height:36px;padding:0 10px;border:none;background:transparent;
+    color:#667085;font:600 12.5px var(--font);border-radius:8px;cursor:pointer;}
+  .login-ver-clave:hover{background:#F2F4F7;color:#101828;}
+  .login-field input#loginPassword{padding-right:76px !important;}
+  .login-error{border-radius:10px !important;}
+
+  /* Celular */
+  @media (max-width: 620px){
+    .kpi-strip > .kpi-card:last-child:nth-child(odd){grid-column:1 / -1;}
+    .kpi-card .v{font-size:clamp(18px,5.4vw,22px) !important;}
+    body.con-sidebar .topbar-top{padding:10px 16px !important;row-gap:10px;}
+    body.con-sidebar .topbar-session{gap:8px !important;}
+    body.con-sidebar .topbar-session > .filter-btn, body.con-sidebar .topbar-session > .global-add-btn{height:38px;flex:1 1 0;justify-content:center;}
+    .debt-report-toolbar > input, .debt-report-toolbar > .ssel-wrap{flex-basis:100% !important;}
+    .login-lado{padding-bottom:56px;}
+  }
+}
+@media screen and (prefers-reduced-motion: reduce){
+  *, *::before, *::after{animation:none !important;transition:none !important;scroll-behavior:auto !important;}
+}
 </style>
 </head>
 <body>
@@ -1443,6 +1565,7 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
     <div class="login-field">
       <label for="loginPassword">Contraseña</label>
       <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Contraseña">
+      <button type="button" class="login-ver-clave" id="btnVerClave" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
     </div>
     <div class="login-error" id="loginError" style="display:none;">Usuario o contraseña incorrectos.</div>
     <div class="login-error" id="firebaseWarning" style="display:none;">⚠️ Falta configurar Firebase (ver firebaseConfig en el código). Mientras tanto no se guardan datos.</div>
@@ -1451,6 +1574,26 @@ body.con-sidebar.rol-trabajador .nav-dropdown-sub-group.oculto-trabajador{displa
   </div>
   </div>
 </div>
+
+<script>
+  // Mostrar / ocultar la contraseña en la pantalla de entrada
+  (function(){
+    var b = document.getElementById('btnVerClave'), i = document.getElementById('loginPassword');
+    if(!b || !i) return;
+    b.addEventListener('click', function(){
+      var ver = i.type === 'password';
+      i.type = ver ? 'text' : 'password';
+      b.textContent = ver ? 'Ocultar' : 'Mostrar';
+      b.setAttribute('aria-pressed', ver ? 'true' : 'false');
+      b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      i.focus();
+    });
+    // Al entrar, la clave vuelve a quedar oculta (por si se cierra sesión después)
+    var ocultar = function(){ i.type = 'password'; b.textContent = 'Mostrar'; b.setAttribute('aria-pressed','false'); b.setAttribute('aria-label','Mostrar contraseña'); };
+    var l = document.getElementById('btnLogin'); if(l) l.addEventListener('click', ocultar);
+    i.addEventListener('keydown', function(e){ if(e.key === 'Enter') ocultar(); });
+  })();
+</script>
 
 <div id="appRoot" style="display:none;">
   <div class="topbar">
