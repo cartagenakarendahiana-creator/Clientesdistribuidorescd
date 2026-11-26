@@ -240,6 +240,32 @@ async function crearPedido({ db, catalogo, body }) {
   return { creado: true, pedido };
 }
 
+// Eliminar un pedido igual que el botón "🗑 Eliminar" de la app (eliminarDistribuidor): su id se agrega a
+// distribuidoresEliminados y deja de aparecer. No se borra ningún dato, así que se puede restaurar.
+async function eliminarPedido({ db, catalogo, id }) {
+  const pedido = armarPedidos(catalogo, await leerDatos(db)).find((x) => x.id === id);
+  if (!pedido) throw new ErrorApi(404, 'No existe ese pedido (o ya estaba eliminado).');
+  await db.ref('casaDoradaDatos/distribuidoresEliminados').transaction((actual) => {
+    const ids = lista(actual);
+    if (ids.includes(id)) return actual;
+    return [...ids, id];
+  });
+  return { eliminado: true, pedido };
+}
+
+// Deshace la eliminación: quita el id de distribuidoresEliminados.
+async function restaurarPedido({ db, catalogo, id }) {
+  const d = await leerDatos(db);
+  if (!lista(d.distribuidoresEliminados).includes(id)) {
+    if (armarPedidos(catalogo, d).some((x) => x.id === id)) throw new ErrorApi(409, 'Ese pedido no está eliminado.');
+    throw new ErrorApi(404, 'No existe ese pedido.');
+  }
+  await db.ref('casaDoradaDatos/distribuidoresEliminados').transaction((actual) => lista(actual).filter((x) => x !== id));
+  const pedido = armarPedidos(catalogo, await leerDatos(db)).find((x) => x.id === id);
+  if (!pedido) throw new ErrorApi(404, 'No existe ese pedido.');
+  return { restaurado: true, pedido };
+}
+
 function filtrarPedidos(pedidos, q) {
   const k = q.cliente ? clienteKey(q.cliente) : '';
   return pedidos.filter((x) => {
@@ -260,7 +286,7 @@ function claveValida(clave, hashEsperado) {
   return crypto.timingSafeEqual(a, Buffer.from(hashEsperado, 'hex'));
 }
 
-// Enrutador: /productos, /pedidos, /pedidos/{id}
+// Enrutador: /productos, /pedidos, /pedidos/{id} (GET y DELETE), /pedidos/{id}/restaurar
 async function atender({ db, catalogo, metodo, ruta, query, body }) {
   const partes = String(ruta || '/').split('/').filter(Boolean).map(decodeURIComponent);
   if (partes[0] === 'productos' && partes.length === 1 && metodo === 'GET') {
@@ -281,6 +307,12 @@ async function atender({ db, catalogo, metodo, ruta, query, body }) {
     if (!pedido) throw new ErrorApi(404, 'No existe ese pedido.');
     return { status: 200, json: { pedido } };
   }
+  if (partes[0] === 'pedidos' && partes.length === 2 && metodo === 'DELETE') {
+    return { status: 200, json: await eliminarPedido({ db, catalogo, id: partes[1] }) };
+  }
+  if (partes[0] === 'pedidos' && partes.length === 3 && partes[2] === 'restaurar' && metodo === 'POST') {
+    return { status: 200, json: await restaurarPedido({ db, catalogo, id: partes[1] }) };
+  }
   if (partes[0] === 'pedidos' && partes.length === 1 && metodo === 'POST') {
     const r = await crearPedido({ db, catalogo, body });
     return { status: r.creado ? 201 : 200, json: r };
@@ -292,4 +324,4 @@ async function atender({ db, catalogo, metodo, ruta, query, body }) {
   throw new ErrorApi(404, 'Ruta no encontrada. Consulta GET /secciones para ver todo lo que se puede leer, o POST /pedidos para crear un pedido.');
 }
 
-module.exports = { atender, armarPedidos, productos, crearPedido, claveValida, ErrorApi, clienteKey };
+module.exports = { atender, armarPedidos, productos, crearPedido, eliminarPedido, restaurarPedido, claveValida, ErrorApi, clienteKey };

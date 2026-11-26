@@ -131,7 +131,7 @@ test('cliente nuevo queda registrado; datos inválidos se rechazan sin guardar n
     await assert.rejects(llamar(db, 'POST', '/pedidos', { body }), (e) => e.status === 400, JSON.stringify(body));
   }
   assert.equal(JSON.stringify(db.datos), antes);
-  await assert.rejects(llamar(db, 'DELETE', '/pedidos/Imperio'), (e) => e.status === 404);
+  await assert.rejects(llamar(db, 'PUT', '/pedidos/Imperio'), (e) => e.status === 404);
 });
 
 test('la clave se compara contra su SHA-256', () => {
@@ -161,4 +161,30 @@ test('productos retirados no salen ni se pueden pedir; tipo de pedido y filtro p
   assert.deepEqual((await llamar(db, 'GET', '/pedidos', { query: { tipo: 'hotel' } })).json.pedidos.map((p) => p.id), ['Casa S.A']);
   assert.deepEqual((await llamar(db, 'GET', '/pedidos', { query: { tipo: 'sin' } })).json.pedidos.map((p) => p.id), ['nuevo-1']);
   await assert.rejects(llamar(db, 'GET', '/pedidos', { query: { tipo: 'proveedor' } }), (e) => e.status === 400);
+});
+
+test('eliminar un pedido lo oculta sin borrar datos, y restaurarlo lo devuelve', async () => {
+  const db = base();
+  const r = await llamar(db, 'DELETE', '/pedidos/nuevo-1');
+  assert.equal(r.status, 200);
+  assert.equal(r.json.eliminado, true);
+  assert.equal(r.json.pedido.id, 'nuevo-1');
+  assert.deepEqual(db.datos.casaDoradaDatos.distribuidoresEliminados, ['Viejo', 'nuevo-1']);
+  assert.ok(db.datos.casaDoradaDatos.extras.some((x) => x.distId === 'nuevo-1'), 'las líneas del pedido no se borran');
+  assert.ok(!(await llamar(db, 'GET', '/pedidos')).json.pedidos.some((p) => p.id === 'nuevo-1'));
+  await assert.rejects(llamar(db, 'GET', '/pedidos/nuevo-1'), (e) => e.status === 404);
+  await assert.rejects(llamar(db, 'DELETE', '/pedidos/nuevo-1'), (e) => e.status === 404, 'ya eliminado');
+  await assert.rejects(llamar(db, 'DELETE', '/pedidos/no-existe'), (e) => e.status === 404);
+
+  const rr = await llamar(db, 'POST', '/pedidos/nuevo-1/restaurar');
+  assert.equal(rr.json.restaurado, true);
+  assert.equal(rr.json.pedido.totales.unidades, 2);
+  assert.deepEqual(db.datos.casaDoradaDatos.distribuidoresEliminados, ['Viejo']);
+  await assert.rejects(llamar(db, 'POST', '/pedidos/nuevo-1/restaurar'), (e) => e.status === 409, 'no está eliminado');
+  await assert.rejects(llamar(db, 'POST', '/pedidos/otro/restaurar'), (e) => e.status === 404);
+  // Los pedidos originales (del catálogo) también se pueden eliminar y restaurar
+  await llamar(db, 'DELETE', '/pedidos/Casa%20S.A');
+  assert.ok(db.datos.casaDoradaDatos.distribuidoresEliminados.includes('Casa S.A'));
+  await llamar(db, 'POST', '/pedidos/Viejo/restaurar');
+  assert.ok((await llamar(db, 'GET', '/pedidos')).json.pedidos.some((p) => p.id === 'Viejo'));
 });
