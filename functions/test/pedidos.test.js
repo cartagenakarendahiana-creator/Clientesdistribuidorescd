@@ -188,3 +188,39 @@ test('eliminar un pedido lo oculta sin borrar datos, y restaurarlo lo devuelve',
   await llamar(db, 'POST', '/pedidos/Viejo/restaurar');
   assert.ok((await llamar(db, 'GET', '/pedidos')).json.pedidos.some((p) => p.id === 'Viejo'));
 });
+
+test('eliminar líneas sin despachar: respaldo en papelera, protege lo despachado y se puede restaurar', async () => {
+  const db = base();
+  // nuevo-1 tiene extra-u1 con 1 entregada: no se puede eliminar
+  await assert.rejects(llamar(db, 'DELETE', '/pedidos/nuevo-1/lineas/extra-u1'), (e) => e.status === 409);
+  // Imperio: agregamos una línea sin entregas y la eliminamos
+  db.datos.casaDoradaDatos.extras.push({ distId: 'Imperio', productoIdx: 0, cantidad: 5, precio: 1000, uid: 'u3' });
+  const r = await llamar(db, 'DELETE', '/pedidos/Imperio/lineas/extra-u3');
+  assert.equal(r.json.eliminada, true);
+  assert.ok(!db.datos.casaDoradaDatos.extras.some((x) => x.uid === 'u3'));
+  assert.equal(db.datos.casaDoradaDatos.extras.length, 2, 'las demás líneas siguen');
+  const copia = db.datos.papelera.lineas[r.json.papelera];
+  assert.equal(copia.extra.uid, 'u3');
+  assert.equal(copia.pedidoId, 'Imperio');
+  // Restaurar la devuelve
+  const rr = await llamar(db, 'POST', `/papelera/${r.json.papelera}/restaurar`);
+  assert.ok(rr.json.pedido.lineas.some((l) => l.linea === 'extra-u3'));
+  assert.ok(!db.datos.papelera.lineas[r.json.papelera], 'sale de la papelera');
+  await assert.rejects(llamar(db, 'POST', `/papelera/${r.json.papelera}/restaurar`), (e) => e.status === 404);
+
+  // Línea del catálogo sin entregas en un pedido con punto en el id ("Casa S.A" → "Casa S%2EA")
+  db.datos.casaDoradaDatos.entregas['Casa S%2EA'] = {};
+  const rc = await llamar(db, 'DELETE', '/pedidos/Casa%20S.A/lineas/cat-1');
+  assert.deepEqual(db.datos.casaDoradaDatos.catalogOverrides['Casa S%2EA']['cat-1'], { eliminado: true });
+  assert.ok(!(await llamar(db, 'GET', '/pedidos/Casa%20S.A')).json.pedido.lineas.some((l) => l.linea === 'cat-1'));
+  await llamar(db, 'POST', `/papelera/${rc.json.papelera}/restaurar`);
+  assert.ok((await llamar(db, 'GET', '/pedidos/Casa%20S.A')).json.pedido.lineas.some((l) => l.linea === 'cat-1'));
+
+  await assert.rejects(llamar(db, 'DELETE', '/pedidos/Imperio/lineas/extra-nada'), (e) => e.status === 404);
+  await assert.rejects(llamar(db, 'DELETE', '/pedidos/no-existe/lineas/cat-0'), (e) => e.status === 404);
+  // Si alguna línea agregada no tiene uid, no se toca nada
+  db.datos.casaDoradaDatos.extras.push({ distId: 'Imperio', productoIdx: 0, cantidad: 1 });
+  const antes = JSON.stringify(db.datos.casaDoradaDatos.extras);
+  await assert.rejects(llamar(db, 'DELETE', '/pedidos/Imperio/lineas/extra-u3'), (e) => e.status === 409);
+  assert.equal(JSON.stringify(db.datos.casaDoradaDatos.extras), antes);
+});

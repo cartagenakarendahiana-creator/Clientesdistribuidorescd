@@ -140,6 +140,8 @@ del cliente (ahí cualquiera la vería).
 | `POST /pedidos` | Crea un pedido (como "+ Nuevo pedido" en la app). |
 | `DELETE /pedidos/{id}` | Elimina un pedido igual que el botón "🗑 Eliminar" de la app: deja de aparecer, pero no se borra ningún dato. |
 | `POST /pedidos/{id}/restaurar` | Devuelve un pedido eliminado (con la API o desde la app). |
+| `DELETE /pedidos/{id}/lineas/{linea}` | Quita una línea del pedido (como su 🗑 en la app). Solo si no tiene nada despachado; antes guarda una copia en `papelera/lineas` y responde su id (`papelera`). |
+| `POST /papelera/{id}/restaurar` | Devuelve una línea eliminada a su pedido. |
 | `GET /secciones` | Todo lo que se puede leer y cuántos registros hay. |
 | `GET /clientes` | Clientes con contacto y resumen de pedidos (`?cliente=`). |
 | `GET /despachos`, `/facturas` | Con `?desde=`, `hasta=`, `cliente=`. Los despachos no traen la foto de la guía (`tieneFotoGuia`). |

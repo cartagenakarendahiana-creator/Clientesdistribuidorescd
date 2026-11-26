@@ -266,6 +266,65 @@ async function restaurarPedido({ db, catalogo, id }) {
   return { restaurado: true, pedido };
 }
 
+// Inverso de decodificarClave (encodeFirebaseKey de la app): para escribir en mapas cuya clave es el id del pedido.
+const codificarClave = (k) => String(k).replace(/[%.#$/[\]]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
+
+// Quita UNA línea de un pedido, igual que el botón 🗑 de la línea en la app: las líneas del catálogo se marcan
+// {eliminado:true} en catalogOverrides y las agregadas se sacan de extras. Por seguridad solo se permite si la
+// línea no tiene nada despachado, y ANTES se guarda una copia en papelera/lineas para poder restaurarla.
+async function eliminarLinea({ db, catalogo, id, linea }) {
+  const d = await leerDatos(db);
+  const pedido = armarPedidos(catalogo, d).find((x) => x.id === id);
+  if (!pedido) throw new ErrorApi(404, 'No existe ese pedido.');
+  const l = pedido.lineas.find((x) => x.linea === linea);
+  if (!l) throw new ErrorApi(404, 'Ese pedido no tiene esa línea.');
+  if (l.entregado > 0) throw new ErrorApi(409, `La línea "${l.producto}" ya tiene ${l.entregado} despachadas: no se elimina.`);
+  const idPapelera = 'l' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex'); // sin caracteres especiales: va en la URL
+  const copia = { pedidoId: id, cliente: pedido.cliente, linea, detalle: l, eliminadoEn: new Date().toISOString() };
+
+  if (linea.startsWith('cat-')) {
+    const ovs = (d.catalogOverrides || {})[id] || {};
+    copia.antes = ovs[linea] || null;
+    await db.ref('papelera/lineas').update({ [idPapelera]: copia });
+    await db.ref(`casaDoradaDatos/catalogOverrides/${codificarClave(id)}`).update({ [linea]: { eliminado: true } });
+    return { eliminada: true, papelera: idPapelera, linea: l };
+  }
+
+  const uid = linea.replace(/^extra-/, '');
+  const items = lista(d.extras);
+  // La clave de una línea agregada sale de su uid; si alguna no lo tuviera guardado, cuál es cuál dependería de
+  // su posición en la lista, así que no se toca nada.
+  if (items.some((x) => x.uid === undefined || x.uid === null)) {
+    throw new ErrorApi(409, 'Hay líneas agregadas sin identificador: abre la app una vez para que se completen y vuelve a intentar.');
+  }
+  const extra = items.find((x) => x.distId === id && String(x.uid) === uid);
+  if (!extra) throw new ErrorApi(404, 'Ese pedido no tiene esa línea.');
+  copia.extra = extra;
+  await db.ref('papelera/lineas').update({ [idPapelera]: copia });
+  await db.ref('casaDoradaDatos/extras').transaction((actual) => {
+    const xs = lista(actual);
+    return xs.some((x) => x.distId === id && String(x.uid) === uid) ? xs.filter((x) => !(x.distId === id && String(x.uid) === uid)) : actual;
+  });
+  return { eliminada: true, papelera: idPapelera, linea: l };
+}
+
+// Devuelve una línea eliminada con eliminarLinea, a partir de su copia en papelera/lineas.
+async function restaurarLinea({ db, catalogo, idPapelera }) {
+  const copia = (await db.ref(`papelera/lineas/${idPapelera}`).once('value')).val();
+  if (!copia) throw new ErrorApi(404, 'No existe esa copia en la papelera.');
+  if (copia.extra) {
+    await db.ref('casaDoradaDatos/extras').transaction((actual) => {
+      const xs = lista(actual);
+      return xs.some((x) => x.distId === copia.extra.distId && String(x.uid) === String(copia.extra.uid)) ? actual : [...xs, copia.extra];
+    });
+  } else {
+    await db.ref(`casaDoradaDatos/catalogOverrides/${codificarClave(copia.pedidoId)}`).update({ [copia.linea]: copia.antes || null });
+  }
+  await db.ref('papelera/lineas').update({ [idPapelera]: null });
+  const pedido = armarPedidos(catalogo, await leerDatos(db)).find((x) => x.id === copia.pedidoId) || null;
+  return { restaurada: true, pedido };
+}
+
 function filtrarPedidos(pedidos, q) {
   const k = q.cliente ? clienteKey(q.cliente) : '';
   return pedidos.filter((x) => {
@@ -310,6 +369,12 @@ async function atender({ db, catalogo, metodo, ruta, query, body }) {
   if (partes[0] === 'pedidos' && partes.length === 2 && metodo === 'DELETE') {
     return { status: 200, json: await eliminarPedido({ db, catalogo, id: partes[1] }) };
   }
+  if (partes[0] === 'pedidos' && partes.length === 4 && partes[2] === 'lineas' && metodo === 'DELETE') {
+    return { status: 200, json: await eliminarLinea({ db, catalogo, id: partes[1], linea: partes[3] }) };
+  }
+  if (partes[0] === 'papelera' && partes.length === 3 && partes[2] === 'restaurar' && metodo === 'POST') {
+    return { status: 200, json: await restaurarLinea({ db, catalogo, idPapelera: partes[1] }) };
+  }
   if (partes[0] === 'pedidos' && partes.length === 3 && partes[2] === 'restaurar' && metodo === 'POST') {
     return { status: 200, json: await restaurarPedido({ db, catalogo, id: partes[1] }) };
   }
@@ -324,4 +389,4 @@ async function atender({ db, catalogo, metodo, ruta, query, body }) {
   throw new ErrorApi(404, 'Ruta no encontrada. Consulta GET /secciones para ver todo lo que se puede leer, o POST /pedidos para crear un pedido.');
 }
 
-module.exports = { atender, armarPedidos, productos, crearPedido, eliminarPedido, restaurarPedido, claveValida, ErrorApi, clienteKey };
+module.exports = { atender, armarPedidos, productos, crearPedido, eliminarPedido, restaurarPedido, eliminarLinea, restaurarLinea, codificarClave, claveValida, ErrorApi, clienteKey };
