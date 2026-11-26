@@ -138,6 +138,8 @@ del cliente (ahí cualquiera la vería).
 | `GET /pedidos` | Todos los pedidos. Filtros opcionales: `?estado=pendiente\|entregado\|sin_productos`, `tipo=distribuidor\|almacen\|hotel\|redes\|sin`, `cliente=`, `vendedor=`, `desde=AAAA-MM-DD`, `hasta=AAAA-MM-DD` (fecha del pedido). |
 | `GET /pedidos/{id}` | Un pedido. |
 | `POST /pedidos` | Crea un pedido (como "+ Nuevo pedido" en la app). |
+| `DELETE /pedidos/{id}` | Elimina un pedido igual que el botón "🗑 Eliminar" de la app: deja de aparecer, pero no se borra ningún dato. |
+| `POST /pedidos/{id}/restaurar` | Devuelve un pedido eliminado (con la API o desde la app). |
 | `GET /secciones` | Todo lo que se puede leer y cuántos registros hay. |
 | `GET /clientes` | Clientes con contacto y resumen de pedidos (`?cliente=`). |
 | `GET /despachos`, `/facturas` | Con `?desde=`, `hasta=`, `cliente=`. Los despachos no traen la foto de la guía (`tieneFotoGuia`). |
